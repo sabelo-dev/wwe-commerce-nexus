@@ -7,17 +7,21 @@ import { useCart } from "@/contexts/CartContext";
 import CartSheet from "@/components/shop/CartSheet";
 import { Search, ShoppingCart, Menu, X, User, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
-  const { items, subtotal, toggleCart } = useCart();
-  const { isMobile } = useMobile();
+  const { cart, toggleCart, isCartOpen, setCartOpen } = useCart();
+  const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+  
+  // Get items and subtotal from cart
+  const items = cart?.items || [];
+  const subtotal = cart?.subtotal || 0;
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-10">
@@ -227,7 +231,7 @@ const Header: React.FC = () => {
       </div>
 
       {/* Cart Offcanvas */}
-      <CartSheet />
+      <CartSheet isOpen={isCartOpen} setIsOpen={setCartOpen} />
     </header>
   );
 };

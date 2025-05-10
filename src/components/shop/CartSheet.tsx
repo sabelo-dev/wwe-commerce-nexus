@@ -21,11 +21,11 @@ const CartSheet: React.FC<CartSheetProps> = ({ isOpen, setIsOpen }) => {
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex items-center">
             <ShoppingBag className="mr-2" size={18} />
-            Your Shopping Cart ({cart.items.reduce((sum, item) => sum + item.quantity, 0)} items)
+            Your Shopping Cart ({cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0} items)
           </SheetTitle>
         </SheetHeader>
 
-        {cart.items.length > 0 ? (
+        {cart?.items?.length > 0 ? (
           <>
             <div className="flex-1 overflow-y-auto py-4">
               <ul className="space-y-4">
@@ -72,7 +72,7 @@ const CartSheet: React.FC<CartSheetProps> = ({ isOpen, setIsOpen }) => {
             <div className="border-t pt-4 space-y-4">
               <div className="flex justify-between items-center font-semibold">
                 <span>Subtotal</span>
-                <span>{formatCurrency(cart.subtotal)}</span>
+                <span>{formatCurrency(cart.subtotal || 0)}</span>
               </div>
               <p className="text-sm text-gray-500">Shipping and taxes calculated at checkout</p>
               <div className="space-y-2">
