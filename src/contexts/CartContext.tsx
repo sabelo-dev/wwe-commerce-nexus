@@ -11,6 +11,8 @@ interface CartContextType {
   clearCart: () => void;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
+  toggleCart: () => void;
+  setCartOpen: (isOpen: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -110,6 +112,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Add the missing toggleCart function
+  const toggleCart = () => {
+    setIsCartOpen(prev => !prev);
+  };
+
+  // Add the missing setCartOpen function (alias for setIsCartOpen)
+  const setCartOpen = (isOpen: boolean) => {
+    setIsCartOpen(isOpen);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -119,7 +131,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateQuantity,
         clearCart,
         isCartOpen,
-        setIsCartOpen
+        setIsCartOpen,
+        toggleCart,
+        setCartOpen
       }}
     >
       {children}
