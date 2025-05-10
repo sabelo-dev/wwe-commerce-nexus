@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { User } from "@/types";
 import { mockUsers } from "@/data/mockData";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  isVendor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVendor, setIsVendor] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -25,8 +28,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    
+    // Check if the user is a vendor in Supabase
+    const checkVendorStatus = async () => {
+      if (user) {
+        try {
+          const { data } = await supabase
+            .from('vendors')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+          
+          setIsVendor(!!data && data.status === 'approved');
+        } catch (error) {
+          console.error("Error checking vendor status:", error);
+        }
+      } else {
+        setIsVendor(false);
+      }
+    };
+    
+    checkVendorStatus();
     setIsLoading(false);
-  }, []);
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -105,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setIsVendor(false);
     localStorage.removeItem("wweUser");
     toast({
       title: "Logged Out",
@@ -113,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isVendor }}>
       {children}
     </AuthContext.Provider>
   );
