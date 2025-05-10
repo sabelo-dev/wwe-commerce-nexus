@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
@@ -11,7 +10,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { formatCurrency, generateStarRating } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import StarRating from "@/components/ui/star-rating";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 
 const ProductPage: React.FC = () => {
@@ -121,9 +121,7 @@ const ProductPage: React.FC = () => {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">{product.name}</h1>
               <div className="flex items-center space-x-2 mt-2">
-                <div className="flex">
-                  {generateStarRating(product.rating)}
-                </div>
+                <StarRating rating={product.rating} />
                 <span className="text-gray-600 text-sm">
                   {product.rating.toFixed(1)} ({product.reviewCount} reviews)
                 </span>
@@ -305,9 +303,7 @@ const ProductPage: React.FC = () => {
                   <div className="flex items-center space-x-4">
                     <div className="text-4xl font-bold">{product.rating.toFixed(1)}</div>
                     <div>
-                      <div className="flex">
-                        {generateStarRating(product.rating)}
-                      </div>
+                      <StarRating rating={product.rating} />
                       <div className="text-sm text-gray-500">Based on {product.reviewCount} reviews</div>
                     </div>
                   </div>
