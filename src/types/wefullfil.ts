@@ -65,3 +65,60 @@ export interface WeFulFilProductFilter {
   sort_by?: 'title' | 'price' | 'created_at' | 'updated_at';
   sort_order?: 'asc' | 'desc';
 }
+
+export interface WeFulFilImportJob {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  totalItems: number;
+  processedItems: number;
+  successfulItems: number;
+  failedItems: number;
+  startedAt: string;
+  completedAt?: string;
+  errorMessage?: string;
+}
+
+export interface WeFulFilStoredProduct {
+  id: string;
+  external_id: string;
+  title: string;
+  sku: string;
+  description?: string;
+  price: number;
+  images: string[];
+  inventory_quantity: number;
+  created_at: string;
+  updated_at: string;
+  tags?: string[];
+  vendor?: string;
+  categories?: string[];
+  weight?: number;
+  weight_unit?: string;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    unit?: string;
+  };
+  import_status: 'pending' | 'imported' | 'failed';
+  imported_at: string;
+  mapped_product_id?: string;
+}
+
+export interface WeFulFilStoredVariant {
+  id: string;
+  product_id: string;
+  external_id: string;
+  title: string;
+  sku: string;
+  price: number;
+  inventory_quantity: number;
+  option1?: string;
+  option2?: string;
+  option3?: string;
+  image?: string;
+  weight?: number;
+  weight_unit?: string;
+  created_at: string;
+  updated_at: string;
+}

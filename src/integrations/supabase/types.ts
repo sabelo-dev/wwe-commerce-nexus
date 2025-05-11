@@ -86,6 +86,51 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_by: string | null
+          error_message: string | null
+          failed_items: number
+          id: string
+          metadata: Json | null
+          processed_items: number
+          source: string
+          started_at: string
+          status: string
+          successful_items: number
+          total_items: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          failed_items?: number
+          id?: string
+          metadata?: Json | null
+          processed_items?: number
+          source: string
+          started_at?: string
+          status?: string
+          successful_items?: number
+          total_items?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          failed_items?: number
+          id?: string
+          metadata?: Json | null
+          processed_items?: number
+          source?: string
+          started_at?: string
+          status?: string
+          successful_items?: number
+          total_items?: number
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -322,6 +367,8 @@ export type Database = {
           compare_at_price: number | null
           created_at: string
           description: string | null
+          external_id: string | null
+          external_source: string | null
           id: string
           name: string
           price: number
@@ -340,6 +387,8 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string
           description?: string | null
+          external_id?: string | null
+          external_source?: string | null
           id?: string
           name: string
           price: number
@@ -358,6 +407,8 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string
           description?: string | null
+          external_id?: string | null
+          external_source?: string | null
           id?: string
           name?: string
           price?: number
@@ -574,6 +625,142 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wefullfil_product_variants: {
+        Row: {
+          created_at: string
+          external_id: string
+          id: string
+          image: string | null
+          inventory_quantity: number
+          option1: string | null
+          option2: string | null
+          option3: string | null
+          price: number
+          product_id: string
+          sku: string
+          title: string
+          updated_at: string
+          weight: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          id?: string
+          image?: string | null
+          inventory_quantity?: number
+          option1?: string | null
+          option2?: string | null
+          option3?: string | null
+          price: number
+          product_id: string
+          sku: string
+          title: string
+          updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          id?: string
+          image?: string | null
+          inventory_quantity?: number
+          option1?: string | null
+          option2?: string | null
+          option3?: string | null
+          price?: number
+          product_id?: string
+          sku?: string
+          title?: string
+          updated_at?: string
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wefullfil_product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "wefullfil_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wefullfil_products: {
+        Row: {
+          categories: Json | null
+          created_at: string
+          description: string | null
+          dimensions: Json | null
+          external_id: string
+          id: string
+          images: Json | null
+          import_status: string
+          imported_at: string
+          inventory_quantity: number
+          mapped_product_id: string | null
+          price: number
+          sku: string
+          tags: Json | null
+          title: string
+          updated_at: string
+          vendor: string | null
+          weight: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          categories?: Json | null
+          created_at?: string
+          description?: string | null
+          dimensions?: Json | null
+          external_id: string
+          id?: string
+          images?: Json | null
+          import_status?: string
+          imported_at?: string
+          inventory_quantity?: number
+          mapped_product_id?: string | null
+          price: number
+          sku: string
+          tags?: Json | null
+          title: string
+          updated_at?: string
+          vendor?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          categories?: Json | null
+          created_at?: string
+          description?: string | null
+          dimensions?: Json | null
+          external_id?: string
+          id?: string
+          images?: Json | null
+          import_status?: string
+          imported_at?: string
+          inventory_quantity?: number
+          mapped_product_id?: string | null
+          price?: number
+          sku?: string
+          tags?: Json | null
+          title?: string
+          updated_at?: string
+          vendor?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wefullfil_products_mapped_product_id_fkey"
+            columns: ["mapped_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
