@@ -13,17 +13,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { mockUsers } from "@/data/mockData";
-import { User } from "@/types";
+import { AdminUser } from "@/types/admin";
 
 const AdminUsers: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // In a real app, we would fetch from API/Supabase
-    // For now, use mockUsers
-    setUsers(mockUsers);
+    // Convert mockUsers to AdminUser type with status
+    const adminUsers = mockUsers.map(user => ({
+      ...user,
+      status: user.status || 'active',
+      createdAt: new Date().toISOString(),
+    })) as AdminUser[];
+    
+    setUsers(adminUsers);
     setLoading(false);
   }, []);
 
