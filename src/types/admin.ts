@@ -29,6 +29,10 @@ export interface AdminProduct {
   subcategory?: string;
   dateAdded: string;
   storeId: string;
+  externalId?: string;
+  externalSource?: string;
+  inventoryQuantity?: number;
+  sku?: string;
 }
 
 export interface AdminOrder {
