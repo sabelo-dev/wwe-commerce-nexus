@@ -5,6 +5,19 @@ import { mockUsers } from "@/data/mockData";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Add the admin user to the mockUsers array if not already present
+const adminUser: User = {
+  id: "admin1",
+  email: "lsigroupapi@gmail.com",
+  name: "Sabelo Mkhatshwa",
+  role: "admin",
+};
+
+// Check if the admin user already exists, if not add it
+if (!mockUsers.some(user => user.email === adminUser.email)) {
+  mockUsers.push(adminUser);
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -59,7 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Find user by email
+      // Check for our hardcoded admin user first for Sabelo
+      if (email === "lsigroupapi@gmail.com" && password === "Hermes@143") {
+        setUser(adminUser);
+        localStorage.setItem("wweUser", JSON.stringify(adminUser));
+        toast({
+          title: "Admin Login Successful",
+          description: `Welcome back, ${adminUser.name || adminUser.email}!`,
+        });
+        return;
+      }
+      
+      // For other users, find by email
       const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       
       if (foundUser) {

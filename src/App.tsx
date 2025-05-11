@@ -16,6 +16,8 @@ import CategoryPage from "./pages/CategoryPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import VendorRegisterPage from "./pages/VendorRegisterPage";
 import VendorOnboardingPage from "./pages/VendorOnboardingPage";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminDashboard from "./pages/admin/AdminDashboard"; 
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,10 +39,12 @@ const App = () => (
                 <Route path="category/:slug" element={<CategoryPage />} />
                 <Route path="vendor/register" element={<VendorRegisterPage />} />
                 <Route path="vendor/onboarding/:vendorId" element={<VendorOnboardingPage />} />
+                <Route path="admin/dashboard" element={<AdminDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/admin/login" element={<AdminLoginPage />} />
             </Routes>
           </BrowserRouter>
         </CartProvider>
