@@ -24,7 +24,7 @@ const AdminUsers: React.FC = () => {
     // Convert mockUsers to AdminUser type with status
     const adminUsers = mockUsers.map(user => ({
       ...user,
-      status: user.status || 'active',
+      status: 'active', // Set default status since it doesn't exist in User type
       createdAt: new Date().toISOString(),
     })) as AdminUser[];
     
