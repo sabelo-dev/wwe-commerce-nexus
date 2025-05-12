@@ -1,9 +1,8 @@
-
 import { WeFulFilResponse, WeFulFilProduct, WeFulFilError, WeFulFilProductFilter, WeFulFilImportJob, WeFulFilStoredProduct } from "@/types/wefullfil";
 import { AdminProduct } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 
-const API_BASE_URL = "https://wefullfill.com";
+const API_BASE_URL = "https://app.wefullfill.com";
 const API_TOKEN = "FKfz13Vd5RtRibx4cLi6i2JufklLqfrczdby146anMeVHwITYex1Ke7IhnLS";
 
 /**
