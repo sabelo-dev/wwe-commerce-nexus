@@ -164,7 +164,9 @@ export async function storeWeFulFilProduct(product: WeFulFilProduct): Promise<We
       ...data,
       images: Array.isArray(data.images) ? data.images : [],
       tags: Array.isArray(data.tags) ? data.tags : [],
-      categories: Array.isArray(data.categories) ? data.categories : []
+      categories: Array.isArray(data.categories) ? data.categories : [],
+      // Ensure import_status is cast to the correct union type
+      import_status: data.import_status as "pending" | "imported" | "failed"
     };
 
     // Store variants if they exist
@@ -242,7 +244,9 @@ export async function fetchStoredWeFulFilProducts(page: number = 1, perPage: num
       ...item,
       images: Array.isArray(item.images) ? item.images : [],
       tags: Array.isArray(item.tags) ? item.tags : [],
-      categories: Array.isArray(item.categories) ? item.categories : []
+      categories: Array.isArray(item.categories) ? item.categories : [],
+      // Ensure import_status is cast to the correct union type
+      import_status: item.import_status as "pending" | "imported" | "failed"
     })) || [];
 
     return { data: processedData, count: count || 0 };
@@ -323,7 +327,8 @@ export async function createImportJob(source: string, totalItems: number): Promi
       .insert({
         source,
         total_items: totalItems,
-        status: 'processing' as 'pending' | 'processing' | 'completed' | 'failed',
+        // Fix the type by casting explicitly
+        status: 'processing' as const,
         started_at: new Date().toISOString()
       })
       .select()
@@ -336,7 +341,7 @@ export async function createImportJob(source: string, totalItems: number): Promi
 
     return {
       id: data.id,
-      status: data.status,
+      status: data.status as "pending" | "processing" | "completed" | "failed",
       totalItems: data.total_items,
       processedItems: data.processed_items,
       successfulItems: data.successful_items,
