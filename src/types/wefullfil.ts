@@ -85,13 +85,14 @@ export interface WeFulFilStoredProduct {
   sku: string;
   description?: string;
   price: number;
-  images: string[];
+  // Update images type to handle JSON from Supabase
+  images: string[] | any;
   inventory_quantity: number;
   created_at: string;
   updated_at: string;
-  tags?: string[];
+  tags?: string[] | any;
   vendor?: string;
-  categories?: string[];
+  categories?: string[] | any;
   weight?: number;
   weight_unit?: string;
   dimensions?: {
@@ -99,7 +100,7 @@ export interface WeFulFilStoredProduct {
     width?: number;
     height?: number;
     unit?: string;
-  };
+  } | any;
   import_status: 'pending' | 'imported' | 'failed';
   imported_at: string;
   mapped_product_id?: string;

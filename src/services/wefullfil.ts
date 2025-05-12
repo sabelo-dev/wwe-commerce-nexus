@@ -59,9 +59,15 @@ export async function fetchWeFulFilProducts(filters: WeFulFilProductFilter = {})
     const queryString = searchParams.toString();
     const url = `${API_BASE_URL}/api/products${queryString ? `?${queryString}` : ""}`;
     
-    const response = await fetch(url, {
+    // Add API token to URL
+    const apiUrl = url + (queryString ? '&' : '?') + `api_token=${API_TOKEN}`;
+    
+    const response = await fetch(apiUrl, {
       method: "GET",
-      headers: createHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
     });
 
     if (!response.ok) {
@@ -153,6 +159,14 @@ export async function storeWeFulFilProduct(product: WeFulFilProduct): Promise<We
       throw error;
     }
 
+    // Process response to ensure it matches our type
+    const storedProduct: WeFulFilStoredProduct = {
+      ...data,
+      images: Array.isArray(data.images) ? data.images : [],
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      categories: Array.isArray(data.categories) ? data.categories : []
+    };
+
     // Store variants if they exist
     if (product.variants && product.variants.length > 0) {
       for (const variant of product.variants) {
@@ -160,7 +174,7 @@ export async function storeWeFulFilProduct(product: WeFulFilProduct): Promise<We
       }
     }
 
-    return data;
+    return storedProduct;
   } catch (error) {
     console.error("Error storing WeFulFil product:", error);
     throw error;
@@ -223,7 +237,15 @@ export async function fetchStoredWeFulFilProducts(page: number = 1, perPage: num
       throw error;
     }
 
-    return { data: data || [], count: count || 0 };
+    // Process the data to ensure it matches our type
+    const processedData: WeFulFilStoredProduct[] = data?.map(item => ({
+      ...item,
+      images: Array.isArray(item.images) ? item.images : [],
+      tags: Array.isArray(item.tags) ? item.tags : [],
+      categories: Array.isArray(item.categories) ? item.categories : []
+    })) || [];
+
+    return { data: processedData, count: count || 0 };
   } catch (error) {
     console.error("Error fetching stored WeFulFil products:", error);
     throw error;
@@ -301,7 +323,7 @@ export async function createImportJob(source: string, totalItems: number): Promi
       .insert({
         source,
         total_items: totalItems,
-        status: 'processing',
+        status: 'processing' as 'pending' | 'processing' | 'completed' | 'failed',
         started_at: new Date().toISOString()
       })
       .select()

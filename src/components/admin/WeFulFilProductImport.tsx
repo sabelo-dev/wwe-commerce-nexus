@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -691,7 +690,7 @@ const WeFulFilProductImport: React.FC = () => {
                       <TableCell>
                         <Badge 
                           variant={
-                            product.import_status === 'imported' ? "success" :
+                            product.import_status === 'imported' ? "default" :
                             product.import_status === 'failed' ? "destructive" :
                             "outline"
                           }
