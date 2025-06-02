@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -7,39 +8,10 @@ import {
   importMultipleWeFulFilProducts,
   fetchStoredWeFulFilProducts
 } from "@/services/wefullfil";
-import { WeFulFilProduct, WeFulFilProductFilter, WeFulFilPagination, WeFulFilStoredProduct } from "@/types/wefullfil";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { WeFulFilProduct, WeFulFilProductFilter, WeFulFilStoredProduct } from "@/types/wefullfil";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, Package, ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
-import { AdminProduct } from "@/types/admin";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -54,6 +26,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { WeFulFilSearchForm } from "./wefullfil/WeFulFilSearchForm";
+import { WeFulFilImportControls } from "./wefullfil/WeFulFilImportControls";
+import { WeFulFilProductTable } from "./wefullfil/WeFulFilProductTable";
+import { WeFulFilPagination } from "./wefullfil/WeFulFilPagination";
+import { StoredProductsTable } from "./wefullfil/StoredProductsTable";
+import { StoredProductsPagination } from "./wefullfil/StoredProductsPagination";
 
 const WeFulFilProductImport: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -221,196 +199,6 @@ const WeFulFilProductImport: React.FC = () => {
     setStoredPage(page);
   };
 
-  const handleSortChange = (value: string) => {
-    let [sort_by, sort_order] = value.split('-') as [WeFulFilProductFilter['sort_by'], WeFulFilProductFilter['sort_order']];
-    setFilters(prev => ({ ...prev, sort_by, sort_order }));
-    apiQuery.refetch();
-  };
-
-  // Generate pagination numbers
-  const renderPaginationItems = (pagination?: WeFulFilPagination) => {
-    if (!pagination) return null;
-    
-    const { current_page, total_pages } = pagination;
-    const pageItems = [];
-    
-    // Always show first page
-    pageItems.push(
-      <PaginationItem key="first">
-        <PaginationLink 
-          onClick={() => handlePageChange(1)}
-          isActive={current_page === 1}
-        >
-          1
-        </PaginationLink>
-      </PaginationItem>
-    );
-    
-    // Add ellipsis if needed
-    if (current_page > 3) {
-      pageItems.push(
-        <PaginationItem key="ellipsis1">
-          <PaginationEllipsis />
-        </PaginationItem>
-      );
-    }
-    
-    // Add previous page if not first or second page
-    if (current_page > 2) {
-      pageItems.push(
-        <PaginationItem key={current_page - 1}>
-          <PaginationLink onClick={() => handlePageChange(current_page - 1)}>
-            {current_page - 1}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    // Add current page if not first
-    if (current_page !== 1) {
-      pageItems.push(
-        <PaginationItem key={current_page}>
-          <PaginationLink 
-            onClick={() => handlePageChange(current_page)}
-            isActive={true}
-          >
-            {current_page}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    // Add next page if not last
-    if (current_page < total_pages - 1) {
-      pageItems.push(
-        <PaginationItem key={current_page + 1}>
-          <PaginationLink onClick={() => handlePageChange(current_page + 1)}>
-            {current_page + 1}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    // Add ellipsis if needed
-    if (current_page < total_pages - 2) {
-      pageItems.push(
-        <PaginationItem key="ellipsis2">
-          <PaginationEllipsis />
-        </PaginationItem>
-      );
-    }
-    
-    // Always show last page if not first
-    if (total_pages > 1) {
-      pageItems.push(
-        <PaginationItem key="last">
-          <PaginationLink 
-            onClick={() => handlePageChange(total_pages)}
-            isActive={current_page === total_pages}
-          >
-            {total_pages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    return pageItems;
-  };
-  
-  // Generate pagination for stored products
-  const renderStoredPaginationItems = () => {
-    const totalPages = Math.ceil(storedProductsCount / 10);
-    const currentPage = storedPage;
-    
-    if (totalPages <= 1) return null;
-    
-    const pageItems = [];
-    
-    // Always show first page
-    pageItems.push(
-      <PaginationItem key="first">
-        <PaginationLink 
-          onClick={() => handleStoredPageChange(1)}
-          isActive={currentPage === 1}
-        >
-          1
-        </PaginationLink>
-      </PaginationItem>
-    );
-    
-    // Add ellipsis if needed
-    if (currentPage > 3) {
-      pageItems.push(
-        <PaginationItem key="ellipsis1">
-          <PaginationEllipsis />
-        </PaginationItem>
-      );
-    }
-    
-    // Add previous page if not first or second page
-    if (currentPage > 2) {
-      pageItems.push(
-        <PaginationItem key={currentPage - 1}>
-          <PaginationLink onClick={() => handleStoredPageChange(currentPage - 1)}>
-            {currentPage - 1}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    // Add current page if not first
-    if (currentPage !== 1) {
-      pageItems.push(
-        <PaginationItem key={currentPage}>
-          <PaginationLink 
-            onClick={() => handleStoredPageChange(currentPage)}
-            isActive={true}
-          >
-            {currentPage}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    // Add next page if not last
-    if (currentPage < totalPages - 1) {
-      pageItems.push(
-        <PaginationItem key={currentPage + 1}>
-          <PaginationLink onClick={() => handleStoredPageChange(currentPage + 1)}>
-            {currentPage + 1}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    // Add ellipsis if needed
-    if (currentPage < totalPages - 2) {
-      pageItems.push(
-        <PaginationItem key="ellipsis2">
-          <PaginationEllipsis />
-        </PaginationItem>
-      );
-    }
-    
-    // Always show last page if not first
-    if (totalPages > 1) {
-      pageItems.push(
-        <PaginationItem key="last">
-          <PaginationLink 
-            onClick={() => handleStoredPageChange(totalPages)}
-            isActive={currentPage === totalPages}
-          >
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    return pageItems;
-  };
-
-  const selectedCount = Object.values(selectedProducts).filter(Boolean).length;
-
   return (
     <div>
       <div className="mb-6">
@@ -426,70 +214,16 @@ const WeFulFilProductImport: React.FC = () => {
           </TabsList>
 
           <TabsContent value="api-search">
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Search WeFulFil API</CardTitle>
-                <CardDescription>
-                  Find products by title, SKU, or categories
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-                  <Input
-                    type="text"
-                    placeholder="Search for products by title or SKU..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="submit" className="bg-wwe-navy hover:bg-wwe-navy/90">
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
-                  </Button>
-                </form>
-                
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <label htmlFor="sort" className="block text-sm font-medium mb-1">
-                      Sort By
-                    </label>
-                    <Select 
-                      onValueChange={handleSortChange} 
-                      defaultValue={`${filters.sort_by}-${filters.sort_order}`}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sort By" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="title-asc">Title (A-Z)</SelectItem>
-                        <SelectItem value="title-desc">Title (Z-A)</SelectItem>
-                        <SelectItem value="price-asc">Price (Low-High)</SelectItem>
-                        <SelectItem value="price-desc">Price (High-Low)</SelectItem>
-                        <SelectItem value="created_at-desc">Newest First</SelectItem>
-                        <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="justify-between">
-                <div>
-                  {apiQuery.data && (
-                    <span className="text-sm text-gray-500">
-                      Showing {apiQuery.data.meta.pagination.count} of {apiQuery.data.meta.pagination.total} products
-                    </span>
-                  )}
-                </div>
-                <Button 
-                  variant="outline" 
-                  onClick={() => apiQuery.refetch()}
-                  disabled={apiQuery.isLoading}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Results
-                </Button>
-              </CardFooter>
-            </Card>
+            <WeFulFilSearchForm
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filters={filters}
+              setFilters={setFilters}
+              onSearch={handleSearch}
+              onRefresh={() => apiQuery.refetch()}
+              isLoading={apiQuery.isLoading}
+              pagination={apiQuery.data?.meta.pagination}
+            />
 
             {apiQuery.isLoading && (
               <div className="flex justify-center my-8">
@@ -513,103 +247,27 @@ const WeFulFilProductImport: React.FC = () => {
 
             {apiQuery.data && apiQuery.data.data && (
               <>
-                <div className="bg-gray-50 p-4 rounded-md mb-4 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Checkbox 
-                      id="select-all"
-                      checked={apiQuery.data.data.length > 0 && selectedCount === apiQuery.data.data.length}
-                      onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                    />
-                    <label htmlFor="select-all" className="ml-2 text-sm font-medium">
-                      Select All ({selectedCount} of {apiQuery.data.data.length} selected)
-                    </label>
-                  </div>
-                  
-                  <Button 
-                    onClick={handleBulkImport} 
-                    disabled={selectedCount === 0 || bulkImporting}
-                    variant="default"
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    {bulkImporting ? `Importing ${selectedCount} Products...` : `Import Selected (${selectedCount})`}
-                  </Button>
-                </div>
+                <WeFulFilImportControls
+                  products={apiQuery.data.data}
+                  selectedProducts={selectedProducts}
+                  onSelectAll={handleSelectAll}
+                  onBulkImport={handleBulkImport}
+                  bulkImporting={bulkImporting}
+                />
                 
-                <Table>
-                  <TableCaption>WeFulFil Products Catalog</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]"></TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Inventory</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {apiQuery.data.data.length > 0 ? (
-                      apiQuery.data.data.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={!!selectedProducts[product.id]}
-                              onCheckedChange={(checked) => handleSelectProduct(product.id, !!checked)}
-                              disabled={product.inventory_quantity <= 0}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{product.title}</TableCell>
-                          <TableCell>{product.sku}</TableCell>
-                          <TableCell>{formatCurrency(product.price)}</TableCell>
-                          <TableCell>
-                            <Badge variant={product.inventory_quantity > 0 ? "default" : "destructive"}>
-                              {product.inventory_quantity > 0 ? `In Stock (${product.inventory_quantity})` : "Out of Stock"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={importing[product.id] || product.inventory_quantity <= 0}
-                              onClick={() => handleImport(product)}
-                            >
-                              {importing[product.id] ? "Importing..." : "Import"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-4">
-                          No products found. Try a different search term.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                <WeFulFilProductTable
+                  products={apiQuery.data.data}
+                  selectedProducts={selectedProducts}
+                  importing={importing}
+                  onSelectProduct={handleSelectProduct}
+                  onImport={handleImport}
+                />
                 
                 {apiQuery.data.meta.pagination.total_pages > 1 && (
-                  <Pagination className="mt-4">
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => handlePageChange(Math.max(1, filters.page! - 1))}
-                          isActive={false}
-                          className={filters.page === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                        />
-                      </PaginationItem>
-                      
-                      {renderPaginationItems(apiQuery.data.meta.pagination)}
-                      
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => handlePageChange(Math.min(apiQuery.data.meta.pagination.total_pages, filters.page! + 1))}
-                          isActive={false}
-                          className={filters.page === apiQuery.data.meta.pagination.total_pages ? "opacity-50 cursor-not-allowed" : ""}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                  <WeFulFilPagination
+                    pagination={apiQuery.data.meta.pagination}
+                    onPageChange={handlePageChange}
+                  />
                 )}
               </>
             )}
@@ -663,76 +321,18 @@ const WeFulFilProductImport: React.FC = () => {
               </div>
             )}
 
-            <Table>
-              <TableCaption>Imported WeFulFil Products</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Inventory</TableHead>
-                  <TableHead>Import Status</TableHead>
-                  <TableHead>Imported At</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {storedProducts.length > 0 ? (
-                  storedProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.title}</TableCell>
-                      <TableCell>{product.sku}</TableCell>
-                      <TableCell>{formatCurrency(product.price)}</TableCell>
-                      <TableCell>
-                        <Badge variant={product.inventory_quantity > 0 ? "default" : "destructive"}>
-                          {product.inventory_quantity > 0 ? `In Stock (${product.inventory_quantity})` : "Out of Stock"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            product.import_status === 'imported' ? "default" :
-                            product.import_status === 'failed' ? "destructive" :
-                            "outline"
-                          }
-                        >
-                          {product.import_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(product.imported_at).toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
-                      {storedSearchQuery ? "No products match your search." : "No products have been imported yet."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <StoredProductsTable
+              products={storedProducts}
+              searchQuery={storedSearchQuery}
+            />
 
             {storedProductsCount > 10 && (
-              <Pagination className="mt-4">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => handleStoredPageChange(Math.max(1, storedPage - 1))}
-                      isActive={false}
-                      className={storedPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                    />
-                  </PaginationItem>
-                  
-                  {renderStoredPaginationItems()}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => handleStoredPageChange(Math.min(Math.ceil(storedProductsCount / 10), storedPage + 1))}
-                      isActive={false}
-                      className={storedPage === Math.ceil(storedProductsCount / 10) ? "opacity-50 cursor-not-allowed" : ""}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+              <StoredProductsPagination
+                currentPage={storedPage}
+                totalCount={storedProductsCount}
+                itemsPerPage={10}
+                onPageChange={handleStoredPageChange}
+              />
             )}
           </TabsContent>
         </Tabs>
