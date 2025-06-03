@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Header: React.FC = () => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isVendor } = useAuth();
   const { cart, toggleCart, isCartOpen, setCartOpen } = useCart();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -76,13 +75,22 @@ const Header: React.FC = () => {
                   >
                     Account
                   </Link>
-                  {user.role === 'consumer' && (
+                  {user?.role === 'consumer' && (
                     <Link
                       to="/vendor/register"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <Store className="h-4 w-4 inline-block mr-2" />
                       Become a Vendor
+                    </Link>
+                  )}
+                  {isVendor && (
+                    <Link
+                      to="/vendor/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Store className="h-4 w-4 inline-block mr-2" />
+                      Vendor Dashboard
                     </Link>
                   )}
                   {isAdmin && (
@@ -190,6 +198,16 @@ const Header: React.FC = () => {
             >
               <Store className="h-4 w-4 inline-block mr-2" />
               Become a Vendor
+            </Link>
+          )}
+          {isVendor && (
+            <Link
+              to="/vendor/dashboard"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Store className="h-4 w-4 inline-block mr-2" />
+              Vendor Dashboard
             </Link>
           )}
           {isAdmin && (

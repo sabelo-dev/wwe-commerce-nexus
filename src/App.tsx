@@ -16,6 +16,7 @@ import CategoryPage from "./pages/CategoryPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import VendorRegisterPage from "./pages/VendorRegisterPage";
 import VendorOnboardingPage from "./pages/VendorOnboardingPage";
+import VendorDashboardPage from "./pages/VendorDashboardPage";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard"; 
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="category/:slug" element={<CategoryPage />} />
                 <Route path="vendor/register" element={<VendorRegisterPage />} />
                 <Route path="vendor/onboarding/:vendorId" element={<VendorOnboardingPage />} />
+                <Route path="vendor/dashboard" element={<VendorDashboardPage />} />
                 <Route path="admin/dashboard" element={<AdminDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
