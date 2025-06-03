@@ -1,22 +1,9 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { User } from "@/types";
-import { mockUsers } from "@/data/mockData";
+import { User, Profile } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-// Add the admin user to the mockUsers array if not already present
-const adminUser: User = {
-  id: "admin1",
-  email: "lsigroupapi@gmail.com",
-  name: "Sabelo Mkhatshwa",
-  role: "admin",
-};
-
-// Check if the admin user already exists, if not add it
-if (!mockUsers.some(user => user.email === adminUser.email)) {
-  mockUsers.push(adminUser);
-}
+import { Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
@@ -25,78 +12,94 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   isVendor: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVendor, setIsVendor] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem("wweUser");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    
-    // Check if the user is a vendor in Supabase
-    const checkVendorStatus = async () => {
-      if (user) {
-        try {
-          const { data } = await supabase
-            .from('vendors')
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch user profile from profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('id', session.user.id)
             .single();
           
-          setIsVendor(!!data && data.status === 'approved');
-        } catch (error) {
-          console.error("Error checking vendor status:", error);
+          if (profile) {
+            const userData: User = {
+              id: profile.id,
+              email: profile.email,
+              name: profile.name,
+              avatar_url: profile.avatar_url,
+              role: profile.role
+            };
+            setUser(userData);
+            setIsAdmin(profile.role === 'admin');
+            
+            // Check vendor status if user has vendor role
+            if (profile.role === 'vendor') {
+              const { data: vendor } = await supabase
+                .from('vendors')
+                .select('*')
+                .eq('user_id', profile.id)
+                .single();
+              
+              setIsVendor(!!vendor && vendor.status === 'approved');
+            } else {
+              setIsVendor(false);
+            }
+          }
+        } else {
+          setUser(null);
+          setIsVendor(false);
+          setIsAdmin(false);
         }
-      } else {
-        setIsVendor(false);
+        
+        setIsLoading(false);
       }
-    };
-    
-    checkVendorStatus();
-    setIsLoading(false);
-  }, [user]);
+    );
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // This will trigger the auth state change listener above
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // Check for our hardcoded admin user first for Sabelo
-      if (email === "lsigroupapi@gmail.com" && password === "Hermes@143") {
-        setUser(adminUser);
-        localStorage.setItem("wweUser", JSON.stringify(adminUser));
-        toast({
-          title: "Admin Login Successful",
-          description: `Welcome back, ${adminUser.name || adminUser.email}!`,
-        });
-        return;
-      }
+      if (error) throw error;
       
-      // For other users, find by email
-      const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (foundUser) {
-        // In a real app, we would verify password hash here
-        setUser(foundUser);
-        localStorage.setItem("wweUser", JSON.stringify(foundUser));
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${foundUser.name || foundUser.email}!`,
-        });
-      } else {
-        throw new Error("Invalid email or password");
-      }
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -113,31 +116,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Check if email already exists
-      const userExists = mockUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (userExists) {
-        throw new Error("Email already in use");
-      }
-      
-      // Create new user
-      const newUser: User = {
-        id: `u${Date.now()}`,
+      const { error } = await supabase.auth.signUp({
         email,
-        name,
-        role: "customer",
-      };
+        password,
+        options: {
+          data: {
+            name: name,
+            role: 'consumer'
+          },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
       
-      // In a real app, we would store this in a database
-      setUser(newUser);
-      localStorage.setItem("wweUser", JSON.stringify(newUser));
+      if (error) throw error;
       
       toast({
         title: "Registration Successful",
-        description: "Your account has been created!",
+        description: "Please check your email to verify your account.",
       });
     } catch (error) {
       toast({
@@ -151,18 +146,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsVendor(false);
-    localStorage.removeItem("wweUser");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Logout Failed",
+        description: "An error occurred while logging out.",
+      });
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isVendor }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isVendor, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

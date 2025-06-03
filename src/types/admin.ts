@@ -3,7 +3,7 @@ export interface AdminUser {
   id: string;
   name?: string;
   email: string;
-  role: 'customer' | 'vendor' | 'admin';
+  role: 'consumer' | 'vendor' | 'admin';
   status?: 'active' | 'suspended' | 'pending';
   createdAt: string;
 }

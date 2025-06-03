@@ -12,38 +12,64 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockUsers } from "@/data/mockData";
-import { AdminUser } from "@/types/admin";
+import { supabase } from "@/integrations/supabase/client";
+import { Profile } from "@/types";
 
 const AdminUsers: React.FC = () => {
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Convert mockUsers to AdminUser type with status
-    const adminUsers = mockUsers.map(user => ({
-      ...user,
-      status: 'active', // Set default status since it doesn't exist in User type
-      createdAt: new Date().toISOString(),
-    })) as AdminUser[];
-    
-    setUsers(adminUsers);
-    setLoading(false);
+    fetchUsers();
   }, []);
 
-  const handleToggleStatus = (userId: string) => {
-    // In a real app, you'd update via API
-    setUsers(users.map(u => 
-      u.id === userId 
-        ? { ...u, status: u.status === 'active' ? 'suspended' : 'active' } 
-        : u
-    ));
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    toast({
-      title: "Status updated",
-      description: "User status has been updated."
-    });
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch users",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, newRole: 'consumer' | 'vendor' | 'admin') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, role: newRole } : u
+      ));
+
+      toast({
+        title: "Role updated",
+        description: `User role has been updated to ${newRole}.`
+      });
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update user role",
+      });
+    }
   };
 
   if (loading) {
@@ -63,7 +89,7 @@ const AdminUsers: React.FC = () => {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Created At</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -77,19 +103,37 @@ const AdminUsers: React.FC = () => {
                   {user.role}
                 </Badge>
               </TableCell>
-              <TableCell>
-                <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                  {user.status || 'active'}
-                </Badge>
-              </TableCell>
+              <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
               <TableCell className="text-right">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleToggleStatus(user.id)}
-                >
-                  {user.status === 'suspended' ? 'Activate' : 'Suspend'}
-                </Button>
+                <div className="flex gap-2 justify-end">
+                  {user.role !== 'admin' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleUpdateRole(user.id, 'admin')}
+                    >
+                      Make Admin
+                    </Button>
+                  )}
+                  {user.role !== 'vendor' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleUpdateRole(user.id, 'vendor')}
+                    >
+                      Make Vendor
+                    </Button>
+                  )}
+                  {user.role !== 'consumer' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleUpdateRole(user.id, 'consumer')}
+                    >
+                      Make Consumer
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

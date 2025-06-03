@@ -55,6 +55,14 @@ const RegisterVendorForm: React.FC = () => {
     }
 
     try {
+      // Update user role to vendor in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'vendor' })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
       // Create vendor profile in Supabase
       const { data, error } = await supabase.from("vendors").insert({
         user_id: user.id,

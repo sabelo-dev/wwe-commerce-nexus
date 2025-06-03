@@ -1,16 +1,15 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import CartSheet from "@/components/shop/CartSheet";
-import { Search, ShoppingCart, Menu, X, User, Store } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, User, Store, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { cart, toggleCart, isCartOpen, setCartOpen } = useCart();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -67,6 +66,7 @@ const Header: React.FC = () => {
                 <Button variant="ghost">
                   <User className="h-5 w-5 mr-2" />
                   {user.name || user.email}
+                  {isAdmin && <Shield className="h-4 w-4 ml-2 text-red-500" />}
                 </Button>
                 <div className="hidden group-hover:block absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
                   <Link
@@ -75,13 +75,24 @@ const Header: React.FC = () => {
                   >
                     Account
                   </Link>
-                  <Link
-                    to="/vendor/register"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <Store className="h-4 w-4 inline-block mr-2" />
-                    Become a Vendor
-                  </Link>
+                  {user.role === 'consumer' && (
+                    <Link
+                      to="/vendor/register"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Store className="h-4 w-4 inline-block mr-2" />
+                      Become a Vendor
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      to="/admin/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Shield className="h-4 w-4 inline-block mr-2" />
+                      Admin Dashboard
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -170,14 +181,26 @@ const Header: React.FC = () => {
           >
             Categories
           </Link>
-          <Link
-            to="/vendor/register"
-            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Store className="h-4 w-4 inline-block mr-2" />
-            Become a Vendor
-          </Link>
+          {user.role === 'consumer' && (
+            <Link
+              to="/vendor/register"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Store className="h-4 w-4 inline-block mr-2" />
+              Become a Vendor
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              to="/admin/dashboard"
+              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Shield className="h-4 w-4 inline-block mr-2" />
+              Admin Dashboard
+            </Link>
+          )}
 
           {/* Search Bar in Mobile Menu */}
           <div className="px-3 py-2">

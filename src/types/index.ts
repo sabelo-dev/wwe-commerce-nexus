@@ -3,8 +3,18 @@ export interface User {
   id: string;
   email: string;
   name?: string;
-  avatar?: string;
-  role: 'customer' | 'vendor' | 'admin';
+  avatar_url?: string;
+  role: 'consumer' | 'vendor' | 'admin';
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  name?: string;
+  avatar_url?: string;
+  role: 'consumer' | 'vendor' | 'admin';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Product {
