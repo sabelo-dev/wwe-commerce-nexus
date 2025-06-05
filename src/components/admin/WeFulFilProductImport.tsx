@@ -1,17 +1,18 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { 
   fetchWeFulFilProducts, 
   importWeFulFilProductToAdmin,
   importMultipleWeFulFilProducts,
-  fetchStoredWeFulFilProducts
+  fetchStoredWeFulFilProducts,
+  clearWeFulFilCache
 } from "@/services/wefullfil";
 import { WeFulFilProduct, WeFulFilProductFilter, WeFulFilStoredProduct } from "@/types/wefullfil";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -45,7 +46,7 @@ const WeFulFilProductImport: React.FC = () => {
     sort_order: "asc",
   });
 
-  // State for stored products
+  // State for stored products with optimized updates
   const [storedPage, setStoredPage] = useState(1);
   const [storedSearchQuery, setStoredSearchQuery] = useState("");
   const [storedProducts, setStoredProducts] = useState<WeFulFilStoredProduct[]>([]);
@@ -54,61 +55,74 @@ const WeFulFilProductImport: React.FC = () => {
   
   const { toast } = useToast();
 
+  // Optimized API query with better caching
   const apiQuery = useQuery({
-    queryKey: ['wefullfil-api-products', filters],
+    queryKey: ['wefullfil-api-products', filters, searchQuery],
     queryFn: () => fetchWeFulFilProducts({ ...filters, search: searchQuery }),
-    enabled: false, // Don't fetch on mount
+    enabled: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on client errors
+      if (error instanceof Error && error.message.includes('4')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
-  // Load stored products from the database
-  useEffect(() => {
-    const loadStoredProducts = async () => {
-      setStoredProductsLoading(true);
-      try {
-        const { data, count } = await fetchStoredWeFulFilProducts(storedPage, 10, storedSearchQuery);
-        setStoredProducts(data);
-        setStoredProductsCount(count);
-      } catch (error) {
-        console.error("Error loading stored products:", error);
-        toast({
-          title: "Error Loading Products",
-          description: `Failed to load imported products: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          variant: "destructive",
-        });
-      } finally {
-        setStoredProductsLoading(false);
-      }
-    };
-
-    loadStoredProducts();
-  }, [storedPage, storedSearchQuery, toast]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFilters(prev => ({ ...prev, page: 1 })); // Reset to page 1 when searching
-    apiQuery.refetch();
-  };
-
-  const handleStoredSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStoredPage(1); // Reset to page 1 when searching
-  };
-
-  const handleImport = async (product: WeFulFilProduct) => {
-    setImporting(prev => ({ ...prev, [product.id]: true }));
-    
+  // Memoized stored products loader to prevent unnecessary re-renders
+  const loadStoredProducts = useCallback(async () => {
+    setStoredProductsLoading(true);
     try {
-      const importedProduct = await importWeFulFilProductToAdmin(product);
-      
-      toast({
-        title: "Product Imported",
-        description: `${product.title} has been added to your products.`,
-      });
-      
-      // Refresh the stored products list
       const { data, count } = await fetchStoredWeFulFilProducts(storedPage, 10, storedSearchQuery);
       setStoredProducts(data);
       setStoredProductsCount(count);
+    } catch (error) {
+      console.error("Error loading stored products:", error);
+      toast({
+        title: "Error Loading Products",
+        description: `Failed to load imported products: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setStoredProductsLoading(false);
+    }
+  }, [storedPage, storedSearchQuery, toast]);
+
+  // Load stored products with optimized dependency array
+  useEffect(() => {
+    loadStoredProducts();
+  }, [loadStoredProducts]);
+
+  // Optimized search handlers
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    setFilters(prev => ({ ...prev, page: 1 }));
+    apiQuery.refetch();
+  }, [apiQuery]);
+
+  const handleStoredSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    setStoredPage(1);
+  }, []);
+
+  // Optimized import handler with better error handling
+  const handleImport = useCallback(async (product: WeFulFilProduct) => {
+    if (importing[product.id]) return; // Prevent duplicate imports
+    
+    setImporting(prev => ({ ...prev, [product.id]: true }));
+    
+    try {
+      await importWeFulFilProductToAdmin(product);
+      
+      toast({
+        title: "Product Imported Successfully",
+        description: `${product.title} has been added to your products.`,
+      });
+      
+      // Refresh stored products list
+      await loadStoredProducts();
     } catch (error) {
       toast({
         title: "Import Failed",
@@ -118,9 +132,10 @@ const WeFulFilProductImport: React.FC = () => {
     } finally {
       setImporting(prev => ({ ...prev, [product.id]: false }));
     }
-  };
+  }, [importing, toast, loadStoredProducts]);
 
-  const handleBulkImport = async () => {
+  // Optimized bulk import with progress tracking
+  const handleBulkImport = useCallback(async () => {
     const selectedProductIds = Object.keys(selectedProducts).filter(id => selectedProducts[id]);
     
     if (selectedProductIds.length === 0) {
@@ -142,7 +157,7 @@ const WeFulFilProductImport: React.FC = () => {
       if (productsToImport.length === 0) {
         toast({
           title: "No Valid Products",
-          description: "Selected products are out of stock.",
+          description: "Selected products are out of stock or invalid.",
           variant: "destructive",
         });
         return;
@@ -151,17 +166,12 @@ const WeFulFilProductImport: React.FC = () => {
       const importedProducts = await importMultipleWeFulFilProducts(productsToImport);
       
       toast({
-        title: "Products Imported",
-        description: `Successfully imported ${importedProducts.length} products.`,
+        title: "Bulk Import Completed",
+        description: `Successfully imported ${importedProducts.length} out of ${productsToImport.length} products.`,
       });
       
-      // Clear selection after successful import
       setSelectedProducts({});
-      
-      // Refresh the stored products list
-      const { data, count } = await fetchStoredWeFulFilProducts(storedPage, 10, storedSearchQuery);
-      setStoredProducts(data);
-      setStoredProductsCount(count);
+      await loadStoredProducts();
     } catch (error) {
       toast({
         title: "Bulk Import Failed",
@@ -171,33 +181,52 @@ const WeFulFilProductImport: React.FC = () => {
     } finally {
       setBulkImporting(false);
     }
-  };
+  }, [selectedProducts, apiQuery.data?.data, toast, loadStoredProducts]);
 
-  const handleSelectAll = (checked: boolean) => {
+  // Optimized selection handlers
+  const handleSelectAll = useCallback((checked: boolean) => {
     if (!apiQuery.data?.data) return;
     
     const newSelected: Record<string, boolean> = {};
     apiQuery.data.data.forEach(product => {
-      newSelected[product.id] = checked;
+      newSelected[product.id] = checked && product.inventory_quantity > 0;
     });
     setSelectedProducts(newSelected);
-  };
+  }, [apiQuery.data?.data]);
 
-  const handleSelectProduct = (productId: string, checked: boolean) => {
+  const handleSelectProduct = useCallback((productId: string, checked: boolean) => {
     setSelectedProducts(prev => ({
       ...prev,
       [productId]: checked,
     }));
-  };
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  // Optimized pagination handlers
+  const handlePageChange = useCallback((page: number) => {
     setFilters(prev => ({ ...prev, page }));
     apiQuery.refetch();
-  };
+  }, [apiQuery]);
 
-  const handleStoredPageChange = (page: number) => {
+  const handleStoredPageChange = useCallback((page: number) => {
     setStoredPage(page);
-  };
+  }, []);
+
+  // Optimized refresh handler with cache clearing
+  const handleRefresh = useCallback(() => {
+    clearWeFulFilCache();
+    apiQuery.refetch();
+  }, [apiQuery]);
+
+  // Memoized computed values
+  const selectedProductsCount = useMemo(() => 
+    Object.values(selectedProducts).filter(Boolean).length,
+    [selectedProducts]
+  );
+
+  const availableProductsCount = useMemo(() => 
+    apiQuery.data?.data.filter(product => product.inventory_quantity > 0).length || 0,
+    [apiQuery.data?.data]
+  );
 
   return (
     <div>
@@ -210,7 +239,7 @@ const WeFulFilProductImport: React.FC = () => {
         <Tabs defaultValue="api-search">
           <TabsList className="mb-4">
             <TabsTrigger value="api-search">API Search</TabsTrigger>
-            <TabsTrigger value="imported">Imported Products</TabsTrigger>
+            <TabsTrigger value="imported">Imported Products ({storedProductsCount})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="api-search">
@@ -220,14 +249,17 @@ const WeFulFilProductImport: React.FC = () => {
               filters={filters}
               setFilters={setFilters}
               onSearch={handleSearch}
-              onRefresh={() => apiQuery.refetch()}
+              onRefresh={handleRefresh}
               isLoading={apiQuery.isLoading}
               pagination={apiQuery.data?.meta.pagination}
             />
 
             {apiQuery.isLoading && (
               <div className="flex justify-center my-8">
-                <p className="text-center">Loading products...</p>
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <p className="text-center">Loading products...</p>
+                </div>
               </div>
             )}
 
@@ -235,13 +267,22 @@ const WeFulFilProductImport: React.FC = () => {
               <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-4">
                 <p className="font-medium">Error loading products</p>
                 <p className="text-sm">{apiQuery.error instanceof Error ? apiQuery.error.message : 'Unknown error occurred'}</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => apiQuery.refetch()} 
-                  className="mt-2"
-                >
-                  Try Again
-                </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => apiQuery.refetch()} 
+                    size="sm"
+                  >
+                    Try Again
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleRefresh} 
+                    size="sm"
+                  >
+                    Clear Cache & Retry
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -317,7 +358,10 @@ const WeFulFilProductImport: React.FC = () => {
 
             {storedProductsLoading && (
               <div className="flex justify-center my-8">
-                <p className="text-center">Loading imported products...</p>
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <p className="text-center">Loading imported products...</p>
+                </div>
               </div>
             )}
 
