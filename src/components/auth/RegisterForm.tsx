@@ -3,44 +3,15 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { registerSchema, RegisterFormValues } from "@/types/auth";
 import RegisterFormFields from "./register/RegisterFormFields";
 import AccountTypeSelection from "./register/AccountTypeSelection";
 import TermsAndConditions from "./register/TermsAndConditions";
 import SocialLoginButtons from "./register/SocialLoginButtons";
-
-const registerSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Please enter a valid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Password must include uppercase, lowercase, and a number"
-      ),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-    role: z.enum(["consumer", "vendor"], {
-      required_error: "Please select an account type",
-    }),
-    terms: z.boolean().refine((val) => val, {
-      message: "You must agree to the terms and conditions",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const RegisterForm: React.FC = () => {
   const { register: registerUser, isLoading } = useAuth();

@@ -9,15 +9,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-interface RegisterFormValues {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: "consumer" | "vendor";
-  terms: boolean;
-}
+import { RegisterFormValues } from "@/types/auth";
 
 interface TermsAndConditionsProps {
   control: Control<RegisterFormValues>;
