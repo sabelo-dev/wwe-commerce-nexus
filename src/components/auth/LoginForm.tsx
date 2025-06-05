@@ -1,6 +1,5 @@
-
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,7 +28,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
-  const navigate = useNavigate();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -42,7 +40,7 @@ const LoginForm: React.FC = () => {
   const onSubmit = async (values: LoginFormValues) => {
     try {
       await login(values.email, values.password);
-      navigate("/"); // Redirect to homepage after successful login
+      // Redirect is handled in the AuthContext based on user role
     } catch (error) {
       console.error(error);
       // Error is handled in the AuthContext
@@ -174,7 +172,7 @@ const LoginForm: React.FC = () => {
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
-              d="M10 1.667C5.4 1.667 1.667 5.4 1.667 10S5.4 18.333 10 18.333 18.333 14.6 18.333 10 14.6 1.667 10 1.667zm0 2.917c1.517 0 1.695.006 2.292.033.551.025 1.01.111 1.428.238.386.15.714.352 1.042.68.329.328.53.656.68 1.042.127.42.213.877.238 1.428.027.597.033.775.033 2.292s-.006 1.695-.033 2.292c-.025.551-.111 1.01-.238 1.428-.15.386-.352.714-.68 1.042-.328.329-.656.53-1.042.68-.42.127-.877.213-1.428.238-.597.027-.775.033-2.292.033s-1.695-.006-2.292-.033c-.551-.025-1.01-.111-1.428-.238-.386-.15-.714-.352-1.042-.68-.329-.328-.53-.656-.68-1.042-.127-.42-.213-.877-.238-1.428-.027-.597-.033-.775-.033-2.292s.006-1.695.033-2.292c.025-.551.111-1.01.238-1.428.15-.386.352-.714.68-1.042.328-.329.656-.53 1.042-.68.42-.127.877-.213 1.428-.238.597-.027.775-.033 2.292-.033z"
+              d="M10 1.667C5.4 1.667 1.667 5.4 1.667 10S5.4 18.333 10 18.333 18.333 14.6 18.333 10 14.6 1.667 10 1.667zm0 2.917c1.517 0 1.695.006 2.292.033.551.025 1.01.111 1.428.238.386.15.714.352 1.042.68.329.328.53.656.68 1.042.127.42.213.877.238 1.428.027.597.033.775.033 2.292s-.006 1.695-.033 2.292c-.025.551-.111 1.01-.238 1.428-.15.386-.352.714-.68 1.042-.328.329-.656.53-1.042-.68.42-.127.877-.213 1.428-.238.597-.027.775-.033 2.292-.033z"
               clipRule="evenodd"
             />
           </svg>

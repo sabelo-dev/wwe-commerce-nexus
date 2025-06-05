@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 
 const registerSchema = z
@@ -33,6 +34,9 @@ const registerSchema = z
         "Password must include uppercase, lowercase, and a number"
       ),
     confirmPassword: z.string().min(1, "Please confirm your password"),
+    role: z.enum(["consumer", "vendor"], {
+      required_error: "Please select an account type",
+    }),
     terms: z.boolean().refine((val) => val, {
       message: "You must agree to the terms and conditions",
     }),
@@ -55,14 +59,15 @@ const RegisterForm: React.FC = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      role: "consumer",
       terms: false,
     },
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
-      await registerUser(values.email, values.password, values.name);
-      navigate("/"); // Redirect to homepage after successful registration
+      await registerUser(values.email, values.password, values.name, values.role);
+      // Redirect is handled in the AuthContext based on role
     } catch (error) {
       console.error(error);
       // Error is handled in the AuthContext
@@ -105,6 +110,37 @@ const RegisterForm: React.FC = () => {
                     autoComplete="email"
                     {...field}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Account Type</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="consumer" id="consumer" />
+                      <label htmlFor="consumer" className="text-sm font-medium">
+                        Consumer - Shop and buy products
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="vendor" id="vendor" />
+                      <label htmlFor="vendor" className="text-sm font-medium">
+                        Vendor - Sell products on our platform
+                      </label>
+                    </div>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>

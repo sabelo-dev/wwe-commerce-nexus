@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, role?: 'consumer' | 'vendor') => Promise<void>;
   logout: () => void;
   isVendor: boolean;
   isAdmin: boolean;
@@ -25,21 +25,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
+  const redirectBasedOnRole = (userRole: string) => {
+    if (userRole === 'admin') {
+      window.location.href = '/admin/dashboard';
+    } else if (userRole === 'vendor') {
+      window.location.href = '/vendor/dashboard';
+    } else {
+      window.location.href = '/';
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         
         if (session?.user) {
           // Fetch user profile from profiles table
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
           
-          if (profile) {
+          if (error) {
+            console.error('Error fetching profile:', error);
+            // If profile doesn't exist, create it
+            if (error.code === 'PGRST116') {
+              const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
+                  role: 'consumer'
+                })
+                .select()
+                .single();
+              
+              if (createError) {
+                console.error('Error creating profile:', createError);
+              } else if (newProfile) {
+                const userData: User = {
+                  id: newProfile.id,
+                  email: newProfile.email,
+                  name: newProfile.name,
+                  avatar_url: newProfile.avatar_url,
+                  role: newProfile.role
+                };
+                setUser(userData);
+                setIsAdmin(newProfile.role === 'admin');
+                setIsVendor(newProfile.role === 'vendor');
+              }
+            }
+          } else if (profile) {
             const userData: User = {
               id: profile.id,
               email: profile.email,
@@ -89,12 +130,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) throw error;
+      
+      // Get user profile to determine role for redirect
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profile) {
+          setTimeout(() => redirectBasedOnRole(profile.role), 100);
+        }
+      }
       
       toast({
         title: "Login Successful",
@@ -112,17 +166,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, role: 'consumer' | 'vendor' = 'consumer') => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name: name,
-            role: 'consumer'
+            role: role
           },
           emailRedirectTo: `${window.location.origin}/`
         }
@@ -130,10 +184,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      toast({
-        title: "Registration Successful",
-        description: "Please check your email to verify your account.",
-      });
+      // If user is immediately available (email confirmation disabled)
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Registration Successful",
+          description: "Please check your email to verify your account.",
+        });
+      } else if (data.user) {
+        // Create profile immediately if user is confirmed
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            name: name,
+            role: role
+          });
+        
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+        
+        toast({
+          title: "Registration Successful",
+          description: "Welcome to WWE Store!",
+        });
+        
+        // Redirect based on role
+        setTimeout(() => redirectBasedOnRole(role), 100);
+      }
     } catch (error) {
       toast({
         variant: "destructive",
