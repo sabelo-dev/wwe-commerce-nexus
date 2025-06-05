@@ -4,6 +4,11 @@ import { Link } from "react-router-dom";
 import { Search, Store, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { User as UserType } from "@/types";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface MobileMenuProps {
   mobileMenuOpen: boolean;
@@ -39,13 +44,109 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         >
           Shop
         </Link>
+        
+        {/* Categories with Subcategories */}
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">
+            Categories
+            <span className="text-xs">+</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pl-6 space-y-1">
+            <Link
+              to="/categories"
+              className="block px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              All Categories
+            </Link>
+            <div className="pl-3">
+              <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Clothing</p>
+              <Link
+                to="/category/clothing/men"
+                className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Men's Clothing
+              </Link>
+              <Link
+                to="/category/clothing/women"
+                className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Women's Clothing
+              </Link>
+              <Link
+                to="/category/clothing/kids"
+                className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Kids' Clothing
+              </Link>
+            </div>
+            <div className="pl-3">
+              <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Home & Kitchen</p>
+              <Link
+                to="/category/home-kitchen/appliances"
+                className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Appliances
+              </Link>
+              <Link
+                to="/category/home-kitchen/kitchen"
+                className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Kitchen
+              </Link>
+              <Link
+                to="/category/home-kitchen/furniture"
+                className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Furniture
+              </Link>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
         <Link
-          to="/categories"
+          to="/best-sellers"
           className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
           onClick={() => setMobileMenuOpen(false)}
         >
-          Categories
+          Best Sellers
         </Link>
+        <Link
+          to="/deals"
+          className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Deals
+        </Link>
+        <Link
+          to="/new-arrivals"
+          className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          New Arrivals
+        </Link>
+        <Link
+          to="/contact"
+          className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Contact
+        </Link>
+        <Link
+          to="/faq"
+          className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          FAQ
+        </Link>
+
+        {/* User-specific links */}
         {user?.role === 'consumer' && (
           <Link
             to="/vendor/register"
