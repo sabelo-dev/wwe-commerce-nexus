@@ -170,6 +170,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      console.log('Starting registration process...');
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -182,7 +184,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       
-      if (error) throw error;
+      console.log('Registration response:', { data, error });
+      
+      if (error) {
+        console.error('Registration error:', error);
+        throw error;
+      }
       
       // If user is immediately available (email confirmation disabled)
       if (data.user && !data.user.email_confirmed_at) {
@@ -191,20 +198,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Please check your email to verify your account.",
         });
       } else if (data.user) {
-        // Create profile immediately if user is confirmed
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: email,
-            name: name,
-            role: role
-          });
-        
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
-        
         toast({
           title: "Registration Successful",
           description: "Welcome to WWE Store!",
@@ -214,10 +207,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => redirectBasedOnRole(role), 100);
       }
     } catch (error) {
+      console.error('Registration failed:', error);
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error ? error.message : "An error occurred during registration",
       });
       throw error;
     } finally {
