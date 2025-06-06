@@ -2,6 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
@@ -14,6 +15,7 @@ interface CartSheetProps {
 
 const CartSheet: React.FC<CartSheetProps> = ({ isOpen, setIsOpen }) => {
   const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { user } = useAuth();
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -76,11 +78,19 @@ const CartSheet: React.FC<CartSheetProps> = ({ isOpen, setIsOpen }) => {
               </div>
               <p className="text-sm text-gray-500">Shipping and taxes calculated at checkout</p>
               <div className="space-y-2">
-                <Link to="/checkout" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full bg-wwe-navy hover:bg-wwe-navy/90">
-                    Checkout
-                  </Button>
-                </Link>
+                {user ? (
+                  <Link to="/checkout" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full bg-wwe-navy hover:bg-wwe-navy/90">
+                      Checkout
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/login" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full bg-wwe-navy hover:bg-wwe-navy/90">
+                      Sign In to Checkout
+                    </Button>
+                  </Link>
+                )}
                 <Button
                   variant="outline"
                   className="w-full"
