@@ -52,34 +52,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (error) {
             console.error('Error fetching profile:', error);
-            // If profile doesn't exist, create it
-            if (error.code === 'PGRST116') {
-              const { data: newProfile, error: createError } = await supabase
+            // If profile doesn't exist, it should have been created by the trigger
+            // But let's wait a moment and try again
+            setTimeout(async () => {
+              const { data: retryProfile, error: retryError } = await supabase
                 .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || '',
-                  role: 'consumer'
-                })
-                .select()
+                .select('*')
+                .eq('id', session.user.id)
                 .single();
               
-              if (createError) {
-                console.error('Error creating profile:', createError);
-              } else if (newProfile) {
+              if (retryProfile) {
                 const userData: User = {
-                  id: newProfile.id,
-                  email: newProfile.email,
-                  name: newProfile.name,
-                  avatar_url: newProfile.avatar_url,
-                  role: newProfile.role
+                  id: retryProfile.id,
+                  email: retryProfile.email,
+                  name: retryProfile.name,
+                  avatar_url: retryProfile.avatar_url,
+                  role: retryProfile.role
                 };
                 setUser(userData);
-                setIsAdmin(newProfile.role === 'admin');
-                setIsVendor(newProfile.role === 'vendor');
+                setIsAdmin(retryProfile.role === 'admin');
+                setIsVendor(retryProfile.role === 'vendor');
               }
-            }
+            }, 1000);
           } else if (profile) {
             const userData: User = {
               id: profile.id,
