@@ -36,68 +36,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loadUserProfile = async (session: Session) => {
-    if (!session?.user) return;
+  const clearAuthState = () => {
+    setUser(null);
+    setSession(null);
+    setIsVendor(false);
+    setIsAdmin(false);
+  };
 
-    // Fetch user profile from profiles table
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching profile:', error);
-      // If profile doesn't exist, it should have been created by the trigger
-      // But let's wait a moment and try again
-      setTimeout(async () => {
-        const { data: retryProfile, error: retryError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (retryProfile) {
-          const userData: User = {
-            id: retryProfile.id,
-            email: retryProfile.email,
-            name: retryProfile.name,
-            avatar_url: retryProfile.avatar_url,
-            role: retryProfile.role
-          };
-          setUser(userData);
-          setIsAdmin(retryProfile.role === 'admin');
-          setIsVendor(retryProfile.role === 'vendor');
-        }
-      }, 1000);
-    } else if (profile) {
-      const userData: User = {
-        id: profile.id,
-        email: profile.email,
-        name: profile.name,
-        avatar_url: profile.avatar_url,
-        role: profile.role
-      };
-      setUser(userData);
-      setIsAdmin(profile.role === 'admin');
+  const loadUserProfile = async (session: Session) => {
+    if (!session?.user) {
+      clearAuthState();
+      return;
+    }
+
+    try {
+      // Fetch user profile from profiles table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
       
-      // Check vendor status if user has vendor role
-      if (profile.role === 'vendor') {
-        const { data: vendor } = await supabase
-          .from('vendors')
-          .select('*')
-          .eq('user_id', profile.id)
-          .single();
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // If profile doesn't exist, wait and try again (it should be created by trigger)
+        setTimeout(async () => {
+          const { data: retryProfile, error: retryError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (retryProfile && !retryError) {
+            const userData: User = {
+              id: retryProfile.id,
+              email: retryProfile.email,
+              name: retryProfile.name,
+              avatar_url: retryProfile.avatar_url,
+              role: retryProfile.role
+            };
+            setUser(userData);
+            setIsAdmin(retryProfile.role === 'admin');
+            
+            // Check vendor status
+            if (retryProfile.role === 'vendor') {
+              const { data: vendor } = await supabase
+                .from('vendors')
+                .select('*')
+                .eq('user_id', retryProfile.id)
+                .single();
+              
+              setIsVendor(!!vendor && vendor.status === 'approved');
+            } else {
+              setIsVendor(false);
+            }
+          }
+        }, 1000);
+      } else if (profile) {
+        const userData: User = {
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+          avatar_url: profile.avatar_url,
+          role: profile.role
+        };
+        setUser(userData);
+        setIsAdmin(profile.role === 'admin');
         
-        setIsVendor(!!vendor && vendor.status === 'approved');
-      } else {
-        setIsVendor(false);
+        // Check vendor status if user has vendor role
+        if (profile.role === 'vendor') {
+          const { data: vendor } = await supabase
+            .from('vendors')
+            .select('*')
+            .eq('user_id', profile.id)
+            .single();
+          
+          setIsVendor(!!vendor && vendor.status === 'approved');
+        } else {
+          setIsVendor(false);
+        }
       }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      clearAuthState();
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener but don't load initial session
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
@@ -106,11 +132,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user && authInitialized) {
           await loadUserProfile(session);
         } else {
-          setUser(null);
-          setIsVendor(false);
-          setIsAdmin(false);
+          clearAuthState();
         }
         
+        // Only set loading to false if auth has been initialized
         if (authInitialized) {
           setIsLoading(false);
         }
@@ -150,14 +175,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Welcome back!",
       });
     } catch (error) {
+      setIsLoading(false);
       toast({
         variant: "destructive",
         title: "Login Failed",
         description: error instanceof Error ? error.message : "An error occurred",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -203,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => redirectBasedOnRole(role), 100);
       }
     } catch (error) {
+      setIsLoading(false);
       console.error('Registration failed:', error);
       toast({
         variant: "destructive",
@@ -210,14 +235,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error instanceof Error ? error.message : "An error occurred during registration",
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+      clearAuthState();
       setAuthInitialized(false);
       toast({
         title: "Logged Out",
