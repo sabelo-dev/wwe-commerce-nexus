@@ -12,16 +12,23 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VendorOverview from "./dashboard/VendorOverview";
+import VendorProfile from "./dashboard/VendorProfile";
 import VendorProducts from "./dashboard/VendorProducts";
 import VendorOrders from "./dashboard/VendorOrders";
+import VendorInventory from "./dashboard/VendorInventory";
+import VendorPayouts from "./dashboard/VendorPayouts";
+import VendorAnalytics from "./dashboard/VendorAnalytics";
 import VendorSettings from "./dashboard/VendorSettings";
 import { 
   LayoutDashboard, 
+  User,
   Package, 
   ShoppingCart, 
+  Warehouse,
+  DollarSign,
+  BarChart3,
   Settings, 
   Store 
 } from "lucide-react";
@@ -43,6 +50,11 @@ const VendorDashboard = () => {
       icon: LayoutDashboard,
     },
     {
+      id: "profile",
+      title: "Profile",
+      icon: User,
+    },
+    {
       id: "products",
       title: "Products",
       icon: Package,
@@ -51,6 +63,21 @@ const VendorDashboard = () => {
       id: "orders",
       title: "Orders",
       icon: ShoppingCart,
+    },
+    {
+      id: "inventory",
+      title: "Inventory",
+      icon: Warehouse,
+    },
+    {
+      id: "payouts",
+      title: "Payouts",
+      icon: DollarSign,
+    },
+    {
+      id: "analytics",
+      title: "Analytics",
+      icon: BarChart3,
     },
     {
       id: "settings",
@@ -108,12 +135,28 @@ const VendorDashboard = () => {
                 <VendorOverview />
               </TabsContent>
               
+              <TabsContent value="profile" className="mt-0">
+                <VendorProfile />
+              </TabsContent>
+              
               <TabsContent value="products" className="mt-0">
                 <VendorProducts />
               </TabsContent>
               
               <TabsContent value="orders" className="mt-0">
                 <VendorOrders />
+              </TabsContent>
+
+              <TabsContent value="inventory" className="mt-0">
+                <VendorInventory />
+              </TabsContent>
+
+              <TabsContent value="payouts" className="mt-0">
+                <VendorPayouts />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="mt-0">
+                <VendorAnalytics />
               </TabsContent>
               
               <TabsContent value="settings" className="mt-0">
