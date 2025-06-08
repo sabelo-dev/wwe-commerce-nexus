@@ -18,18 +18,31 @@ import AdminAuditLogs from "@/components/admin/AdminAuditLogs";
 import AdminSettings from "@/components/admin/AdminSettings";
 
 const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if not admin
-  React.useEffect(() => {
-    if (user && user.role !== "admin") {
-      navigate("/");
-    }
-  }, [user, navigate]);
+  // Show loading spinner while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
+  // Redirect if not logged in
   if (!user) {
-    return <div className="container mx-auto p-8">Loading...</div>;
+    navigate("/admin/login");
+    return null;
+  }
+
+  // Redirect if not admin
+  if (!isAdmin || user.role !== "admin") {
+    navigate("/");
+    return null;
   }
 
   return (
