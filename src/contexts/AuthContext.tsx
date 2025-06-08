@@ -20,9 +20,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isVendor, setIsVendor] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const { toast } = useToast();
 
   const redirectBasedOnRole = (userRole: string) => {
@@ -35,93 +36,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loadUserProfile = async (session: Session) => {
+    if (!session?.user) return;
+
+    // Fetch user profile from profiles table
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching profile:', error);
+      // If profile doesn't exist, it should have been created by the trigger
+      // But let's wait a moment and try again
+      setTimeout(async () => {
+        const { data: retryProfile, error: retryError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (retryProfile) {
+          const userData: User = {
+            id: retryProfile.id,
+            email: retryProfile.email,
+            name: retryProfile.name,
+            avatar_url: retryProfile.avatar_url,
+            role: retryProfile.role
+          };
+          setUser(userData);
+          setIsAdmin(retryProfile.role === 'admin');
+          setIsVendor(retryProfile.role === 'vendor');
+        }
+      }, 1000);
+    } else if (profile) {
+      const userData: User = {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name,
+        avatar_url: profile.avatar_url,
+        role: profile.role
+      };
+      setUser(userData);
+      setIsAdmin(profile.role === 'admin');
+      
+      // Check vendor status if user has vendor role
+      if (profile.role === 'vendor') {
+        const { data: vendor } = await supabase
+          .from('vendors')
+          .select('*')
+          .eq('user_id', profile.id)
+          .single();
+        
+        setIsVendor(!!vendor && vendor.status === 'approved');
+      } else {
+        setIsVendor(false);
+      }
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener but don't load initial session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         
-        if (session?.user) {
-          // Fetch user profile from profiles table
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching profile:', error);
-            // If profile doesn't exist, it should have been created by the trigger
-            // But let's wait a moment and try again
-            setTimeout(async () => {
-              const { data: retryProfile, error: retryError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (retryProfile) {
-                const userData: User = {
-                  id: retryProfile.id,
-                  email: retryProfile.email,
-                  name: retryProfile.name,
-                  avatar_url: retryProfile.avatar_url,
-                  role: retryProfile.role
-                };
-                setUser(userData);
-                setIsAdmin(retryProfile.role === 'admin');
-                setIsVendor(retryProfile.role === 'vendor');
-              }
-            }, 1000);
-          } else if (profile) {
-            const userData: User = {
-              id: profile.id,
-              email: profile.email,
-              name: profile.name,
-              avatar_url: profile.avatar_url,
-              role: profile.role
-            };
-            setUser(userData);
-            setIsAdmin(profile.role === 'admin');
-            
-            // Check vendor status if user has vendor role
-            if (profile.role === 'vendor') {
-              const { data: vendor } = await supabase
-                .from('vendors')
-                .select('*')
-                .eq('user_id', profile.id)
-                .single();
-              
-              setIsVendor(!!vendor && vendor.status === 'approved');
-            } else {
-              setIsVendor(false);
-            }
-          }
+        if (session?.user && authInitialized) {
+          await loadUserProfile(session);
         } else {
           setUser(null);
           setIsVendor(false);
           setIsAdmin(false);
         }
         
-        setIsLoading(false);
+        if (authInitialized) {
+          setIsLoading(false);
+        }
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        // This will trigger the auth state change listener above
-      } else {
-        setIsLoading(false);
-      }
-    });
-
     return () => subscription.unsubscribe();
-  }, []);
+  }, [authInitialized]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    setAuthInitialized(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -162,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, name: string, role: 'consumer' | 'vendor' = 'consumer') => {
     setIsLoading(true);
+    setAuthInitialized(true);
     
     try {
       console.log('Starting registration process...');
@@ -216,6 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+      setAuthInitialized(false);
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
