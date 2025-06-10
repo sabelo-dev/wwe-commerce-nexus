@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { User, Profile } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -42,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(false);
   };
 
-  const checkVendorStatus = async (userId: string) => {
+  const checkVendorStatus = async (userId: string): Promise<boolean> => {
     try {
       const { data: vendor } = await supabase
         .from('vendors')
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loadUserProfile = async (session: Session) => {
+  const loadUserProfile = async (session: Session | null) => {
     if (!session?.user) {
       clearAuthState();
       setIsLoading(false);
@@ -76,28 +77,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error fetching profile:', error);
         // If profile doesn't exist, wait and try again (it should be created by trigger)
         setTimeout(async () => {
-          const { data: retryProfile, error: retryError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (retryProfile && !retryError) {
-            const userData: User = {
-              id: retryProfile.id,
-              email: retryProfile.email,
-              name: retryProfile.name,
-              avatar_url: retryProfile.avatar_url,
-              role: retryProfile.role
-            };
-            setUser(userData);
-            setIsAdmin(retryProfile.role === 'admin');
+          try {
+            const { data: retryProfile, error: retryError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
             
-            // Check vendor status for any user (not just those with vendor role)
-            const vendorStatus = await checkVendorStatus(retryProfile.id);
-            setIsVendor(vendorStatus);
+            if (retryProfile && !retryError) {
+              const userData: User = {
+                id: retryProfile.id,
+                email: retryProfile.email,
+                name: retryProfile.name,
+                avatar_url: retryProfile.avatar_url,
+                role: retryProfile.role
+              };
+              setUser(userData);
+              setIsAdmin(retryProfile.role === 'admin');
+              
+              // Check vendor status for any user (not just those with vendor role)
+              const vendorStatus = await checkVendorStatus(retryProfile.id);
+              setIsVendor(vendorStatus);
+            }
+          } catch (retryError) {
+            console.error('Error on retry:', retryError);
+          } finally {
+            setIsLoading(false);
           }
-          setIsLoading(false);
         }, 1000);
       } else if (profile) {
         const userData: User = {
@@ -124,11 +130,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUserProfile = async () => {
     if (session?.user) {
+      setIsLoading(true);
       await loadUserProfile(session);
     }
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -137,21 +146,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (error) {
           console.error('Error getting session:', error);
-          setIsLoading(false);
+          if (mounted) setIsLoading(false);
           return;
         }
 
-        setSession(session);
-        
-        if (session?.user) {
+        if (mounted) {
+          setSession(session);
           await loadUserProfile(session);
-        } else {
-          clearAuthState();
-          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     };
 
@@ -161,18 +166,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
         
-        if (session?.user) {
+        if (mounted) {
+          setSession(session);
           await loadUserProfile(session);
-        } else {
-          clearAuthState();
-          setIsLoading(false);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

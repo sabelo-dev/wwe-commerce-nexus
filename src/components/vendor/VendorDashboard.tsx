@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -38,20 +37,23 @@ const VendorDashboard = () => {
   const { user, isVendor, isLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     // Only perform redirects after loading is complete
-    if (!isLoading) {
+    if (!isLoading && !redirecting) {
       if (!user) {
+        setRedirecting(true);
         navigate("/login", { replace: true });
       } else if (user.role !== 'vendor' && !isVendor) {
+        setRedirecting(true);
         navigate("/vendor/register", { replace: true });
       }
     }
-  }, [user, isVendor, isLoading, navigate]);
+  }, [user, isVendor, isLoading, navigate, redirecting]);
 
-  // Show loading while auth is initializing
-  if (isLoading) {
+  // Show loading while auth is initializing or redirecting
+  if (isLoading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
