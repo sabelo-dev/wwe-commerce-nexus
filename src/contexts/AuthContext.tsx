@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { User, Profile } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +12,7 @@ interface AuthContextType {
   logout: () => void;
   isVendor: boolean;
   isAdmin: boolean;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +40,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
     setIsVendor(false);
     setIsAdmin(false);
+  };
+
+  const checkVendorStatus = async (userId: string) => {
+    try {
+      const { data: vendor } = await supabase
+        .from('vendors')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      return !!vendor && vendor.status === 'approved';
+    } catch (error) {
+      console.error('Error checking vendor status:', error);
+      return false;
+    }
   };
 
   const loadUserProfile = async (session: Session) => {
@@ -78,18 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(userData);
             setIsAdmin(retryProfile.role === 'admin');
             
-            // Check vendor status
-            if (retryProfile.role === 'vendor') {
-              const { data: vendor } = await supabase
-                .from('vendors')
-                .select('*')
-                .eq('user_id', retryProfile.id)
-                .single();
-              
-              setIsVendor(!!vendor && vendor.status === 'approved');
-            } else {
-              setIsVendor(false);
-            }
+            // Check vendor status for any user (not just those with vendor role)
+            const vendorStatus = await checkVendorStatus(retryProfile.id);
+            setIsVendor(vendorStatus);
           }
           setIsLoading(false);
         }, 1000);
@@ -104,24 +110,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
         setIsAdmin(profile.role === 'admin');
         
-        // Check vendor status if user has vendor role
-        if (profile.role === 'vendor') {
-          const { data: vendor } = await supabase
-            .from('vendors')
-            .select('*')
-            .eq('user_id', profile.id)
-            .single();
-          
-          setIsVendor(!!vendor && vendor.status === 'approved');
-        } else {
-          setIsVendor(false);
-        }
+        // Check vendor status for any user (not just those with vendor role)
+        const vendorStatus = await checkVendorStatus(profile.id);
+        setIsVendor(vendorStatus);
         setIsLoading(false);
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       clearAuthState();
       setIsLoading(false);
+    }
+  };
+
+  const refreshUserProfile = async () => {
+    if (session?.user) {
+      await loadUserProfile(session);
     }
   };
 
@@ -282,7 +285,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isVendor, isAdmin }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isVendor, isAdmin, refreshUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -295,3 +298,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export const AuthConsumer = AuthContext.Consumer;

@@ -42,7 +42,9 @@ const VendorDashboard = () => {
   useEffect(() => {
     // Only perform redirects after loading is complete
     if (!isLoading) {
-      if (!user || !isVendor) {
+      if (!user) {
+        navigate("/login", { replace: true });
+      } else if (user.role !== 'vendor' && !isVendor) {
         navigate("/vendor/register", { replace: true });
       }
     }
@@ -61,7 +63,7 @@ const VendorDashboard = () => {
   }
 
   // Don't render anything while redirecting
-  if (!user || !isVendor) {
+  if (!user || (user.role !== 'vendor' && !isVendor)) {
     return null;
   }
 

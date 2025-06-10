@@ -31,7 +31,7 @@ const vendorSchema = z.object({
 type VendorFormValues = z.infer<typeof vendorSchema>;
 
 const RegisterVendorForm: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUserProfile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -72,6 +72,9 @@ const RegisterVendorForm: React.FC = () => {
       }).select();
 
       if (error) throw error;
+
+      // Refresh user profile to update the auth context
+      await refreshUserProfile();
 
       toast({
         title: "Registration Submitted",
