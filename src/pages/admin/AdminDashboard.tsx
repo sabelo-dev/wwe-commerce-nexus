@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,17 @@ const AdminDashboard: React.FC = () => {
   const { user, isLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Only perform redirects after loading is complete
+    if (!isLoading) {
+      if (!user) {
+        navigate("/admin/login", { replace: true });
+      } else if (!isAdmin || user.role !== "admin") {
+        navigate("/", { replace: true });
+      }
+    }
+  }, [user, isLoading, isAdmin, navigate]);
+
   // Show loading spinner while auth is initializing
   if (isLoading) {
     return (
@@ -33,15 +44,8 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  // Redirect if not logged in
-  if (!user) {
-    navigate("/admin/login");
-    return null;
-  }
-
-  // Redirect if not admin
-  if (!isAdmin || user.role !== "admin") {
-    navigate("/");
+  // Don't render anything while redirecting
+  if (!user || !isAdmin || user.role !== "admin") {
     return null;
   }
 

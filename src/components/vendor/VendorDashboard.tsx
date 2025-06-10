@@ -1,6 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   SidebarProvider,
   Sidebar,
@@ -32,15 +33,36 @@ import {
   Settings, 
   Store 
 } from "lucide-react";
-import { Navigate } from "react-router-dom";
 
 const VendorDashboard = () => {
-  const { user, isVendor } = useAuth();
+  const { user, isVendor, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Redirect if user is not a vendor
+  useEffect(() => {
+    // Only perform redirects after loading is complete
+    if (!isLoading) {
+      if (!user || !isVendor) {
+        navigate("/vendor/register", { replace: true });
+      }
+    }
+  }, [user, isVendor, isLoading, navigate]);
+
+  // Show loading while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything while redirecting
   if (!user || !isVendor) {
-    return <Navigate to="/vendor/register" replace />;
+    return null;
   }
 
   const sidebarItems = [
