@@ -20,10 +20,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isVendor, setIsVendor] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [authInitialized, setAuthInitialized] = useState(false);
   const { toast } = useToast();
 
   const redirectBasedOnRole = (userRole: string) => {
@@ -46,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadUserProfile = async (session: Session) => {
     if (!session?.user) {
       clearAuthState();
+      setIsLoading(false);
       return;
     }
 
@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setIsVendor(false);
             }
           }
+          setIsLoading(false);
         }, 1000);
       } else if (profile) {
         const userData: User = {
@@ -115,39 +116,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setIsVendor(false);
         }
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       clearAuthState();
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Initial session:', session?.user?.id);
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setIsLoading(false);
+          return;
+        }
+
+        setSession(session);
+        
+        if (session?.user) {
+          await loadUserProfile(session);
+        } else {
+          clearAuthState();
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error);
+        setIsLoading(false);
+      }
+    };
+
+    getInitialSession();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         
-        if (session?.user && authInitialized) {
+        if (session?.user) {
           await loadUserProfile(session);
         } else {
           clearAuthState();
-        }
-        
-        // Only set loading to false if auth has been initialized
-        if (authInitialized) {
           setIsLoading(false);
         }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [authInitialized]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    setAuthInitialized(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -187,7 +213,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, name: string, role: 'consumer' | 'vendor' = 'consumer') => {
     setIsLoading(true);
-    setAuthInitialized(true);
     
     try {
       console.log('Starting registration process...');
@@ -217,6 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Registration Successful",
           description: "Please check your email to verify your account.",
         });
+        setIsLoading(false);
       } else if (data.user) {
         toast({
           title: "Registration Successful",
@@ -242,7 +268,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut();
       clearAuthState();
-      setAuthInitialized(false);
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
