@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">About WWE</h3>
             <p className="text-sm text-gray-300 mb-4">
-              World Wide Ecommerce (WWE) has been connecting buyers and sellers since 2016. Our mission is to provide the best shopping experience with quality products and exceptional service.
+              World Wide Ecommerce (WWEAPP) has been connecting buyers and sellers since 2025. Our mission is to provide the best shopping experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
               <a href="https://facebook.com" className="text-gray-300 hover:text-white">
