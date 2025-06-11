@@ -1,73 +1,46 @@
-# Welcome to your Lovable project
+wwecommerce (wweapp)
+wwecommerce (wweapp) is a next-generation multivendor online marketplace launched in 2025, designed to empower businesses of all sizes to sell online with ease. Built for scalability, security, and performance, wweapp enables vendors to manage their storefronts independently while providing customers with a seamless and engaging shopping experience.
 
-## Project info
+Overview
+Platform Name: wwecommerce (wweapp)
 
-**URL**: https://lovable.dev/projects/d0859489-9381-447f-a186-2612cdbf9227
+Launched: 2025
 
-## How can I edit this code?
+Type: Multivendor Online Store
 
-There are several ways of editing your application.
+Parent Company: LSI (established in 2016)
 
-**Use Lovable**
+Mission: To bridge businesses and customers through a robust digital commerce ecosystem.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d0859489-9381-447f-a186-2612cdbf9227) and start prompting.
+About LSI
+Founded in 2016, LSI (Logistics & Solutions Innovations) has grown into a trusted name in technology and logistics. With nearly a decade of experience, LSI’s mission is to simplify commerce by building smart, scalable solutions that power digital transformation. wwecommerce (wweapp) is the latest product in LSI’s portfolio, designed to redefine how vendors and buyers interact online.
 
-Changes made via Lovable will be committed automatically to this repo.
+Key Features
+✅ Multivendor Architecture – Multiple sellers, one powerful platform
 
-**Use your preferred IDE**
+🛍️ Customizable Vendor Stores – Each vendor gets their own storefront
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+🧾 Product & Inventory Management – Easy-to-use admin tools for vendors
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+🔐 Secure Checkout & Payments – Encrypted and integrated payment gateways
 
-Follow these steps:
+📈 Analytics Dashboard – Actionable insights for vendors and admins
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+📦 Order Management System – Real-time updates on order status
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+🌍 Responsive Design – Seamless across devices (Web, Mobile, Tablet)
 
-# Step 3: Install the necessary dependencies.
-npm i
+Future Roadmap
+🧠 AI-powered product recommendations
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+📦 Integrated shipping/logistics APIs
 
-**Edit a file directly in GitHub**
+🌐 Multi-language and multi-currency support
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+🤝 Vendor collaboration and affiliate features
 
-**Use GitHub Codespaces**
+📱 Mobile App for iOS & Android
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/d0859489-9381-447f-a186-2612cdbf9227) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+License
+© 2025 LSI. All rights reserved.
+This project is proprietary and protected under applicable copyright and trademark laws.
