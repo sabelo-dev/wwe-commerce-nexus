@@ -100,7 +100,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>&copy; {currentYear} World Wide Ecommerce (WWE). All rights reserved.</p>
+          <p>&copy; {currentYear} WWEAPP. All rights reserved.</p>
         </div>
       </div>
     </footer>
