@@ -64,15 +64,15 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm text-gray-300">
               <li className="flex items-start">
                 <MapPin size={18} className="mr-2 mt-1 flex-shrink-0" />
-                <span>123 E-Commerce St, Digital City, 12345</span>
+                <span>RSA</span>
               </li>
               <li className="flex items-center">
                 <Phone size={18} className="mr-2 flex-shrink-0" />
-                <span>+1 (555) 123-4567</span>
+                <span>+27 (63) 977-6666</span>
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 flex-shrink-0" />
-                <span>support@wweecommerce.com</span>
+                <span>support@wweecommerce.co.za</span>
               </li>
             </ul>
           </div>
