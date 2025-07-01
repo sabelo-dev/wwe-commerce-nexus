@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,8 @@ const AdminLoginForm: React.FC = () => {
     
     try {
       await login(data.email, data.password);
-      // The AuthContext will handle the redirect based on role
+      // AuthContext handles redirect and loading state
+      setIsLoading(false);
       toast({
         title: "Login successful",
         description: "Welcome to the admin dashboard.",

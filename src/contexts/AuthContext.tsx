@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { User, Profile } from "@/types";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 
@@ -208,6 +208,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Login Successful",
         description: "Welcome back!",
       });
+      
+      // Don't set loading to false here as the redirect will handle it
     } catch (error) {
       setIsLoading(false);
       toast({
