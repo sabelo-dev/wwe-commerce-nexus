@@ -30,19 +30,18 @@ const AdminLoginForm: React.FC = () => {
     
     try {
       await login(data.email, data.password);
+      // The AuthContext will handle the redirect based on role
       toast({
         title: "Login successful",
         description: "Welcome to the admin dashboard.",
       });
-      navigate("/admin/dashboard");
     } catch (error) {
+      setIsLoading(false);
       toast({
         variant: "destructive",
         title: "Login failed",
         description: error instanceof Error ? error.message : "An error occurred",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

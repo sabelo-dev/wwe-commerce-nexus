@@ -5,15 +5,27 @@ import AdminLoginForm from "@/components/auth/AdminLoginForm";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AdminLoginPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading, isAdmin } = useAuth();
+
+  // Show loading while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // If user is already logged in as admin, redirect to admin dashboard
-  if (user && user.role === "admin") {
+  if (user && (user.role === "admin" || isAdmin)) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
   // If user is logged in but not admin, redirect to home
-  if (user && user.role !== "admin") {
+  if (user && user.role !== "admin" && !isAdmin) {
     return <Navigate to="/" replace />;
   }
 
