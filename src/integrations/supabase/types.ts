@@ -541,6 +541,45 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          billing_period: string
+          created_at: string
+          features: Json
+          id: string
+          max_orders: number | null
+          max_products: number | null
+          name: string
+          price: number
+          support_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          created_at?: string
+          features?: Json
+          id?: string
+          max_orders?: number | null
+          max_products?: number | null
+          name: string
+          price?: number
+          support_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string
+          features?: Json
+          id?: string
+          max_orders?: number | null
+          max_products?: number | null
+          name?: string
+          price?: number
+          support_level?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vendor_documents: {
         Row: {
           document_type: string
@@ -629,6 +668,11 @@ export type Database = {
           id: string
           logo_url: string | null
           status: string
+          subscription_expires_at: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_end_date: string | null
+          trial_start_date: string | null
           updated_at: string
           user_id: string
         }
@@ -640,6 +684,11 @@ export type Database = {
           id?: string
           logo_url?: string | null
           status?: string
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
           user_id: string
         }
@@ -651,6 +700,11 @@ export type Database = {
           id?: string
           logo_url?: string | null
           status?: string
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -800,6 +854,14 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_vendor_features: {
+        Args: { vendor_id: string }
+        Returns: Json
+      }
+      is_trial_expired: {
+        Args: { vendor_id: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -21,6 +21,8 @@ import VendorInventory from "./dashboard/VendorInventory";
 import VendorPayouts from "./dashboard/VendorPayouts";
 import VendorAnalytics from "./dashboard/VendorAnalytics";
 import VendorSettings from "./dashboard/VendorSettings";
+import SubscriptionBanner from "./SubscriptionBanner";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   LayoutDashboard, 
   User,
@@ -38,6 +40,8 @@ const VendorDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [redirecting, setRedirecting] = useState(false);
+  const [vendorData, setVendorData] = useState<any>(null);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
 
   useEffect(() => {
     // Only perform redirects after loading is complete
@@ -51,6 +55,35 @@ const VendorDashboard = () => {
       }
     }
   }, [user, isVendor, isLoading, navigate, redirecting]);
+
+  useEffect(() => {
+    const fetchVendorData = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: vendor } = await supabase
+          .from('vendors')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (vendor) {
+          setVendorData(vendor);
+          
+          // Check if trial has expired
+          if (vendor.subscription_tier === 'trial' && vendor.trial_end_date) {
+            const endDate = new Date(vendor.trial_end_date);
+            const now = new Date();
+            setIsTrialExpired(now > endDate);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching vendor data:', error);
+      }
+    };
+
+    fetchVendorData();
+  }, [user?.id]);
 
   // Show loading while auth is initializing or redirecting
   if (isLoading || redirecting) {
@@ -148,6 +181,20 @@ const VendorDashboard = () => {
           </header>
           
           <main className="flex-1 p-6">
+            {isTrialExpired && (
+              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <h3 className="font-semibold text-destructive mb-2">Trial Expired</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Your trial period has ended. Please upgrade to continue using the vendor dashboard.
+                </p>
+                <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm">
+                  Upgrade Now
+                </button>
+              </div>
+            )}
+            
+            <SubscriptionBanner vendorId={vendorData?.id} />
+            
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="hidden">
                 {sidebarItems.map((item) => (

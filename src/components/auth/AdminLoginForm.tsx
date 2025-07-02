@@ -30,12 +30,7 @@ const AdminLoginForm: React.FC = () => {
     
     try {
       await login(data.email, data.password);
-      // AuthContext handles redirect and loading state
-      setIsLoading(false);
-      toast({
-        title: "Login successful",
-        description: "Welcome to the admin dashboard.",
-      });
+      // AuthContext handles the redirect and loading state
     } catch (error) {
       setIsLoading(false);
       toast({

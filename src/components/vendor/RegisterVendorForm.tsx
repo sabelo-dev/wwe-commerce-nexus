@@ -63,12 +63,19 @@ const RegisterVendorForm: React.FC = () => {
 
       if (profileError) throw profileError;
 
-      // Create vendor profile in Supabase
+      // Create vendor profile in Supabase with trial subscription
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 90); // 90 days trial
+
       const { data, error } = await supabase.from("vendors").insert({
         user_id: user.id,
         business_name: values.businessName,
         description: values.description,
         status: "pending",
+        subscription_tier: "trial",
+        trial_start_date: new Date().toISOString(),
+        trial_end_date: trialEndDate.toISOString(),
+        subscription_status: "trial"
       }).select();
 
       if (error) throw error;
@@ -77,8 +84,8 @@ const RegisterVendorForm: React.FC = () => {
       await refreshUserProfile();
 
       toast({
-        title: "Registration Submitted",
-        description: "Your vendor application is under review. We'll notify you once it's approved.",
+        title: "Registration Successful",
+        description: "Welcome! You have a 90-day free trial to explore all features.",
       });
       
       // Redirect to vendor onboarding
