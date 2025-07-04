@@ -28,6 +28,7 @@ import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 
 // Vendor pages
+import VendorLoginPage from "@/pages/VendorLoginPage";
 import VendorRegisterPage from "@/pages/VendorRegisterPage";
 import VendorOnboardingPage from "@/pages/VendorOnboardingPage";
 import VendorDashboardPage from "@/pages/VendorDashboardPage";
@@ -90,6 +91,7 @@ function App() {
               <Route path="admin/dashboard" element={<AdminDashboard />} />
               
               {/* Vendor pages */}
+              <Route path="vendor/login" element={<VendorLoginPage />} />
               <Route path="vendor/register" element={<VendorRegisterPage />} />
               <Route path="vendor/onboarding" element={<VendorOnboardingPage />} />
               <Route path="vendor/dashboard" element={<VendorDashboardPage />} />

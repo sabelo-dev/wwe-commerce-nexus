@@ -4,6 +4,7 @@ import { User, Profile } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
+import { useLoadingManager } from "@/hooks/useLoadingManager";
 
 interface AuthContextType {
   user: User | null;
@@ -21,10 +22,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isVendor, setIsVendor] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+  const loadingManager = useLoadingManager();
 
   const redirectBasedOnRole = (userRole: string) => {
     if (userRole === 'admin') {
@@ -61,9 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadUserProfile = async (session: Session | null) => {
     if (!session?.user) {
       clearAuthState();
-      setIsLoading(false);
+      loadingManager.stopLoading('auth');
       return;
     }
+
+    loadingManager.startLoading('profile');
 
     try {
       // Fetch user profile from profiles table
@@ -98,11 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // Check vendor status for any user (not just those with vendor role)
               const vendorStatus = await checkVendorStatus(retryProfile.id);
               setIsVendor(vendorStatus);
+              loadingManager.stopLoading();
             }
           } catch (retryError) {
             console.error('Error on retry:', retryError);
-          } finally {
-            setIsLoading(false);
+            loadingManager.stopLoading();
           }
         }, 1000);
       } else if (profile) {
@@ -119,24 +122,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check vendor status for any user (not just those with vendor role)
         const vendorStatus = await checkVendorStatus(profile.id);
         setIsVendor(vendorStatus);
-        setIsLoading(false);
+        loadingManager.stopLoading();
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       clearAuthState();
-      setIsLoading(false);
+      loadingManager.stopLoading();
     }
   };
 
   const refreshUserProfile = async () => {
     if (session?.user) {
-      setIsLoading(true);
+      loadingManager.startLoading('refresh');
       await loadUserProfile(session);
     }
   };
 
   useEffect(() => {
     let mounted = true;
+    loadingManager.startLoading('auth');
 
     // Get initial session
     const getInitialSession = async () => {
@@ -146,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (error) {
           console.error('Error getting session:', error);
-          if (mounted) setIsLoading(false);
+          if (mounted) loadingManager.stopLoading();
           return;
         }
 
@@ -156,7 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
-        if (mounted) setIsLoading(false);
+        if (mounted) loadingManager.stopLoading();
       }
     };
 
@@ -181,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
+    loadingManager.startLoading('login');
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -200,20 +204,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
         
         if (profile) {
-          // Set loading to false before redirect
-          setIsLoading(false);
+          loadingManager.stopLoading();
           
           toast({
             title: "Login Successful",
             description: "Welcome back!",
           });
           
-          // Short delay then redirect
-          setTimeout(() => redirectBasedOnRole(profile.role), 500);
+          // Immediate redirect
+          redirectBasedOnRole(profile.role);
         }
       }
     } catch (error) {
-      setIsLoading(false);
+      loadingManager.stopLoading();
       toast({
         variant: "destructive",
         title: "Login Failed",
@@ -224,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (email: string, password: string, name: string, role: 'consumer' | 'vendor' = 'consumer') => {
-    setIsLoading(true);
+    loadingManager.startLoading('register');
     
     try {
       console.log('Starting registration process...');
@@ -254,18 +257,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Registration Successful",
           description: "Please check your email to verify your account.",
         });
-        setIsLoading(false);
+        loadingManager.stopLoading();
       } else if (data.user) {
         toast({
           title: "Registration Successful",
           description: "Welcome to WWE Store!",
         });
         
-        // Redirect based on role
-        setTimeout(() => redirectBasedOnRole(role), 100);
+        loadingManager.stopLoading();
+        // Immediate redirect
+        redirectBasedOnRole(role);
       }
     } catch (error) {
-      setIsLoading(false);
+      loadingManager.stopLoading();
       console.error('Registration failed:', error);
       toast({
         variant: "destructive",
@@ -294,7 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isVendor, isAdmin, refreshUserProfile }}>
+    <AuthContext.Provider value={{ user, isLoading: loadingManager.isLoading, login, register, logout, isVendor, isAdmin, refreshUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

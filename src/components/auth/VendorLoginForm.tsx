@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -8,31 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface AdminLoginFormData {
+interface VendorLoginFormData {
   email: string;
   password: string;
 }
 
-const AdminLoginForm: React.FC = () => {
-  const { login } = useAuth();
+const VendorLoginForm: React.FC = () => {
+  const { login, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AdminLoginFormData>();
+  } = useForm<VendorLoginFormData>();
 
-  const onSubmit = async (data: AdminLoginFormData) => {
-    setIsLoading(true);
+  const onSubmit = async (data: VendorLoginFormData) => {
+    setLocalLoading(true);
     
     try {
       await login(data.email, data.password);
     } catch (error) {
-      setIsLoading(false);
-      // Error toast is already handled in AuthContext
+      setLocalLoading(false);
+      // Error is handled in AuthContext
     }
   };
 
@@ -43,7 +42,7 @@ const AdminLoginForm: React.FC = () => {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
-            placeholder="admin@example.com"
+            placeholder="vendor@example.com"
             {...register("email", {
               required: "Email is required",
               pattern: {
@@ -70,12 +69,12 @@ const AdminLoginForm: React.FC = () => {
           )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login as Admin"}
+        <Button type="submit" className="w-full" disabled={isLoading || localLoading}>
+          {isLoading || localLoading ? "Logging in..." : "Login as Vendor"}
         </Button>
       </form>
     </div>
   );
 };
 
-export default AdminLoginForm;
+export default VendorLoginForm;
