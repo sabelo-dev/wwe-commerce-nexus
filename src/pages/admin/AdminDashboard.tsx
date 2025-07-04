@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useLoadingManager } from "@/hooks/useLoadingManager";
 import {
   SidebarProvider,
   Sidebar,
@@ -46,35 +47,34 @@ import {
 const AdminDashboard = () => {
   const { user, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
+  const loadingManager = useLoadingManager();
   const [activeTab, setActiveTab] = useState("overview");
-  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    // Only perform redirects after loading is complete
-    if (!isLoading && !redirecting) {
+    if (!isLoading) {
       if (!user) {
-        setRedirecting(true);
+        loadingManager.startLoading('redirect');
         navigate("/admin/login", { replace: true });
       } else if (user.role !== 'admin' && !isAdmin) {
-        setRedirecting(true);
+        loadingManager.startLoading('redirect');
         navigate("/", { replace: true });
       }
     }
-  }, [user, isAdmin, isLoading, navigate, redirecting]);
+  }, [user, isAdmin, isLoading, navigate, loadingManager]);
 
   // Show loading while auth is initializing or redirecting
-  if (isLoading || redirecting) {
+  if (isLoading || loadingManager.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading...</p>
+          <p className="mt-2 text-muted-foreground">Loading admin dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // Don't render anything while redirecting
+  // Don't render anything if unauthorized
   if (!user || (user.role !== 'admin' && !isAdmin)) {
     return null;
   }
