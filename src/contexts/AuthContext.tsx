@@ -62,11 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadUserProfile = async (session: Session | null) => {
     if (!session?.user) {
       clearAuthState();
-      loadingManager.stopLoading('auth');
+      loadingManager.stopLoading();
       return;
     }
-
-    loadingManager.startLoading('profile');
 
     try {
       // Fetch user profile from profiles table
@@ -101,14 +99,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // Check vendor status for any user (not just those with vendor role)
               const vendorStatus = await checkVendorStatus(retryProfile.id);
               setIsVendor(vendorStatus);
-              loadingManager.stopLoading();
             }
           } catch (retryError) {
             console.error('Error on retry:', retryError);
+          } finally {
             loadingManager.stopLoading();
           }
         }, 1000);
-      } else if (profile) {
+        return;
+      }
+      
+      if (profile) {
         const userData: User = {
           id: profile.id,
           email: profile.email,
@@ -122,11 +123,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check vendor status for any user (not just those with vendor role)
         const vendorStatus = await checkVendorStatus(profile.id);
         setIsVendor(vendorStatus);
-        loadingManager.stopLoading();
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       clearAuthState();
+    } finally {
       loadingManager.stopLoading();
     }
   };
