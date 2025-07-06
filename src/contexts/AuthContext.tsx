@@ -194,7 +194,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password
       });
       
-      if (error) throw error;
+      if (error) {
+        loadingManager.stopLoading('login');
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        });
+        throw error;
+      }
       
       // Get user profile to determine role for redirect
       if (data.user) {
@@ -205,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
         
         if (profile) {
-          loadingManager.stopLoading();
+          loadingManager.stopLoading('login');
           
           toast({
             title: "Login Successful",
@@ -214,15 +222,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Immediate redirect
           redirectBasedOnRole(profile.role);
+        } else {
+          loadingManager.stopLoading('login');
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "User profile not found",
+          });
         }
+      } else {
+        loadingManager.stopLoading('login');
       }
     } catch (error) {
-      loadingManager.stopLoading();
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: error instanceof Error ? error.message : "An error occurred",
-      });
+      loadingManager.stopLoading('login');
+      if (error instanceof Error && !error.message.includes("Login Failed")) {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        });
+      }
       throw error;
     }
   };
@@ -249,34 +268,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Registration error:', error);
+        loadingManager.stopLoading('register');
+        toast({
+          variant: "destructive",
+          title: "Registration Failed",
+          description: error.message,
+        });
         throw error;
       }
       
       // If user is immediately available (email confirmation disabled)
       if (data.user && !data.user.email_confirmed_at) {
+        loadingManager.stopLoading('register');
         toast({
           title: "Registration Successful",
           description: "Please check your email to verify your account.",
         });
-        loadingManager.stopLoading();
       } else if (data.user) {
+        loadingManager.stopLoading('register');
         toast({
           title: "Registration Successful",
           description: "Welcome to WWE Store!",
         });
         
-        loadingManager.stopLoading();
         // Immediate redirect
         redirectBasedOnRole(role);
+      } else {
+        loadingManager.stopLoading('register');
       }
     } catch (error) {
-      loadingManager.stopLoading();
+      loadingManager.stopLoading('register');
       console.error('Registration failed:', error);
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: error instanceof Error ? error.message : "An error occurred during registration",
-      });
+      if (error instanceof Error && !error.message.includes("Registration Failed")) {
+        toast({
+          variant: "destructive",
+          title: "Registration Failed",
+          description: error.message,
+        });
+      }
       throw error;
     }
   };
