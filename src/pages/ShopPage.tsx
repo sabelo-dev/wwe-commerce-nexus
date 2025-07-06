@@ -1,6 +1,5 @@
 
-import React, { useState } from "react";
-import { mockProducts, mockCategories } from "@/data/mockData";
+import React, { useState, useEffect } from "react";
 import ProductGrid from "@/components/shop/ProductGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +26,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Filter, SortAsc } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Product, Category } from "@/types";
+import { fetchAllProducts, fetchCategories } from "@/services/products";
 
 const ShopPage: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
   const [sortBy, setSortBy] = useState<string>("featured");
@@ -36,11 +40,38 @@ const ShopPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
 
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [productsData, categoriesData] = await Promise.all([
+          fetchAllProducts(),
+          fetchCategories()
+        ]);
+
+        setProducts(productsData);
+        setCategories(categoriesData);
+        
+        // Update max price range based on actual products
+        if (productsData.length > 0) {
+          const maxPrice = Math.max(...productsData.map(p => p.price));
+          setPriceRange([0, Math.ceil(maxPrice / 100) * 100]);
+        }
+      } catch (error) {
+        console.error('Error loading shop data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   // Extract all vendors/brands from products
-  const allBrands = Array.from(new Set(mockProducts.map((p) => p.vendorName)));
+  const allBrands = Array.from(new Set(products.map((p) => p.vendorName)));
 
   // Filter products based on selected filters
-  const filteredProducts = mockProducts.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     // Filter by category
     if (selectedCategory && product.category !== selectedCategory) {
       return false;
@@ -81,6 +112,17 @@ const ShopPage: React.FC = () => {
     }
   });
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50">
       <div className="wwe-container py-8">
@@ -88,7 +130,7 @@ const ShopPage: React.FC = () => {
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Shop All Products</h1>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-gray-600">
-              Showing {sortedProducts.length} of {mockProducts.length} products
+              Showing {sortedProducts.length} of {products.length} products
             </p>
 
             {/* Sort & Filter buttons for mobile */}
@@ -177,7 +219,7 @@ const ShopPage: React.FC = () => {
                   <AccordionTrigger className="py-2">Categories</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2">
-                      {mockCategories.map((category) => (
+                      {categories.map((category) => (
                         <div key={category.id} className="flex items-center">
                           <Button
                             variant="ghost"

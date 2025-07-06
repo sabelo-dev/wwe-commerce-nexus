@@ -1,14 +1,41 @@
 
-import React from "react";
-import { mockProducts } from "@/data/mockData";
+import React, { useState, useEffect } from "react";
 import ProductGrid from "@/components/shop/ProductGrid";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Product } from "@/types";
+import { fetchDealsProducts } from "@/services/products";
 
 const DealsPage: React.FC = () => {
-  // Filter products with compare_at_price (on sale)
-  const dealsProducts = mockProducts.filter(
-    (product) => product.compareAtPrice && product.compareAtPrice > product.price
-  );
+  const [dealsProducts, setDealsProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadDeals = async () => {
+      try {
+        setLoading(true);
+        const products = await fetchDealsProducts(20);
+        setDealsProducts(products);
+      } catch (error) {
+        console.error('Error loading deals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDeals();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading deals...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">

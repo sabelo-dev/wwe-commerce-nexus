@@ -1,9 +1,39 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { mockCategories } from "@/data/mockData";
+import { Category } from "@/types";
+import { fetchCategories } from "@/services/products";
 
 const CategoriesPage: React.FC = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        const categoriesData = await fetchCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading categories...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="wwe-container py-8">
@@ -20,7 +50,7 @@ const CategoriesPage: React.FC = () => {
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {mockCategories.map((category) => (
+          {categories.map((category) => (
             <Link
               key={category.id}
               to={`/category/${category.slug}`}

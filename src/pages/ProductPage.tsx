@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { Star, Truck, ShieldCheck, Heart } from "lucide-react";
-import { mockProducts } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import {
   Tabs,
@@ -13,14 +12,51 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import StarRating from "@/components/ui/star-rating";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
+import { Product } from "@/types";
+import { fetchProductBySlug, fetchRelatedProducts } from "@/services/products";
 
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { addToCart } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const product = mockProducts.find((p) => p.slug === slug);
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!slug) return;
+      
+      try {
+        setLoading(true);
+        const productData = await fetchProductBySlug(slug);
+        
+        if (productData) {
+          setProduct(productData);
+          const related = await fetchRelatedProducts(productData.id, productData.category, 4);
+          setRelatedProducts(related);
+        }
+      } catch (error) {
+        console.error('Error loading product:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -36,12 +72,6 @@ const ProductPage: React.FC = () => {
     );
   }
 
-  // Find related products (same category)
-  const relatedProducts = mockProducts
-    .filter(
-      (p) => p.category === product.category && p.id !== product.id
-    )
-    .slice(0, 4);
 
   const handleAddToCart = () => {
     addToCart({
