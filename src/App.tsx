@@ -45,6 +45,8 @@ import KitchenPage from "@/pages/subcategories/KitchenPage";
 import BestSellersPage from "@/pages/BestSellersPage";
 import NewArrivalsPage from "@/pages/NewArrivalsPage";
 import DealsPage from "@/pages/DealsPage";
+import PopularPage from "@/pages/PopularPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +74,7 @@ function App() {
                 <Route path="best-sellers" element={<BestSellersPage />} />
                 <Route path="new-arrivals" element={<NewArrivalsPage />} />
                 <Route path="deals" element={<DealsPage />} />
+                <Route path="popular" element={<PopularPage />} />
                 
                 {/* Subcategory pages */}
                 <Route path="men-clothing" element={<MenClothingPage />} />
@@ -85,6 +88,7 @@ function App() {
               {/* Auth pages without layout */}
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
               
               {/* Admin pages */}
               <Route path="admin/login" element={<AdminLoginPage />} />
