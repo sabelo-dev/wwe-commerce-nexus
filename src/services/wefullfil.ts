@@ -2,22 +2,40 @@ import { WeFulFilResponse, WeFulFilProduct, WeFulFilError, WeFulFilProductFilter
 import { AdminProduct } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 
-const API_BASE_URL = "https://app.wefullfill.com";
-const API_TOKEN = "FKfz13Vd5RtRibx4cLi6i2JufklLqfrczdby146anMeVHwITYex1Ke7IhnLS";
-
 // Cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Creates headers with authentication for WeFulFil API requests
+ * Makes secure API requests through the edge function proxy
  */
-const createHeaders = () => {
-  return {
-    "Authorization": `Bearer ${API_TOKEN}`,
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-  };
+const makeSecureApiRequest = async <T>(
+  endpoint: string,
+  options: {
+    method?: string;
+    filters?: Record<string, any>;
+    productId?: string;
+  } = {}
+): Promise<T> => {
+  const { data, error } = await supabase.functions.invoke('wefullfil-proxy', {
+    body: {
+      endpoint,
+      method: options.method || 'GET',
+      filters: options.filters,
+      productId: options.productId,
+    },
+  });
+
+  if (error) {
+    console.error('WeFulFil proxy error:', error);
+    throw new Error(`WeFulFil API Error: ${error.message}`);
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
 };
 
 /**
@@ -37,112 +55,26 @@ const setCachedData = (key: string, data: any, ttl: number = CACHE_TTL) => {
 };
 
 /**
- * Handles error responses from the WeFulFil API with improved error messages
- */
-const handleApiError = async (response: Response) => {
-  try {
-    const errorData: WeFulFilError = await response.json();
-    const errorMessage = errorData.message || `API Error: ${response.status} - ${response.statusText}`;
-    
-    // Log error for debugging
-    console.error("WeFulFil API Error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorData
-    });
-    
-    throw new Error(errorMessage);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(`Network error: ${response.status} - ${response.statusText}`);
-  }
-};
-
-/**
- * Generic API request handler with retry logic and caching
- */
-const makeApiRequest = async <T>(
-  endpoint: string, 
-  options: RequestInit = {}, 
-  useCache: boolean = true,
-  retryCount: number = 3
-): Promise<T> => {
-  const cacheKey = `${endpoint}_${JSON.stringify(options)}`;
-  
-  // Check cache first
-  if (useCache) {
-    const cachedData = getCachedData(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-  }
-
-  let lastError: Error;
-  
-  for (let attempt = 1; attempt <= retryCount; attempt++) {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {
-          ...createHeaders(),
-          ...options.headers,
-        },
-      });
-
-      if (!response.ok) {
-        await handleApiError(response);
-      }
-
-      const data = await response.json();
-      
-      // Cache successful responses
-      if (useCache && response.ok) {
-        setCachedData(cacheKey, data);
-      }
-      
-      return data;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(`Attempt ${attempt} failed`);
-      
-      // Don't retry on client errors (4xx)
-      if (error instanceof Error && error.message.includes('4')) {
-        throw lastError;
-      }
-      
-      // Wait before retrying (exponential backoff)
-      if (attempt < retryCount) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-      }
-    }
-  }
-  
-  throw lastError;
-};
-
-/**
  * Optimized function to fetch products from WeFulFil with caching and better error handling
  */
 export async function fetchWeFulFilProducts(filters: WeFulFilProductFilter = {}): Promise<WeFulFilResponse> {
   try {
-    const searchParams = new URLSearchParams();
+    const cacheKey = `products_${JSON.stringify(filters)}`;
     
-    // Build query parameters more efficiently
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        searchParams.append(key, value.toString());
-      }
+    // Check cache first
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const data = await makeSecureApiRequest<WeFulFilResponse>('/api/products', {
+      filters
     });
     
-    // Add API token
-    searchParams.append('api_token', API_TOKEN);
+    // Cache successful responses
+    setCachedData(cacheKey, data);
     
-    const endpoint = `/api/products?${searchParams.toString()}`;
-    
-    return await makeApiRequest<WeFulFilResponse>(endpoint, {
-      method: "GET",
-    });
+    return data;
   } catch (error) {
     console.error("Error fetching WeFulFil products:", error);
     throw error;
@@ -154,8 +86,21 @@ export async function fetchWeFulFilProducts(filters: WeFulFilProductFilter = {})
  */
 export async function fetchWeFulFilProductById(productId: string): Promise<WeFulFilProduct> {
   try {
-    const endpoint = `/api/products/${productId}?api_token=${API_TOKEN}`;
-    const data = await makeApiRequest<{ data: WeFulFilProduct }>(endpoint);
+    const cacheKey = `product_${productId}`;
+    
+    // Check cache first
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      return cachedData.data;
+    }
+
+    const data = await makeSecureApiRequest<{ data: WeFulFilProduct }>('/api/products', {
+      productId
+    });
+    
+    // Cache successful responses
+    setCachedData(cacheKey, data);
+    
     return data.data;
   } catch (error) {
     console.error(`Error fetching WeFulFil product ${productId}:`, error);

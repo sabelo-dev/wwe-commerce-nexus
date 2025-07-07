@@ -864,6 +864,10 @@ export type Database = {
         Args: { vendor_id: string }
         Returns: Json
       }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_trial_expired: {
         Args: { vendor_id: string }
         Returns: boolean

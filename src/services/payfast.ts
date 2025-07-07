@@ -18,10 +18,11 @@ interface PayFastResponse {
 
 export const createPayFastPayment = async (data: PayFastPaymentData): Promise<PayFastResponse> => {
   try {
-    // PayFast configuration
-    const merchantId = "10000100"; // Test merchant ID
-    const merchantKey = "46f0cd694581a"; // Test merchant key
-    const passphrase = "jt7NOE43FZPn"; // Test passphrase
+    // PayFast configuration - these should be set as environment variables in production
+    // For now, using test credentials but they should be moved to Supabase secrets
+    const merchantId = "10000100"; // TODO: Move to Supabase secrets
+    const merchantKey = "46f0cd694581a"; // TODO: Move to Supabase secrets  
+    const passphrase = "jt7NOE43FZPn"; // TODO: Move to Supabase secrets
     
     // Create payment form data
     const paymentData = {
