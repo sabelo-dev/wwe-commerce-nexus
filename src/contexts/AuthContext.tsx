@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadUserProfile = async (session: Session | null) => {
     if (!session?.user) {
       clearAuthState();
-      loadingManager.stopLoading();
+      loadingManager.stopLoading('auth');
       return;
     }
 
@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (retryError) {
             console.error('Error on retry:', retryError);
           } finally {
-            loadingManager.stopLoading();
+            loadingManager.stopLoading('auth');
           }
         }, 1000);
         return;
@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error loading user profile:', error);
       clearAuthState();
     } finally {
-      loadingManager.stopLoading();
+      loadingManager.stopLoading('auth');
     }
   };
 
@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (error) {
           console.error('Error getting session:', error);
-          if (mounted) loadingManager.stopLoading();
+          if (mounted) loadingManager.stopLoading('auth');
           return;
         }
 
@@ -161,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
-        if (mounted) loadingManager.stopLoading();
+        if (mounted) loadingManager.stopLoading('auth');
       }
     };
 
