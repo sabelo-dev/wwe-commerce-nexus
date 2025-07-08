@@ -72,40 +72,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching profile:', error);
-        // If profile doesn't exist, wait and try again (it should be created by trigger)
-        setTimeout(async () => {
-          try {
-            const { data: retryProfile, error: retryError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (retryProfile && !retryError) {
-              const userData: User = {
-                id: retryProfile.id,
-                email: retryProfile.email,
-                name: retryProfile.name,
-                avatar_url: retryProfile.avatar_url,
-                role: retryProfile.role
-              };
-              setUser(userData);
-              setIsAdmin(retryProfile.role === 'admin');
-              
-              // Check vendor status for any user (not just those with vendor role)
-              const vendorStatus = await checkVendorStatus(retryProfile.id);
-              setIsVendor(vendorStatus);
-            }
-          } catch (retryError) {
-            console.error('Error on retry:', retryError);
-          } finally {
-            loadingManager.stopLoading('auth');
-          }
-        }, 1000);
+        clearAuthState();
+        loadingManager.stopLoading('auth');
         return;
       }
       
@@ -123,6 +95,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check vendor status for any user (not just those with vendor role)
         const vendorStatus = await checkVendorStatus(profile.id);
         setIsVendor(vendorStatus);
+      } else {
+        // Profile doesn't exist yet, create basic user data from session
+        const userData: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || '',
+          avatar_url: session.user.user_metadata?.avatar_url || null,
+          role: 'consumer'
+        };
+        setUser(userData);
+        setIsAdmin(false);
+        setIsVendor(false);
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
