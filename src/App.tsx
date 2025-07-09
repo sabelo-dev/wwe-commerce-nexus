@@ -48,6 +48,12 @@ import DealsPage from "@/pages/DealsPage";
 import PopularPage from "@/pages/PopularPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 
+// Policy pages
+import ShippingPage from "@/pages/ShippingPage";
+import ReturnsPage from "@/pages/ReturnsPage";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -83,6 +89,20 @@ function App() {
                 <Route path="furniture" element={<FurniturePage />} />
                 <Route path="appliances" element={<AppliancesPage />} />
                 <Route path="kitchen" element={<KitchenPage />} />
+                
+                {/* Nested category routes */}
+                <Route path="category/home-kitchen/appliances" element={<AppliancesPage />} />
+                <Route path="category/home-kitchen/kitchen" element={<KitchenPage />} />
+                <Route path="category/home-kitchen/furniture" element={<FurniturePage />} />
+                <Route path="category/clothing/women" element={<WomenClothingPage />} />
+                <Route path="category/clothing/men" element={<MenClothingPage />} />
+                <Route path="category/clothing/kids" element={<KidsClothingPage />} />
+                
+                {/* Policy pages */}
+                <Route path="shipping" element={<ShippingPage />} />
+                <Route path="returns" element={<ReturnsPage />} />
+                <Route path="terms" element={<TermsPage />} />
+                <Route path="privacy" element={<PrivacyPage />} />
               </Route>
               
               {/* Auth pages without layout */}

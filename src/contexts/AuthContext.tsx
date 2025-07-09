@@ -28,13 +28,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadingManager = useLoadingManager();
 
   const redirectBasedOnRole = (userRole: string) => {
-    if (userRole === 'admin') {
-      window.location.href = '/admin/dashboard';
-    } else if (userRole === 'vendor') {
-      window.location.href = '/vendor/dashboard';
-    } else {
-      window.location.href = '/';
-    }
+    // Use setTimeout to allow React to complete current render cycle
+    setTimeout(() => {
+      if (userRole === 'admin') {
+        window.location.replace('/admin/dashboard');
+      } else if (userRole === 'vendor') {
+        window.location.replace('/vendor/dashboard');
+      } else {
+        window.location.replace('/');
+      }
+    }, 100);
   };
 
   const clearAuthState = () => {
@@ -50,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('vendors')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       return !!vendor && vendor.status === 'approved';
     } catch (error) {
@@ -194,11 +197,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
+        
+        loadingManager.stopLoading('login');
         
         if (profile) {
-          loadingManager.stopLoading('login');
-          
           toast({
             title: "Login Successful",
             description: "Welcome back!",
@@ -207,12 +210,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Immediate redirect
           redirectBasedOnRole(profile.role);
         } else {
-          loadingManager.stopLoading('login');
+          // Profile will be created by trigger, redirect to home for now
           toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: "User profile not found",
+            title: "Login Successful",
+            description: "Welcome back!",
           });
+          redirectBasedOnRole('consumer');
         }
       } else {
         loadingManager.stopLoading('login');
