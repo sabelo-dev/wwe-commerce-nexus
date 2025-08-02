@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
-import { Star, Truck, ShieldCheck, Heart } from "lucide-react";
+import { Star, Truck, ShieldCheck, Heart, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Tabs,
   TabsContent,
@@ -14,6 +16,7 @@ import StarRating from "@/components/ui/star-rating";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { Product } from "@/types";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/services/products";
+import { airJordanSample } from "@/data/sampleProducts";
 
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -23,6 +26,10 @@ const ProductPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<string>("");
+
+  // Available sizes for Air Jordan
+  const availableSizes = ["UK 2.5", "UK 3", "UK 3.5", "UK 4", "UK 4.5", "UK 5", "UK 5.5", "UK 6", "UK 6.5", "UK 7", "UK 7.5", "UK 9"];
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -30,12 +37,19 @@ const ProductPage: React.FC = () => {
       
       try {
         setLoading(true);
-        const productData = await fetchProductBySlug(slug);
         
-        if (productData) {
-          setProduct(productData);
-          const related = await fetchRelatedProducts(productData.id, productData.category, 4);
-          setRelatedProducts(related);
+        // Check if this is our sample Air Jordan product
+        if (slug === "air-jordan-1-low-method-of-make") {
+          setProduct(airJordanSample);
+          setRelatedProducts([]);
+        } else {
+          const productData = await fetchProductBySlug(slug);
+          
+          if (productData) {
+            setProduct(productData);
+            const related = await fetchRelatedProducts(productData.id, productData.category, 4);
+            setRelatedProducts(related);
+          }
         }
       } catch (error) {
         console.error('Error loading product:', error);
@@ -72,46 +86,41 @@ const ProductPage: React.FC = () => {
     );
   }
 
-
   const handleAddToCart = () => {
+    if (product.id === "air-jordan-1-low-mom" && !selectedSize) {
+      alert("Please select a size first");
+      return;
+    }
+    
     addToCart({
       productId: product.id,
-      name: product.name,
+      name: product.name + (selectedSize ? ` - ${selectedSize}` : ""),
       price: product.price,
       image: product.images[0],
     });
   };
 
-  const incrementQuantity = () => {
-    setQuantity(quantity + 1);
+  const incrementQuantity = () => setQuantity(quantity + 1);
+  const decrementQuantity = () => {
+    if (quantity > 1) setQuantity(quantity - 1);
   };
 
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
+  const isAirJordan = product.id === "air-jordan-1-low-mom";
+  const discountPercent = product.compareAtPrice ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100) : 0;
 
   return (
     <div className="bg-white">
       <div className="wwe-container py-8">
         {/* Breadcrumbs */}
         <div className="mb-6 text-sm">
-          <Link to="/" className="text-gray-500 hover:text-wwe-navy">
-            Home
-          </Link>{" "}
-          /{" "}
-          <Link to="/shop" className="text-gray-500 hover:text-wwe-navy">
-            Shop
-          </Link>{" "}
-          /{" "}
-          <Link
-            to={`/category/${product.category.toLowerCase()}`}
-            className="text-gray-500 hover:text-wwe-navy"
-          >
+          <Link to="/" className="text-gray-500 hover:text-wwe-navy">Home</Link>
+          {" "} / {" "}
+          <Link to="/shop" className="text-gray-500 hover:text-wwe-navy">Shop</Link>
+          {" "} / {" "}
+          <Link to={`/category/${product.category.toLowerCase()}`} className="text-gray-500 hover:text-wwe-navy">
             {product.category}
-          </Link>{" "}
-          / <span className="text-gray-900">{product.name}</span>
+          </Link>
+          {" "} / <span className="text-gray-900">{product.name}</span>
         </div>
 
         {/* Product Info */}
@@ -169,28 +178,32 @@ const ProductPage: React.FC = () => {
                     <span className="text-gray-500 line-through">
                       {formatCurrency(product.compareAtPrice)}
                     </span>
-                    <span className="text-green-600 font-medium">
-                      {Math.round(
-                        ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100
-                      )}
-                      % off
-                    </span>
+                    <Badge className="bg-wwe-gold text-wwe-navy">
+                      {discountPercent}% off
+                    </Badge>
                   </>
                 )}
               </div>
             </div>
 
+            {/* Limited Time Offer for Air Jordan */}
+            {isAirJordan && (
+              <div className="bg-wwe-gold/10 border border-wwe-gold rounded-lg p-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5 text-wwe-gold" />
+                  <span className="font-semibold text-wwe-navy">Limited Time Offer!</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  10% discount expires in 30 days. Don't miss out!
+                </p>
+              </div>
+            )}
+
             {/* Availability */}
             <div>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  product.inStock
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
+              <Badge className={product.inStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                 {product.inStock ? "In Stock" : "Out of Stock"}
-              </span>
+              </Badge>
             </div>
 
             {/* Short Description */}
@@ -199,15 +212,31 @@ const ProductPage: React.FC = () => {
             {/* Vendor Info */}
             <div className="mt-2">
               <span className="text-sm text-gray-600">
-                Sold by:{" "}
-                <Link
-                  to={`/vendor/${product.vendorId}`}
-                  className="text-wwe-navy font-medium hover:underline"
-                >
-                  {product.vendorName}
-                </Link>
+                Brand: <span className="text-wwe-navy font-medium">{product.vendorName}</span>
               </span>
             </div>
+
+            {/* Size Selection for Air Jordan */}
+            {isAirJordan && (
+              <div className="space-y-3">
+                <span className="font-medium text-gray-900">Size:</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {availableSizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`py-2 px-3 border rounded-md text-sm font-medium transition-colors ${
+                        selectedSize === size
+                          ? "border-wwe-navy bg-wwe-navy text-white"
+                          : "border-gray-300 bg-white text-gray-900 hover:border-gray-400"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-col space-y-4 mt-6">
@@ -259,7 +288,7 @@ const ProductPage: React.FC = () => {
             <div className="border-t border-gray-200 pt-4 mt-6 space-y-3">
               <div className="flex items-center space-x-2">
                 <Truck className="h-5 w-5 text-gray-500" />
-                <span className="text-sm">Free shipping on orders over $50</span>
+                <span className="text-sm">Free shipping on orders over R500</span>
               </div>
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="h-5 w-5 text-gray-500" />
@@ -279,48 +308,58 @@ const ProductPage: React.FC = () => {
             </TabsList>
             <TabsContent value="details" className="py-6">
               <div className="prose max-w-none">
-                <p>{product.description}</p>
-                <p>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-                  varius enim in eros elementum tristique. Duis cursus, mi quis viverra
-                  ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.
-                </p>
-                <ul>
-                  <li>High-quality materials for durability</li>
-                  <li>Modern design that fits any environment</li>
-                  <li>Easy to use and maintain</li>
-                  <li>Energy efficient and eco-friendly</li>
-                </ul>
+                <p className="mb-4">{product.description}</p>
+                {isAirJordan && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Benefits</h3>
+                    <ul className="list-disc pl-6 space-y-2 mb-6">
+                      <li>Nike Air in the heel provides lightweight, resilient cushioning.</li>
+                      <li>Solid-rubber outsoles give you ample everyday traction.</li>
+                      <li>Leather in the upper offers durability and structure.</li>
+                    </ul>
+                    
+                    <h3 className="text-lg font-semibold mb-3">Product Details</h3>
+                    <ul className="list-disc pl-6 space-y-1">
+                      <li>Wings logo on heel</li>
+                      <li>Stitched Swoosh logo</li>
+                      <li>Classic laces</li>
+                      <li>Colour Shown: Sail/Sail/Metallic Gold</li>
+                      <li>Style: FN5032-100</li>
+                      <li>Country/Region of Origin: China</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="specs" className="py-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border rounded-md p-4">
-                  <h3 className="font-semibold mb-2">Dimensions</h3>
+                  <h3 className="font-semibold mb-2">Product Information</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span className="text-gray-600">Width</span>
-                    <span>10 inches</span>
-                    <span className="text-gray-600">Height</span>
-                    <span>8 inches</span>
-                    <span className="text-gray-600">Depth</span>
-                    <span>6 inches</span>
-                    <span className="text-gray-600">Weight</span>
-                    <span>2 lbs</span>
+                    <span className="text-gray-600">Brand</span>
+                    <span>{product.vendorName}</span>
+                    <span className="text-gray-600">Category</span>
+                    <span>{product.subcategory || product.category}</span>
+                    {isAirJordan && (
+                      <>
+                        <span className="text-gray-600">Style Code</span>
+                        <span>FN5032-100</span>
+                        <span className="text-gray-600">Colorway</span>
+                        <span>Sail/Sail/Metallic Gold</span>
+                      </>
+                    )}
                   </div>
                 </div>
-                <div className="border rounded-md p-4">
-                  <h3 className="font-semibold mb-2">Material & Care</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span className="text-gray-600">Material</span>
-                    <span>Premium aluminum alloy</span>
-                    <span className="text-gray-600">Finish</span>
-                    <span>Matte black</span>
-                    <span className="text-gray-600">Care</span>
-                    <span>Wipe with damp cloth</span>
-                    <span className="text-gray-600">Warranty</span>
-                    <span>1-year limited</span>
+                {isAirJordan && (
+                  <div className="border rounded-md p-4">
+                    <h3 className="font-semibold mb-2">Available Sizes</h3>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      {availableSizes.map((size) => (
+                        <span key={size} className="text-gray-700">{size}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="reviews" className="py-6">
