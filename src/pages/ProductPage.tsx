@@ -16,7 +16,6 @@ import StarRating from "@/components/ui/star-rating";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { Product } from "@/types";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/services/products";
-import { airJordanSample } from "@/data/sampleProducts";
 
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -38,18 +37,12 @@ const ProductPage: React.FC = () => {
       try {
         setLoading(true);
         
-        // Check if this is our sample Air Jordan product
-        if (slug === "air-jordan-1-low-method-of-make") {
-          setProduct(airJordanSample);
-          setRelatedProducts([]);
-        } else {
-          const productData = await fetchProductBySlug(slug);
-          
-          if (productData) {
-            setProduct(productData);
-            const related = await fetchRelatedProducts(productData.id, productData.category, 4);
-            setRelatedProducts(related);
-          }
+        const productData = await fetchProductBySlug(slug);
+        
+        if (productData) {
+          setProduct(productData);
+          const related = await fetchRelatedProducts(productData.id, productData.category, 4);
+          setRelatedProducts(related);
         }
       } catch (error) {
         console.error('Error loading product:', error);

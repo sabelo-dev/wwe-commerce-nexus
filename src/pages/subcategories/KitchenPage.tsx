@@ -1,14 +1,31 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { mockProducts } from "@/data/mockData";
+import { fetchProductsBySubcategory } from "@/services/products";
 import ProductGrid from "@/components/shop/ProductGrid";
 import { Button } from "@/components/ui/button";
+import { Product } from "@/types";
 
 const KitchenPage: React.FC = () => {
-  const kitchenProducts = mockProducts.filter(
-    (product) => product.category === "Home & Kitchen" && product.subcategory === "Kitchen"
-  );
+  const [kitchenProducts, setKitchenProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const products = await fetchProductsBySubcategory("Home & Kitchen", "Kitchen");
+        setKitchenProducts(products);
+      } catch (error) {
+        console.error("Error loading kitchen products:", error);
+        setKitchenProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -46,7 +63,12 @@ const KitchenPage: React.FC = () => {
             </h2>
           </div>
 
-          {kitchenProducts.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Loading products...</p>
+            </div>
+          ) : kitchenProducts.length > 0 ? (
             <ProductGrid products={kitchenProducts} />
           ) : (
             <div className="text-center py-12 bg-white rounded-lg shadow-sm border">

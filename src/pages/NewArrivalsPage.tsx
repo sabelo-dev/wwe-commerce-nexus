@@ -1,13 +1,29 @@
 
-import React from "react";
-import { mockProducts } from "@/data/mockData";
+import React, { useState, useEffect } from "react";
+import { fetchNewArrivals } from "@/services/products";
 import ProductGrid from "@/components/shop/ProductGrid";
+import { Product } from "@/types";
 
 const NewArrivalsPage: React.FC = () => {
-  // Sort by creation date (newest first) and take recent products
-  const newArrivals = mockProducts
-    .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
-    .slice(0, 16);
+  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const products = await fetchNewArrivals(16);
+        setNewArrivals(products);
+      } catch (error) {
+        console.error("Error loading new arrivals:", error);
+        setNewArrivals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -42,7 +58,12 @@ const NewArrivalsPage: React.FC = () => {
             </h2>
           </div>
 
-          {newArrivals.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Loading products...</p>
+            </div>
+          ) : newArrivals.length > 0 ? (
             <ProductGrid products={newArrivals} />
           ) : (
             <div className="text-center py-12 bg-white rounded-lg shadow-sm border">

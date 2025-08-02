@@ -1,14 +1,31 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { mockProducts } from "@/data/mockData";
+import { fetchProductsBySubcategory } from "@/services/products";
 import ProductGrid from "@/components/shop/ProductGrid";
 import { Button } from "@/components/ui/button";
+import { Product } from "@/types";
 
 const MenClothingPage: React.FC = () => {
-  const menClothing = mockProducts.filter(
-    (product) => product.category === "Clothing" && product.subcategory?.includes("Men")
-  );
+  const [menClothing, setMenClothing] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const products = await fetchProductsBySubcategory("Clothing", "Men");
+        setMenClothing(products);
+      } catch (error) {
+        console.error("Error loading men's clothing:", error);
+        setMenClothing([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -46,7 +63,12 @@ const MenClothingPage: React.FC = () => {
             </h2>
           </div>
 
-          {menClothing.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Loading products...</p>
+            </div>
+          ) : menClothing.length > 0 ? (
             <ProductGrid products={menClothing} />
           ) : (
             <div className="text-center py-12 bg-white rounded-lg shadow-sm border">

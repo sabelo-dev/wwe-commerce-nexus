@@ -1,18 +1,38 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { mockProducts, mockCategories } from "@/data/mockData";
+import { fetchProductsByCategory, fetchCategories } from "@/services/products";
 import ProductGrid from "@/components/shop/ProductGrid";
 import { Button } from "@/components/ui/button";
+import { Product, Category } from "@/types";
 
 const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  
-  const category = mockCategories.find((c) => c.slug === slug);
-  const products = mockProducts.filter((p) => 
-    p.category === category?.name || 
-    category?.subcategories?.some((sub) => sub.name === p.subcategory)
-  );
+  const [category, setCategory] = useState<Category | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const categories = await fetchCategories();
+        const foundCategory = categories.find((c) => c.slug === slug);
+        
+        if (foundCategory) {
+          setCategory(foundCategory);
+          const categoryProducts = await fetchProductsByCategory(foundCategory.name);
+          setProducts(categoryProducts);
+        }
+      } catch (error) {
+        console.error("Error loading category data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [slug]);
 
   if (!category) {
     return (

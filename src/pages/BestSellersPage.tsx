@@ -1,14 +1,29 @@
 
-import React from "react";
-import { mockProducts } from "@/data/mockData";
+import React, { useState, useEffect } from "react";
+import { fetchBestSellers } from "@/services/products";
 import ProductGrid from "@/components/shop/ProductGrid";
+import { Product } from "@/types";
 
 const BestSellersPage: React.FC = () => {
-  // Filter products by high rating and review count for best sellers
-  const bestSellers = mockProducts
-    .filter((product) => product.rating >= 4.5 && product.reviewCount >= 50)
-    .sort((a, b) => b.reviewCount - a.reviewCount)
-    .slice(0, 12);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const products = await fetchBestSellers(12);
+        setBestSellers(products);
+      } catch (error) {
+        console.error("Error loading best sellers:", error);
+        setBestSellers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -25,7 +40,12 @@ const BestSellersPage: React.FC = () => {
         </div>
 
         {/* Products Grid */}
-        {bestSellers.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Loading best sellers...</p>
+          </div>
+        ) : bestSellers.length > 0 ? (
           <ProductGrid products={bestSellers} />
         ) : (
           <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
