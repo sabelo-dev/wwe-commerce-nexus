@@ -28,16 +28,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadingManager = useLoadingManager();
 
   const redirectBasedOnRole = (userRole: string) => {
-    // Use setTimeout to allow React to complete current render cycle
-    setTimeout(() => {
-      if (userRole === 'admin') {
-        window.location.replace('/admin/dashboard');
-      } else if (userRole === 'vendor') {
-        window.location.replace('/vendor/dashboard');
-      } else {
-        window.location.replace('/');
-      }
-    }, 100);
+    // Use React Router navigation instead of hard redirects
+    const targetPath = userRole === 'admin' ? '/admin/dashboard' 
+                     : userRole === 'vendor' ? '/vendor/dashboard' 
+                     : '/';
+    
+    // Let React handle the redirect naturally through route protection
+    console.log('User role determined:', userRole, 'Target path:', targetPath);
   };
 
   const clearAuthState = () => {
@@ -156,12 +153,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
         if (mounted) {
           setSession(session);
-          await loadUserProfile(session);
+          // Use setTimeout to prevent deadlock and allow proper state updates
+          setTimeout(() => {
+            if (mounted) {
+              loadUserProfile(session);
+            }
+          }, 0);
         }
       }
     );
@@ -207,12 +209,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "Welcome back!",
           });
           
-          // Immediate redirect
+          // Let the auth state change handle routing
           redirectBasedOnRole(profile.role);
         } else {
-          // Profile will be created by trigger, redirect to home for now
+          // Profile will be created by trigger
           toast({
-            title: "Login Successful",
+            title: "Login Successful", 
             description: "Welcome back!",
           });
           redirectBasedOnRole('consumer');
@@ -278,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Welcome to WWE Store!",
         });
         
-        // Immediate redirect
+        // Let auth state change handle routing
         redirectBasedOnRole(role);
       } else {
         loadingManager.stopLoading('register');
