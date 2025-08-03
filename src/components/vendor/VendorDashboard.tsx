@@ -21,6 +21,9 @@ import VendorInventory from "./dashboard/VendorInventory";
 import VendorPayouts from "./dashboard/VendorPayouts";
 import VendorAnalytics from "./dashboard/VendorAnalytics";
 import VendorSettings from "./dashboard/VendorSettings";
+import VendorPromotions from "./dashboard/VendorPromotions";
+import VendorReviews from "./dashboard/VendorReviews";
+import VendorSupport from "./dashboard/VendorSupport";
 import SubscriptionBanner from "./SubscriptionBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -32,7 +35,10 @@ import {
   DollarSign,
   BarChart3,
   Settings, 
-  Store 
+  Store,
+  Percent,
+  Star,
+  Headphones
 } from "lucide-react";
 
 const VendorDashboard = () => {
@@ -129,6 +135,11 @@ const VendorDashboard = () => {
       icon: Warehouse,
     },
     {
+      id: "promotions",
+      title: "Promotions",
+      icon: Percent,
+    },
+    {
       id: "payouts",
       title: "Payouts",
       icon: DollarSign,
@@ -137,6 +148,16 @@ const VendorDashboard = () => {
       id: "analytics",
       title: "Analytics",
       icon: BarChart3,
+    },
+    {
+      id: "reviews",
+      title: "Reviews",
+      icon: Star,
+    },
+    {
+      id: "support",
+      title: "Support",
+      icon: Headphones,
     },
     {
       id: "settings",
@@ -224,12 +245,24 @@ const VendorDashboard = () => {
                 <VendorInventory />
               </TabsContent>
 
+              <TabsContent value="promotions" className="mt-0">
+                <VendorPromotions />
+              </TabsContent>
+
               <TabsContent value="payouts" className="mt-0">
                 <VendorPayouts />
               </TabsContent>
 
               <TabsContent value="analytics" className="mt-0">
                 <VendorAnalytics />
+              </TabsContent>
+
+              <TabsContent value="reviews" className="mt-0">
+                <VendorReviews />
+              </TabsContent>
+
+              <TabsContent value="support" className="mt-0">
+                <VendorSupport />
               </TabsContent>
               
               <TabsContent value="settings" className="mt-0">

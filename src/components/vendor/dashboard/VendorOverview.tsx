@@ -14,7 +14,13 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle,
-  Star
+  Star,
+  Target,
+  Zap,
+  Calendar,
+  Bell,
+  MessageSquare,
+  Percent
 } from "lucide-react";
 
 const VendorOverview = () => {
@@ -25,13 +31,26 @@ const VendorOverview = () => {
     pendingApproval: 3,
     totalOrders: 156,
     newOrders: 5,
+    pendingOrders: 8,
+    processingOrders: 12,
+    shippedOrders: 23,
     revenue: 4562.50,
+    todayRevenue: 342.15,
+    weeklyRevenue: 2841.30,
     monthlyRevenue: 12340.75,
     storeViews: 2341,
+    todayViews: 89,
+    weeklyViews: 567,
     lowStockItems: 4,
+    outOfStockItems: 2,
     rating: 4.3,
     reviewCount: 89,
-    profileCompletion: 85
+    profileCompletion: 85,
+    conversionRate: 3.2,
+    avgOrderValue: 78.45,
+    returnRate: 2.1,
+    activePromotions: 3,
+    pendingPayouts: 2
   };
 
   const recentOrders = [
@@ -119,23 +138,18 @@ const VendorOverview = () => {
         </Card>
       )}
 
-      {/* Stats Grid */}
+      {/* Enhanced Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Revenue Today</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            <div className="text-2xl font-bold">${stats.todayRevenue.toFixed(2)}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <span>{stats.activeProducts} active</span>
-              {stats.pendingApproval > 0 && (
-                <>
-                  <span className="mx-1">•</span>
-                  <span className="text-orange-600">{stats.pendingApproval} pending</span>
-                </>
-              )}
+              <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              <span>7d: ${stats.weeklyRevenue.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -146,23 +160,22 @@ const VendorOverview = () => {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            <div className="text-2xl font-bold">{stats.newOrders}</div>
             <div className="flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              <span>{stats.newOrders} new today</span>
+              <span>{stats.pendingOrders} pending • {stats.processingOrders} processing</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.revenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{stats.conversionRate}%</div>
             <p className="text-xs text-muted-foreground">
-              ${stats.monthlyRevenue.toFixed(2)} this month
+              ${stats.avgOrderValue} avg order
             </p>
           </CardContent>
         </Card>
@@ -173,10 +186,58 @@ const VendorOverview = () => {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.storeViews.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.todayViews}</div>
             <p className="text-xs text-muted-foreground flex items-center">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +15% this week
+              {stats.weeklyViews} this week
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Alerts and Notifications */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inventory Alerts</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Low Stock</span>
+                <span className="font-medium text-orange-600">{stats.lowStockItems} items</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm">Out of Stock</span>
+                <span className="font-medium text-red-600">{stats.outOfStockItems} items</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Promotions</CardTitle>
+            <Percent className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activePromotions}</div>
+            <p className="text-xs text-muted-foreground">
+              Black Friday ends in 5 days
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Payouts</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.pendingPayouts}</div>
+            <p className="text-xs text-muted-foreground">
+              Next: ${(stats.revenue * 0.85).toFixed(2)} on Jan 30
             </p>
           </CardContent>
         </Card>
@@ -257,17 +318,21 @@ const VendorOverview = () => {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Enhanced Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks and shortcuts</CardDescription>
+          <CardDescription>Automate routine tasks and access key features</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-6">
             <Button variant="outline" className="justify-start">
               <Package className="h-4 w-4 mr-2" />
               Add Product
+            </Button>
+            <Button variant="outline" className="justify-start">
+              <Percent className="h-4 w-4 mr-2" />
+              Create Promotion
             </Button>
             <Button variant="outline" className="justify-start">
               <ShoppingCart className="h-4 w-4 mr-2" />
@@ -278,9 +343,60 @@ const VendorOverview = () => {
               Request Payout
             </Button>
             <Button variant="outline" className="justify-start">
-              <Users className="h-4 w-4 mr-2" />
-              View Analytics
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Contact Support
             </Button>
+            <Button variant="outline" className="justify-start">
+              <Bell className="h-4 w-4 mr-2" />
+              Set Alerts
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Insights & Recommendations */}
+      <Card className="border-purple-200 bg-purple-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-purple-600" />
+            AI-Powered Insights
+          </CardTitle>
+          <CardDescription>Actionable recommendations to grow your business</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-white rounded-lg border">
+              <TrendingUp className="h-5 w-5 text-green-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-medium">Demand Spike Detected</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your "Wireless Earbuds" are trending. Consider increasing inventory by 20 units.
+                </p>
+              </div>
+              <Button size="sm">Act Now</Button>
+            </div>
+            
+            <div className="flex items-start gap-3 p-3 bg-white rounded-lg border">
+              <Percent className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-medium">Dynamic Pricing Opportunity</h4>
+                <p className="text-sm text-muted-foreground">
+                  Increase Smart Watch price by 8% based on competitor analysis (+$3.2K monthly).
+                </p>
+              </div>
+              <Button size="sm" variant="outline">Review</Button>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-white rounded-lg border">
+              <Calendar className="h-5 w-5 text-orange-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-medium">Seasonal Preparation</h4>
+                <p className="text-sm text-muted-foreground">
+                  Valentine's Day approaches. Create romantic product bundles to boost sales.
+                </p>
+              </div>
+              <Button size="sm" variant="outline">Plan</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
