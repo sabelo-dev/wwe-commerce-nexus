@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ShippingForm from "./ShippingForm";
 import PaymentMethodSelector from "./PaymentMethodSelector";
-import { createPayFastPayment } from "@/services/payfast";
+import { supabase } from "@/integrations/supabase/client";
 
 const checkoutSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -76,23 +76,44 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       };
 
       if (values.paymentMethod === "payfast") {
-        // Create PayFast payment
-        const paymentResult = await createPayFastPayment({
-          amount: cart.subtotal || 0,
-          itemName: `Order for ${cart.items.length} items`,
-          returnUrl: `${window.location.origin}/checkout/success`,
-          cancelUrl: `${window.location.origin}/checkout/cancel`,
-          notifyUrl: `${window.location.origin}/api/payfast/notify`,
-          customerEmail: values.email,
-          customerFirstName: values.firstName,
-          customerLastName: values.lastName,
+        // Use the PayFast edge function
+        const { data: paymentData, error } = await supabase.functions.invoke('payfast-payment', {
+          body: {
+            amount: cart.subtotal || 0,
+            itemName: `Order for ${cart.items.length} items`,
+            returnUrl: `${window.location.origin}/checkout/success`,
+            cancelUrl: `${window.location.origin}/checkout/cancel`,
+            notifyUrl: `${window.location.origin}/api/payfast/notify`,
+            customerEmail: values.email,
+            customerFirstName: values.firstName,
+            customerLastName: values.lastName,
+          },
         });
 
-        if (paymentResult.success && paymentResult.redirectUrl) {
-          // Redirect to PayFast
-          window.location.href = paymentResult.redirectUrl;
+        if (error) {
+          throw new Error(error.message || "Failed to create payment");
+        }
+
+        if (paymentData?.success && paymentData?.formData) {
+          // Create and submit form to PayFast
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = paymentData.action;
+          form.style.display = 'none';
+
+          // Add all payment data as hidden inputs
+          Object.entries(paymentData.formData).forEach(([key, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value.toString();
+            form.appendChild(input);
+          });
+
+          document.body.appendChild(form);
+          form.submit();
         } else {
-          throw new Error(paymentResult.error || "Payment initialization failed");
+          throw new Error("No payment data received");
         }
       } else {
         // Handle other payment methods here
