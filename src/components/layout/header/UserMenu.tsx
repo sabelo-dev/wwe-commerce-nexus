@@ -9,7 +9,7 @@ interface UserMenuProps {
   user: UserType | null;
   isAdmin: boolean;
   isVendor: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const UserMenu: React.FC<UserMenuProps> = ({ user, isAdmin, isVendor, logout }) => {
@@ -63,7 +63,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, isAdmin, isVendor, logout }) 
           </Link>
         )}
         <button
-          onClick={logout}
+          onClick={() => logout()}
           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
         >
           Sign out

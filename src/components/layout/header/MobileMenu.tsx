@@ -16,7 +16,7 @@ interface MobileMenuProps {
   user: UserType | null;
   isAdmin: boolean;
   isVendor: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const MobileMenu: React.FC<MobileMenuProps> = ({
@@ -206,8 +206,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               Account
             </Link>
             <button
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 setMobileMenuOpen(false);
               }}
               className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"

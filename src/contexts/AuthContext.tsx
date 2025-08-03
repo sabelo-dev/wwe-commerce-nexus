@@ -11,7 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, role?: 'consumer' | 'vendor') => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isVendor: boolean;
   isAdmin: boolean;
   refreshUserProfile: () => Promise<void>;
@@ -158,12 +158,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (mounted) {
           setSession(session);
-          // Use setTimeout to prevent deadlock and allow proper state updates
-          setTimeout(() => {
-            if (mounted) {
-              loadUserProfile(session);
-            }
-          }, 0);
+          
+          // Handle auth events properly
+          if (event === 'SIGNED_OUT') {
+            clearAuthState();
+            loadingManager.stopLoading('auth');
+          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            // Use setTimeout to prevent deadlock and allow proper state updates
+            setTimeout(() => {
+              if (mounted) {
+                loadUserProfile(session);
+              }
+            }, 0);
+          }
         }
       }
     );
@@ -301,18 +308,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      loadingManager.startLoading('logout');
+      
+      // Clear state first to prevent any pending requests
       clearAuthState();
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
+      
+      // Then sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
+        toast({
+          variant: "destructive",
+          title: "Logout Failed",
+          description: error.message,
+        });
+      } else {
+        toast({
+          title: "Logged Out",
+          description: "You have been successfully logged out.",
+        });
+      }
     } catch (error) {
+      console.error('Logout error:', error);
       toast({
         variant: "destructive",
         title: "Logout Failed",
         description: "An error occurred while logging out.",
       });
+    } finally {
+      loadingManager.stopLoading('logout');
     }
   };
 

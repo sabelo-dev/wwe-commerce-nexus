@@ -100,15 +100,28 @@ export const fetchWeFulFilProductsForFrontend = async (limit: number = 20): Prom
  */
 export const fetchAllProducts = async (): Promise<Product[]> => {
   try {
-    const [dbProducts, wfProducts] = await Promise.all([
-      fetchDatabaseProducts(),
-      fetchWeFulFilProductsForFrontend(50)
-    ]);
+    // Always fetch database products first
+    const dbProducts = await fetchDatabaseProducts();
+    
+    // Try to fetch WeFulFil products but don't fail if it errors
+    let wfProducts: Product[] = [];
+    try {
+      wfProducts = await fetchWeFulFilProductsForFrontend(50);
+    } catch (error) {
+      console.warn('WeFulFil products unavailable:', error);
+      // Continue with just database products
+    }
 
     return [...dbProducts, ...wfProducts];
   } catch (error) {
     console.error('Error fetching all products:', error);
-    return [];
+    // As fallback, try to return just database products
+    try {
+      return await fetchDatabaseProducts();
+    } catch (dbError) {
+      console.error('Error fetching database products:', dbError);
+      return [];
+    }
   }
 };
 
