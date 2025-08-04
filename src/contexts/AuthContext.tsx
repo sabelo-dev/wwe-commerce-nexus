@@ -28,13 +28,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadingManager = useLoadingManager();
 
   const redirectBasedOnRole = (userRole: string) => {
-    // Use React Router navigation instead of hard redirects
     const targetPath = userRole === 'admin' ? '/admin/dashboard' 
                      : userRole === 'vendor' ? '/vendor/dashboard' 
                      : '/';
     
-    // Let React handle the redirect naturally through route protection
-    console.log('User role determined:', userRole, 'Target path:', targetPath);
+    // Force page redirect for proper role-based routing
+    window.location.href = targetPath;
   };
 
   const clearAuthState = () => {
