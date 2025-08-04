@@ -34,7 +34,7 @@ export const createPayFastPayment = async (data: PayFastPaymentData): Promise<Pa
       name_first: data.customerFirstName,
       name_last: data.customerLastName,
       email_address: data.customerEmail,
-      m_payment_id: `WWE-${Date.now()}`, // Unique payment ID
+      m_payment_id: `LSI-${Date.now()}`, // Unique payment ID
       amount: data.amount.toFixed(2),
       item_name: data.itemName,
       item_description: data.itemName,

@@ -47,10 +47,10 @@ const Navigation: React.FC = () => {
                   </ul>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Home & Kitchen</h3>
+                  <h3 className="font-semibold mb-2">Home</h3>
                   <ul className="space-y-1">
                     <li><Link to="/category/home-kitchen/appliances" className="text-sm hover:text-wwe-navy">Appliances</Link></li>
-                    <li><Link to="/category/home-kitchen/kitchen" className="text-sm hover:text-wwe-navy">Kitchen</Link></li>
+                    <li><Link to="/category/home-kitchen/kitchen" className="text-sm hover:text-wwe-navy">Electronics</Link></li>
                     <li><Link to="/category/home-kitchen/furniture" className="text-sm hover:text-wwe-navy">Furniture</Link></li>
                   </ul>
                 </div>

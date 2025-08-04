@@ -13,12 +13,12 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Column */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">About WWE</h3>
+            <h3 className="text-lg font-semibold mb-4">About LSI</h3>
             <p className="text-sm text-gray-300 mb-4">
-              World Wide Ecommerce (WWEAPP) has been connecting buyers and sellers since 2025. Our mission is to provide the best shopping experience with quality products and exceptional service.
+              LSI connecting buyers and sellers since 2025. Our mission is to provide the best shopping experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
-              <a href="https://facebook.com" className="text-gray-300 hover:text-white">
+              <a href="https://facebook.com/" className="text-gray-300 hover:text-white">
                 <Facebook size={20} />
               </a>
               <a href="https://twitter.com" className="text-gray-300 hover:text-white">
@@ -72,7 +72,7 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 flex-shrink-0" />
-                <span>support@wweecommerce.co.za</span>
+                <span>support@lsiapp.com</span>
               </li>
             </ul>
           </div>
@@ -100,7 +100,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>&copy; {currentYear} WWEAPP. All rights reserved.</p>
+          <p>&copy; {currentYear} LSIApp. All rights reserved.</p>
         </div>
       </div>
     </footer>

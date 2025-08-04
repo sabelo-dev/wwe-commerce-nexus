@@ -84,7 +84,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
               </Link>
             </div>
             <div className="pl-3">
-              <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Home & Kitchen</p>
+              <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Home</p>
               <Link
                 to="/category/home-kitchen/appliances"
                 className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
@@ -97,7 +97,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                 className="block px-3 py-1 rounded-md text-sm text-gray-600 hover:bg-gray-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Kitchen
+                Electronics
               </Link>
               <Link
                 to="/category/home-kitchen/furniture"
