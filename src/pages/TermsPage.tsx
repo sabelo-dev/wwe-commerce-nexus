@@ -29,7 +29,7 @@ const TermsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  Welcome to WWE Store. These Terms of Service ("Terms") govern your use of our website and services. 
+                  Welcome to LSI Store. These Terms of Service ("Terms") govern your use of our website and services. 
                   By using our platform, you agree to be bound by these terms.
                 </p>
                 <p className="text-gray-700">
@@ -161,7 +161,7 @@ const TermsPage: React.FC = () => {
                 <h4 className="font-semibold">Our Rights</h4>
                 <p className="text-gray-700">
                   All content on our platform, including text, graphics, logos, and software, 
-                  is owned by WWE Store or our licensors and is protected by copyright and trademark laws.
+                  is owned by LSI Store or our licensors and is protected by copyright and trademark laws.
                 </p>
                 
                 <h4 className="font-semibold mt-6">User Content</h4>
@@ -248,9 +248,9 @@ const TermsPage: React.FC = () => {
                   If you have questions about these Terms of Service, please contact us:
                 </p>
                 <div className="text-gray-700">
-                  <p>Email: legal@wwestore.co.za</p>
-                  <p>Phone: +27-11-555-0123</p>
-                  <p>Address: 123 Commerce Street, Johannesburg, South Africa</p>
+                  <p>Email: legal@lsiapp.com</p>
+                  <p>Phone: +27-63-977-6666</p>
+                  <p>Address: eCommerce Street, Johannesburg, South Africa</p>
                 </div>
               </div>
             </CardContent>

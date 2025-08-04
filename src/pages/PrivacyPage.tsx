@@ -30,7 +30,7 @@ const PrivacyPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  At WWE Store, we are committed to protecting your privacy and ensuring the security of your personal information. 
+                  At LSI, we are committed to protecting your privacy and ensuring the security of your personal information. 
                   This Privacy Policy explains how we collect, use, and safeguard your data.
                 </p>
                 <Alert>
@@ -202,7 +202,7 @@ const PrivacyPage: React.FC = () => {
                 
                 <h4 className="font-semibold mt-6">How to Exercise Your Rights</h4>
                 <p className="text-gray-700">
-                  To exercise any of these rights, please contact us at privacy@wwestore.co.za. 
+                  To exercise any of these rights, please contact us at privacy@lsiapp.com. 
                   We will respond to your request within 30 days.
                 </p>
               </div>
@@ -322,10 +322,10 @@ const PrivacyPage: React.FC = () => {
                   If you have questions about this Privacy Policy or our data practices, please contact us:
                 </p>
                 <div className="text-gray-700">
-                  <p><strong>Privacy Officer:</strong> privacy@wwestore.co.za</p>
-                  <p><strong>General Inquiries:</strong> support@wwestore.co.za</p>
-                  <p><strong>Phone:</strong> +27-11-555-0123</p>
-                  <p><strong>Address:</strong> 123 Commerce Street, Johannesburg, South Africa</p>
+                  <p><strong>Privacy Officer:</strong> privacy@lsiapp.com</p>
+                  <p><strong>General Inquiries:</strong> support@lsiapp.com</p>
+                  <p><strong>Phone:</strong> +27-63-577-6666</p>
+                  <p><strong>Address:</strong>eCommerce Street, Johannesburg, South Africa</p>
                 </div>
               </div>
             </CardContent>
