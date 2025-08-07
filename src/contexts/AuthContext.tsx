@@ -28,12 +28,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadingManager = useLoadingManager();
 
   const redirectBasedOnRole = (userRole: string) => {
+    console.log('Redirecting based on role:', userRole);
     const targetPath = userRole === 'admin' ? '/admin/dashboard' 
                      : userRole === 'vendor' ? '/vendor/dashboard' 
                      : '/';
     
-    // Force page redirect for proper role-based routing
-    window.location.href = targetPath;
+    console.log('Target path:', targetPath);
+    // Use a short delay to ensure state is properly set before redirect
+    setTimeout(() => {
+      window.location.href = targetPath;
+    }, 100);
   };
 
   const clearAuthState = () => {
@@ -201,28 +205,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Get user profile to determine role for redirect
       if (data.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
           .maybeSingle();
         
+        console.log('Profile data after login:', profile, 'Error:', profileError);
+        
         loadingManager.stopLoading('login');
         
-        if (profile) {
+        if (profile && profile.role) {
           toast({
             title: "Login Successful",
             description: "Welcome back!",
           });
           
-          // Let the auth state change handle routing
+          console.log('Redirecting user with role:', profile.role);
           redirectBasedOnRole(profile.role);
         } else {
-          // Profile will be created by trigger
+          // Profile will be created by trigger, default to consumer
           toast({
             title: "Login Successful", 
             description: "Welcome back!",
           });
+          console.log('No profile found, redirecting as consumer');
           redirectBasedOnRole('consumer');
         }
       } else {
