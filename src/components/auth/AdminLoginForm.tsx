@@ -29,7 +29,10 @@ const AdminLoginForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(data.email, data.password);
+      const result = await login(data.email, data.password);
+      if (result?.redirectPath) {
+        navigate(result.redirectPath);
+      }
     } catch (error) {
       setIsLoading(false);
       // Error toast is already handled in AuthContext

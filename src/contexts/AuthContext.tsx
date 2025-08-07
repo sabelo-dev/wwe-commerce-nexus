@@ -9,8 +9,8 @@ import { useLoadingManager } from "@/hooks/useLoadingManager";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role?: 'consumer' | 'vendor') => Promise<void>;
+  login: (email: string, password: string) => Promise<{ redirectPath?: string }>;
+  register: (email: string, password: string, name: string, role?: 'consumer' | 'vendor') => Promise<{ redirectPath?: string }>;
   logout: () => Promise<void>;
   isVendor: boolean;
   isAdmin: boolean;
@@ -27,17 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const loadingManager = useLoadingManager();
 
-  const redirectBasedOnRole = (userRole: string) => {
-    console.log('Redirecting based on role:', userRole);
+  const getRedirectPathForRole = (userRole: string): string => {
+    console.log('Getting redirect path for role:', userRole);
     const targetPath = userRole === 'admin' ? '/admin/dashboard' 
                      : userRole === 'vendor' ? '/vendor/dashboard' 
                      : '/';
-    
     console.log('Target path:', targetPath);
-    // Use a short delay to ensure state is properly set before redirect
-    setTimeout(() => {
-      window.location.href = targetPath;
-    }, 100);
+    return targetPath;
   };
 
   const clearAuthState = () => {
@@ -184,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ redirectPath?: string }> => {
     loadingManager.startLoading('login');
     
     try {
@@ -215,25 +211,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         loadingManager.stopLoading('login');
         
-        if (profile && profile.role) {
-          toast({
-            title: "Login Successful",
-            description: "Welcome back!",
-          });
-          
-          console.log('Redirecting user with role:', profile.role);
-          redirectBasedOnRole(profile.role);
-        } else {
-          // Profile will be created by trigger, default to consumer
-          toast({
-            title: "Login Successful", 
-            description: "Welcome back!",
-          });
-          console.log('No profile found, redirecting as consumer');
-          redirectBasedOnRole('consumer');
-        }
+        const userRole = profile?.role || 'consumer';
+        const redirectPath = getRedirectPathForRole(userRole);
+        
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
+        
+        console.log('Login successful, returning redirect path:', redirectPath);
+        return { redirectPath };
       } else {
         loadingManager.stopLoading('login');
+        return {};
       }
     } catch (error) {
       loadingManager.stopLoading('login');
@@ -248,7 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, password: string, name: string, role: 'consumer' | 'vendor' = 'consumer') => {
+  const register = async (email: string, password: string, name: string, role: 'consumer' | 'vendor' = 'consumer'): Promise<{ redirectPath?: string }> => {
     loadingManager.startLoading('register');
     
     try {
@@ -286,17 +276,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Registration Successful",
           description: "Please check your email to verify your account.",
         });
+        return {};
       } else if (data.user) {
         loadingManager.stopLoading('register');
+        const redirectPath = getRedirectPathForRole(role);
+        
         toast({
           title: "Registration Successful",
           description: "Welcome to WWE Store!",
         });
         
-        // Let auth state change handle routing
-        redirectBasedOnRole(role);
+        console.log('Registration successful, returning redirect path:', redirectPath);
+        return { redirectPath };
       } else {
         loadingManager.stopLoading('register');
+        return {};
       }
     } catch (error) {
       loadingManager.stopLoading('register');

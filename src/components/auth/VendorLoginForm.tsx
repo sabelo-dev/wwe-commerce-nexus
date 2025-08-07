@@ -28,7 +28,10 @@ const VendorLoginForm: React.FC = () => {
     setLocalLoading(true);
     
     try {
-      await login(data.email, data.password);
+      const result = await login(data.email, data.password);
+      if (result?.redirectPath) {
+        navigate(result.redirectPath);
+      }
     } catch (error) {
       setLocalLoading(false);
       // Error is handled in AuthContext
