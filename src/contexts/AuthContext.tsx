@@ -209,9 +209,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('Profile data after login:', profile, 'Error:', profileError);
         
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
+        
         loadingManager.stopLoading('login');
         
         const userRole = profile?.role || 'consumer';
+        console.log('User role determined:', userRole);
         const redirectPath = getRedirectPathForRole(userRole);
         
         toast({
