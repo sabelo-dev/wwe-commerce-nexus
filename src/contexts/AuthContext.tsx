@@ -66,6 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      console.log('Loading user profile for:', session.user.id);
+      
       // Fetch user profile from profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -81,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (profile) {
+        console.log('Profile found:', profile);
         const userData: User = {
           id: profile.id,
           email: profile.email,
@@ -94,7 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check vendor status for any user (not just those with vendor role)
         const vendorStatus = await checkVendorStatus(profile.id);
         setIsVendor(vendorStatus);
+        
+        console.log('User loaded successfully:', userData.role, 'isAdmin:', profile.role === 'admin');
       } else {
+        console.log('No profile found, creating basic user data');
         // Profile doesn't exist yet, create basic user data from session
         const userData: User = {
           id: session.user.id,

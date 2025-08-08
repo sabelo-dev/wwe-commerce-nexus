@@ -70,16 +70,19 @@ const AdminDashboard = () => {
   }, [user, isAdmin, isLoading]);
 
   useEffect(() => {
-    console.log('Admin Dashboard - Auth state:', authState, 'User:', user, 'IsAdmin:', isAdmin);
+    console.log('Admin Dashboard - Auth state:', authState, 'User:', user?.role, 'IsAdmin:', isAdmin);
     
-    if (authState.status === 'unauthenticated') {
-      console.log('Redirecting to admin login - no user');
-      navigate("/admin/login", { replace: true });
-    } else if (authState.status === 'unauthorized') {
-      console.log('Redirecting to home - unauthorized user');
-      navigate("/", { replace: true });
+    // Only redirect if we're certain about the auth state (not loading)
+    if (!isLoading) {
+      if (authState.status === 'unauthenticated') {
+        console.log('Redirecting to admin login - no user');
+        navigate("/admin/login", { replace: true });
+      } else if (authState.status === 'unauthorized') {
+        console.log('Redirecting to home - unauthorized user, role:', user?.role);
+        navigate("/", { replace: true });
+      }
     }
-  }, [authState, navigate, user, isAdmin]);
+  }, [authState, navigate, user, isAdmin, isLoading]);
 
   const handleLogout = async () => {
     try {
