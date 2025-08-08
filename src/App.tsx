@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { Toaster } from "@/components/ui/toaster";
 import Layout from "@/components/layout/Layout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Page imports
 import HomePage from "@/pages/HomePage";
@@ -106,19 +107,19 @@ function App() {
               </Route>
               
               {/* Auth pages without layout */}
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="login" element={<ProtectedRoute><LoginPage /></ProtectedRoute>} />
+              <Route path="register" element={<ProtectedRoute><RegisterPage /></ProtectedRoute>} />
+              <Route path="forgot-password" element={<ProtectedRoute><ForgotPasswordPage /></ProtectedRoute>} />
               
               {/* Admin pages */}
-              <Route path="admin/login" element={<AdminLoginPage />} />
+              <Route path="admin/login" element={<ProtectedRoute><AdminLoginPage /></ProtectedRoute>} />
               <Route path="admin/dashboard" element={<AdminDashboard />} />
               
               {/* Vendor pages */}
-              <Route path="vendor/login" element={<VendorLoginPage />} />
-              <Route path="vendor/register" element={<VendorRegisterPage />} />
-              <Route path="vendor/onboarding" element={<VendorOnboardingPage />} />
-              <Route path="vendor/dashboard" element={<VendorDashboardPage />} />
+              <Route path="vendor/login" element={<ProtectedRoute><VendorLoginPage /></ProtectedRoute>} />
+              <Route path="vendor/register" element={<ProtectedRoute><VendorRegisterPage /></ProtectedRoute>} />
+              <Route path="vendor/onboarding" element={<ProtectedRoute requireAuth requireVendor><VendorOnboardingPage /></ProtectedRoute>} />
+              <Route path="vendor/dashboard" element={<ProtectedRoute requireAuth requireVendor><VendorDashboardPage /></ProtectedRoute>} />
               
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />

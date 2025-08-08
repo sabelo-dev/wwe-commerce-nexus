@@ -27,13 +27,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const loadingManager = useLoadingManager();
 
-  const getRedirectPathForRole = (userRole: string): string => {
-    console.log('Getting redirect path for role:', userRole);
-    const targetPath = userRole === 'admin' ? '/admin/dashboard' 
-                     : userRole === 'vendor' ? '/vendor/dashboard' 
-                     : '/';
-    console.log('Target path:', targetPath);
-    return targetPath;
+  const getRedirectPathForRole = (userRole: string, isVendorApproved: boolean): string => {
+    if (userRole === 'admin') return '/admin/dashboard';
+    if (userRole === 'vendor' || isVendorApproved) return '/vendor/dashboard';
+    return '/';
   };
 
   const clearAuthState = () => {
@@ -66,8 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      console.log('Loading user profile for:', session.user.id);
-      
       // Fetch user profile from profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -83,7 +78,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (profile) {
-        console.log('Profile found:', profile);
         const userData: User = {
           id: profile.id,
           email: profile.email,
@@ -94,14 +88,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
         setIsAdmin(profile.role === 'admin');
         
-        // Check vendor status for any user (not just those with vendor role)
+        // Check vendor status
         const vendorStatus = await checkVendorStatus(profile.id);
         setIsVendor(vendorStatus);
-        
-        console.log('User loaded successfully:', userData.role, 'isAdmin:', profile.role === 'admin');
       } else {
-        console.log('No profile found, creating basic user data');
-        // Profile doesn't exist yet, create basic user data from session
+        // Create basic user data from session if no profile exists
         const userData: User = {
           id: session.user.id,
           email: session.user.email || '',
@@ -205,37 +196,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // Get user profile to determine role for redirect
       if (data.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .maybeSingle();
+        // Get user profile and vendor status for redirect
+        const [profileResult, vendorResult] = await Promise.all([
+          supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle(),
+          checkVendorStatus(data.user.id)
+        ]);
         
-        console.log('Profile data after login:', profile, 'Error:', profileError);
-        
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-        }
-        
-        loadingManager.stopLoading('login');
-        
-        const userRole = profile?.role || 'consumer';
-        console.log('User role determined:', userRole);
-        const redirectPath = getRedirectPathForRole(userRole);
+        const userRole = profileResult.data?.role || 'consumer';
+        const redirectPath = getRedirectPathForRole(userRole, vendorResult);
         
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         });
         
-        console.log('Login successful, returning redirect path:', redirectPath);
-        return { redirectPath };
-      } else {
         loadingManager.stopLoading('login');
-        return {};
+        return { redirectPath };
       }
+      
+      loadingManager.stopLoading('login');
+      return {};
     } catch (error) {
       loadingManager.stopLoading('login');
       if (error instanceof Error && !error.message.includes("Login Failed")) {
@@ -289,15 +270,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return {};
       } else if (data.user) {
-        loadingManager.stopLoading('register');
-        const redirectPath = getRedirectPathForRole(role);
+        const redirectPath = getRedirectPathForRole(role, false);
         
         toast({
           title: "Registration Successful",
           description: "Welcome to WWE Store!",
         });
         
-        console.log('Registration successful, returning redirect path:', redirectPath);
+        loadingManager.stopLoading('register');
         return { redirectPath };
       } else {
         loadingManager.stopLoading('register');
