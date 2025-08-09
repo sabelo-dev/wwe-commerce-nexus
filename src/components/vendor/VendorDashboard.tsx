@@ -14,30 +14,29 @@ import {
 } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VendorOverview from "./dashboard/VendorOverview";
-import VendorProfile from "./dashboard/VendorProfile";
+import VendorShopfront from "./dashboard/VendorShopfront";
 import VendorProducts from "./dashboard/VendorProducts";
 import VendorOrders from "./dashboard/VendorOrders";
-import VendorInventory from "./dashboard/VendorInventory";
-import VendorPayouts from "./dashboard/VendorPayouts";
-import VendorAnalytics from "./dashboard/VendorAnalytics";
-import VendorSettings from "./dashboard/VendorSettings";
-import VendorPromotions from "./dashboard/VendorPromotions";
 import VendorReviews from "./dashboard/VendorReviews";
+import VendorInventory from "./dashboard/VendorInventory";
+import VendorPromotions from "./dashboard/VendorPromotions";
+import VendorPayouts from "./dashboard/VendorPayouts";
+import VendorMessages from "./dashboard/VendorMessages";
+import VendorSettings from "./dashboard/VendorSettings";
 import VendorSupport from "./dashboard/VendorSupport";
 import SubscriptionBanner from "./SubscriptionBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   LayoutDashboard, 
-  User,
+  Store,
   Package, 
   ShoppingCart, 
-  Warehouse,
-  DollarSign,
-  BarChart3,
-  Settings, 
-  Store,
-  Percent,
   Star,
+  Warehouse,
+  Percent,
+  DollarSign,
+  MessageSquare,
+  Settings, 
   Headphones
 } from "lucide-react";
 
@@ -77,17 +76,17 @@ const VendorDashboard = () => {
   }, [user?.id]);
 
   const sidebarItems = [
-    { id: "overview", title: "Overview", icon: LayoutDashboard },
-    { id: "profile", title: "Profile", icon: User },
+    { id: "overview", title: "Dashboard Home", icon: LayoutDashboard },
+    { id: "shopfront", title: "Shopfront", icon: Store },
     { id: "products", title: "Products", icon: Package },
     { id: "orders", title: "Orders", icon: ShoppingCart },
-    { id: "inventory", title: "Inventory", icon: Warehouse },
-    { id: "promotions", title: "Promotions", icon: Percent },
-    { id: "payouts", title: "Payouts", icon: DollarSign },
-    { id: "analytics", title: "Analytics", icon: BarChart3 },
     { id: "reviews", title: "Reviews", icon: Star },
-    { id: "support", title: "Support", icon: Headphones },
+    { id: "inventory", title: "Inventory Manager", icon: Warehouse },
+    { id: "promotions", title: "Discounts / Coupons", icon: Percent },
+    { id: "payouts", title: "Earnings / Wallet", icon: DollarSign },
+    { id: "messages", title: "Messages", icon: MessageSquare },
     { id: "settings", title: "Settings", icon: Settings },
+    { id: "support", title: "Help / Support", icon: Headphones },
   ];
 
   return (
@@ -154,14 +153,17 @@ const VendorDashboard = () => {
                 <TabsContent value="overview" className="mt-0">
                   <VendorOverview />
                 </TabsContent>
-                <TabsContent value="profile" className="mt-0">
-                  <VendorProfile />
+                <TabsContent value="shopfront" className="mt-0">
+                  <VendorShopfront />
                 </TabsContent>
                 <TabsContent value="products" className="mt-0">
                   <VendorProducts />
                 </TabsContent>
                 <TabsContent value="orders" className="mt-0">
                   <VendorOrders />
+                </TabsContent>
+                <TabsContent value="reviews" className="mt-0">
+                  <VendorReviews />
                 </TabsContent>
                 <TabsContent value="inventory" className="mt-0">
                   <VendorInventory />
@@ -172,17 +174,14 @@ const VendorDashboard = () => {
                 <TabsContent value="payouts" className="mt-0">
                   <VendorPayouts />
                 </TabsContent>
-                <TabsContent value="analytics" className="mt-0">
-                  <VendorAnalytics />
-                </TabsContent>
-                <TabsContent value="reviews" className="mt-0">
-                  <VendorReviews />
-                </TabsContent>
-                <TabsContent value="support" className="mt-0">
-                  <VendorSupport />
+                <TabsContent value="messages" className="mt-0">
+                  <VendorMessages />
                 </TabsContent>
                 <TabsContent value="settings" className="mt-0">
                   <VendorSettings />
+                </TabsContent>
+                <TabsContent value="support" className="mt-0">
+                  <VendorSupport />
                 </TabsContent>
               </Tabs>
             </main>
