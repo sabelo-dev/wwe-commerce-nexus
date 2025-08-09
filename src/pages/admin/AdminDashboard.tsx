@@ -27,11 +27,10 @@ import AdminUsers from "@/components/admin/AdminUsers";
 import AdminVendors from "@/components/admin/AdminVendors";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
-import AdminCustomers from "@/components/admin/AdminCustomers";
-import AdminDisputes from "@/components/admin/AdminDisputes";
-import AdminFinancials from "@/components/admin/AdminFinancials";
-import AdminContent from "@/components/admin/AdminContent";
-import AdminPromotions from "@/components/admin/AdminPromotions";
+import AdminCategories from "@/components/admin/AdminCategories";
+import AdminReviews from "@/components/admin/AdminReviews";
+import AdminCMS from "@/components/admin/AdminCMS";
+import AdminNotifications from "@/components/admin/AdminNotifications";
 import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import AdminAuditLogs from "@/components/admin/AdminAuditLogs";
 import AdminSettings from "@/components/admin/AdminSettings";
@@ -67,18 +66,17 @@ const AdminDashboard = () => {
 
   const sidebarItems = [
     { id: "overview", title: "Overview", icon: LayoutDashboard },
-    { id: "users", title: "Users", icon: Users },
-    { id: "vendors", title: "Vendors", icon: Store },
-    { id: "products", title: "Products", icon: Package },
-    { id: "orders", title: "Orders", icon: ShoppingCart },
-    { id: "customers", title: "Customers", icon: Users },
-    { id: "disputes", title: "Support", icon: MessageSquare },
-    { id: "financials", title: "Financials", icon: DollarSign },
-    { id: "content", title: "Content", icon: FileText },
-    { id: "promotions", title: "Marketing", icon: Megaphone },
-    { id: "analytics", title: "Analytics", icon: BarChart3 },
-    { id: "audit", title: "Audit Logs", icon: AuditIcon },
-    { id: "settings", title: "Settings", icon: Settings },
+    { id: "users", title: "User Management", icon: Users },
+    { id: "vendors", title: "Vendor Management", icon: Store },
+    { id: "orders", title: "Orders (All)", icon: ShoppingCart },
+    { id: "products", title: "Products (All)", icon: Package },
+    { id: "categories", title: "Categories", icon: FileText },
+    { id: "analytics", title: "Reports & Analytics", icon: BarChart3 },
+    { id: "settings", title: "System Settings", icon: Settings },
+    { id: "reviews", title: "Reviews & Complaints", icon: MessageSquare },
+    { id: "cms", title: "CMS / Pages", icon: FileText },
+    { id: "notifications", title: "Notifications", icon: Megaphone },
+    { id: "audit", title: "Logs / Audit Trail", icon: AuditIcon },
   ];
 
   return (
@@ -174,29 +172,26 @@ const AdminDashboard = () => {
                 <TabsContent value="orders" className="mt-0">
                   <AdminOrders />
                 </TabsContent>
-                <TabsContent value="customers" className="mt-0">
-                  <AdminCustomers />
-                </TabsContent>
-                <TabsContent value="disputes" className="mt-0">
-                  <AdminDisputes />
-                </TabsContent>
-                <TabsContent value="financials" className="mt-0">
-                  <AdminFinancials />
-                </TabsContent>
-                <TabsContent value="content" className="mt-0">
-                  <AdminContent />
-                </TabsContent>
-                <TabsContent value="promotions" className="mt-0">
-                  <AdminPromotions />
+                <TabsContent value="categories" className="mt-0">
+                  <AdminCategories />
                 </TabsContent>
                 <TabsContent value="analytics" className="mt-0">
                   <AdminAnalytics />
                 </TabsContent>
-                <TabsContent value="audit" className="mt-0">
-                  <AdminAuditLogs />
-                </TabsContent>
                 <TabsContent value="settings" className="mt-0">
                   <AdminSettings />
+                </TabsContent>
+                <TabsContent value="reviews" className="mt-0">
+                  <AdminReviews />
+                </TabsContent>
+                <TabsContent value="cms" className="mt-0">
+                  <AdminCMS />
+                </TabsContent>
+                <TabsContent value="notifications" className="mt-0">
+                  <AdminNotifications />
+                </TabsContent>
+                <TabsContent value="audit" className="mt-0">
+                  <AdminAuditLogs />
                 </TabsContent>
               </Tabs>
             </main>
