@@ -20,6 +20,7 @@ import CheckoutPage from "@/pages/CheckoutPage";
 import CheckoutSuccessPage from "@/pages/CheckoutSuccessPage";
 import CheckoutCancelPage from "@/pages/CheckoutCancelPage";
 import AccountPage from "@/pages/AccountPage";
+import ConsumerDashboard from "@/pages/ConsumerDashboard";
 import ContactPage from "@/pages/ContactPage";
 import FAQPage from "@/pages/FAQPage";
 import NotFound from "@/pages/NotFound";
@@ -74,6 +75,11 @@ function App() {
                 <Route path="checkout/success" element={<CheckoutSuccessPage />} />
                 <Route path="checkout/cancel" element={<CheckoutCancelPage />} />
                 <Route path="account" element={<AccountPage />} />
+                <Route path="consumer/dashboard" element={
+                  <ProtectedRoute requireAuth>
+                    <ConsumerDashboard />
+                  </ProtectedRoute>
+                } />
                 <Route path="contact" element={<ContactPage />} />
                 <Route path="faq" element={<FAQPage />} />
                 
