@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Product, Category } from "@/types";
-import { fetchWeFulFilProducts, mapWeFulFilToAdminProduct } from "./wefullfil";
 
 /**
  * Converts database product to frontend Product type
@@ -57,71 +56,14 @@ export const fetchDatabaseProducts = async (): Promise<Product[]> => {
 };
 
 /**
- * Converts WeFulFil product to frontend Product type
- */
-const mapWeFulFilProduct = (wfProduct: any): Product => {
-  return {
-    id: `wf-${wfProduct.id}`,
-    name: wfProduct.title,
-    slug: wfProduct.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-'),
-    description: wfProduct.description || "",
-    price: Number(wfProduct.price),
-    images: Array.isArray(wfProduct.images) ? wfProduct.images : [],
-    category: wfProduct.categories?.[0] || "General",
-    subcategory: wfProduct.categories?.[1],
-    rating: 0,
-    reviewCount: 0,
-    inStock: wfProduct.inventory_quantity > 0,
-    vendorId: "wefullfil",
-    vendorName: wfProduct.vendor || "WeFulFil",
-    createdAt: wfProduct.created_at || new Date().toISOString(),
-  };
-};
-
-/**
- * Fetches products from WeFulFil
- */
-export const fetchWeFulFilProductsForFrontend = async (limit: number = 20): Promise<Product[]> => {
-  try {
-    const response = await fetchWeFulFilProducts({
-      per_page: limit,
-      page: 1
-    });
-
-    return response.data.map(mapWeFulFilProduct);
-  } catch (error) {
-    console.error('Error fetching WeFulFil products:', error);
-    return [];
-  }
-};
-
-/**
- * Fetches all products from both database and WeFulFil
+ * Fetches all products from database
  */
 export const fetchAllProducts = async (): Promise<Product[]> => {
   try {
-    // Always fetch database products first
-    const dbProducts = await fetchDatabaseProducts();
-    
-    // Try to fetch WeFulFil products but don't fail if it errors
-    let wfProducts: Product[] = [];
-    try {
-      wfProducts = await fetchWeFulFilProductsForFrontend(50);
-    } catch (error) {
-      console.warn('WeFulFil products unavailable:', error);
-      // Continue with just database products
-    }
-
-    return [...dbProducts, ...wfProducts];
+    return await fetchDatabaseProducts();
   } catch (error) {
     console.error('Error fetching all products:', error);
-    // As fallback, try to return just database products
-    try {
-      return await fetchDatabaseProducts();
-    } catch (dbError) {
-      console.error('Error fetching database products:', dbError);
-      return [];
-    }
+    return [];
   }
 };
 
@@ -163,7 +105,7 @@ export const fetchCategories = async (): Promise<Category[]> => {
 };
 
 /**
- * Fetches featured products (mix of database and WeFulFil)
+ * Fetches featured products from database
  */
 export const fetchFeaturedProducts = async (limit: number = 4): Promise<Product[]> => {
   try {
