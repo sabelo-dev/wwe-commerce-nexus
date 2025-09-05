@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { User, Profile } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -27,14 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const loadingManager = useLoadingManager();
 
-  const getRedirectPathForRole = (userRole: string, isVendorApproved: boolean, isRegistration: boolean = false): string => {
+  const getRedirectPathForRole = (userRole: string, isVendorApproved: boolean, isLogin: boolean = true): string => {
     if (userRole === 'admin') return '/admin/dashboard';
     if (userRole === 'vendor') {
-      // For vendor registration, always redirect to onboarding
-      // For vendor login, redirect to dashboard
-      return isRegistration ? '/vendor/onboarding' : '/vendor/dashboard';
+      // For login: always go to dashboard if vendor exists, onboarding will redirect if needed
+      // For register: go to onboarding for new vendor setup
+      return isLogin ? '/vendor/dashboard' : '/vendor/onboarding';
     }
-    return '/';
+    return '/'; // Consumer goes to home page
   };
 
   const clearAuthState = () => {
@@ -208,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
         
         const userRole = profileResult.data?.role || 'consumer';
-        const redirectPath = getRedirectPathForRole(userRole, vendorResult, false);
+        const redirectPath = getRedirectPathForRole(userRole, vendorResult, true);
         
         toast({
           title: "Login Successful",
@@ -274,11 +273,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return {};
       } else if (data.user) {
-        const redirectPath = getRedirectPathForRole(role, false, true);
+        const redirectPath = getRedirectPathForRole(role, false, false);
         
         toast({
           title: "Registration Successful",
-          description: "Welcome to WWE Store!",
+          description: "Welcome to LSI Platform!",
         });
         
         loadingManager.stopLoading('register');
