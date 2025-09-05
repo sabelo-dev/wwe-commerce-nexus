@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,6 +28,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
+  const navigate = useNavigate();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -39,8 +40,10 @@ const LoginForm: React.FC = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      await login(values.email, values.password);
-      // Redirect is handled in the AuthContext based on user role
+      const result = await login(values.email, values.password);
+      if (result.redirectPath) {
+        navigate(result.redirectPath);
+      }
     } catch (error) {
       console.error(error);
       // Error is handled in the AuthContext

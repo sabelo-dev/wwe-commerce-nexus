@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,7 @@ import SocialLoginButtons from "./register/SocialLoginButtons";
 
 const RegisterForm: React.FC = () => {
   const { register: registerUser, isLoading } = useAuth();
+  const navigate = useNavigate();
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -30,8 +31,10 @@ const RegisterForm: React.FC = () => {
 
   const onSubmit = async (values: RegisterFormValues) => {
     try {
-      await registerUser(values.email, values.password, values.name, values.role);
-      // Redirect is handled in the AuthContext based on role
+      const result = await registerUser(values.email, values.password, values.name, values.role);
+      if (result.redirectPath) {
+        navigate(result.redirectPath);
+      }
     } catch (error) {
       console.error(error);
       // Error is handled in the AuthContext

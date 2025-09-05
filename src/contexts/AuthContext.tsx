@@ -27,9 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const loadingManager = useLoadingManager();
 
-  const getRedirectPathForRole = (userRole: string, isVendorApproved: boolean): string => {
+  const getRedirectPathForRole = (userRole: string, isVendorApproved: boolean, isRegistration: boolean = false): string => {
     if (userRole === 'admin') return '/admin/dashboard';
-    if (userRole === 'vendor' || isVendorApproved) return '/vendor/dashboard';
+    if (userRole === 'vendor') {
+      // For vendor registration, always redirect to onboarding
+      // For vendor login, redirect to dashboard
+      return isRegistration ? '/vendor/onboarding' : '/vendor/dashboard';
+    }
     return '/';
   };
 
@@ -204,7 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
         
         const userRole = profileResult.data?.role || 'consumer';
-        const redirectPath = getRedirectPathForRole(userRole, vendorResult);
+        const redirectPath = getRedirectPathForRole(userRole, vendorResult, false);
         
         toast({
           title: "Login Successful",
@@ -270,7 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return {};
       } else if (data.user) {
-        const redirectPath = getRedirectPathForRole(role, false);
+        const redirectPath = getRedirectPathForRole(role, false, true);
         
         toast({
           title: "Registration Successful",
