@@ -113,19 +113,31 @@ function App() {
               </Route>
               
               {/* Auth pages without layout */}
-              <Route path="login" element={<ProtectedRoute><LoginPage /></ProtectedRoute>} />
-              <Route path="register" element={<ProtectedRoute><RegisterPage /></ProtectedRoute>} />
-              <Route path="forgot-password" element={<ProtectedRoute><ForgotPasswordPage /></ProtectedRoute>} />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
               
               {/* Admin pages */}
-              <Route path="admin/login" element={<ProtectedRoute><AdminLoginPage /></ProtectedRoute>} />
-              <Route path="admin/dashboard" element={<AdminDashboard />} />
+              <Route path="admin/login" element={<AdminLoginPage />} />
+              <Route path="admin/dashboard" element={
+                <ProtectedRoute requireAuth requireAdmin>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
               
               {/* Vendor pages */}
-              <Route path="vendor/login" element={<ProtectedRoute><VendorLoginPage /></ProtectedRoute>} />
-              <Route path="vendor/register" element={<ProtectedRoute><VendorRegisterPage /></ProtectedRoute>} />
-              <Route path="vendor/onboarding" element={<ProtectedRoute requireAuth requireVendor><VendorOnboardingPage /></ProtectedRoute>} />
-              <Route path="vendor/dashboard" element={<ProtectedRoute requireAuth requireVendor><VendorDashboardPage /></ProtectedRoute>} />
+              <Route path="vendor/login" element={<VendorLoginPage />} />
+              <Route path="vendor/register" element={<VendorRegisterPage />} />
+              <Route path="vendor/onboarding" element={
+                <ProtectedRoute requireAuth requireVendor>
+                  <VendorOnboardingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="vendor/dashboard" element={
+                <ProtectedRoute requireAuth requireVendor>
+                  <VendorDashboardPage />
+                </ProtectedRoute>
+              } />
               
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />

@@ -246,8 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             name: name,
             role: role
-          },
-          emailRedirectTo: `${window.location.origin}/`
+          }
         }
       });
       
@@ -264,24 +263,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // If user is immediately available (email confirmation disabled)
-      if (data.user && !data.user.email_confirmed_at) {
-        loadingManager.stopLoading('register');
-        toast({
-          title: "Registration Successful",
-          description: "Please check your email to verify your account.",
-        });
-        return {};
-      } else if (data.user) {
-        const redirectPath = getRedirectPathForRole(role, false, false);
-        
-        toast({
-          title: "Registration Successful",
-          description: "Welcome to LSI Platform!",
-        });
-        
-        loadingManager.stopLoading('register');
-        return { redirectPath };
+      // Handle registration success
+      if (data.user) {
+        // Check if email confirmation is required
+        if (!data.user.email_confirmed_at && data.session === null) {
+          loadingManager.stopLoading('register');
+          toast({
+            title: "Registration Successful",
+            description: "Please check your email to verify your account.",
+          });
+          return {};
+        } else {
+          // User is signed in immediately
+          const redirectPath = getRedirectPathForRole(role, false, false);
+          
+          toast({
+            title: "Registration Successful",
+            description: "Welcome to LSI Platform!",
+          });
+          
+          loadingManager.stopLoading('register');
+          return { redirectPath };
+        }
       } else {
         loadingManager.stopLoading('register');
         return {};
