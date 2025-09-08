@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('Initial session:', session?.user?.id);
+        console.log('Initial session check:', session ? 'Session found' : 'No session');
         
         if (error) {
           console.error('Error getting session:', error);
@@ -140,7 +140,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (mounted) {
           setSession(session);
-          await loadUserProfile(session);
+          if (session) {
+            await loadUserProfile(session);
+          } else {
+            loadingManager.stopLoading('auth');
+          }
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);
@@ -152,8 +156,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
+      async (event, session) => {
+        console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
         
         if (mounted) {
           setSession(session);
@@ -164,11 +168,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             loadingManager.stopLoading('auth');
           } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             // Use setTimeout to prevent deadlock and allow proper state updates
-            setTimeout(() => {
-              if (mounted) {
-                loadUserProfile(session);
+            setTimeout(async () => {
+              if (mounted && session) {
+                await loadUserProfile(session);
               }
             }, 0);
+          } else if (event === 'INITIAL_SESSION') {
+            if (session) {
+              setTimeout(async () => {
+                if (mounted) {
+                  await loadUserProfile(session);
+                }
+              }, 0);
+            } else {
+              loadingManager.stopLoading('auth');
+            }
           }
         }
       }
