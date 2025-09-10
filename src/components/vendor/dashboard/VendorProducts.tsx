@@ -1,9 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, 
   Search, 
@@ -23,44 +26,72 @@ import {
 
 const VendorProducts = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Mock products data
-  const products = [
-    {
-      id: "1",
-      name: "Wireless Bluetooth Earbuds",
-      sku: "WBE-001",
-      price: 129.99,
-      stock: 45,
-      status: "active",
-      category: "Electronics",
-      image: "https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=60"
-    },
-    {
-      id: "2",
-      name: "Smart Fitness Watch",
-      sku: "SFW-002",
-      price: 249.99,
-      stock: 23,
-      status: "active",
-      category: "Electronics",
-      image: "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=60"
-    },
-    {
-      id: "3",
-      name: "Organic Cotton T-Shirt",
-      sku: "OCT-003",
-      price: 24.99,
-      stock: 0,
-      status: "out_of_stock",
-      category: "Clothing",
-      image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=60"
+  // Fetch vendor products from database
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: products, error } = await supabase
+          .from('products')
+          .select(`
+            *,
+            product_images(image_url, position),
+            stores!inner(vendor_id, vendors!inner(user_id))
+          `)
+          .eq('stores.vendors.user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        setProducts(products || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load products.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [user?.id]);
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts(products.filter(p => p.id !== productId));
+      toast({
+        title: "Product Deleted",
+        description: "Product has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete product.",
+      });
     }
-  ];
+  };
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -101,68 +132,85 @@ const VendorProducts = () => {
           <CardTitle>Your Products ({filteredProducts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-md"
-                  />
-                  <div className="space-y-1">
-                    <h3 className="font-medium">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{product.category}</Badge>
-                      <Badge 
-                        variant={
-                          product.status === "active" ? "default" :
-                          product.status === "out_of_stock" ? "destructive" :
-                          "outline"
-                        }
-                      >
-                        {product.status === "out_of_stock" ? "Out of Stock" : "Active"}
-                      </Badge>
+          {loading ? (
+            <div className="text-center py-8">Loading products...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No products found. Add your first product to get started.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredProducts.map((product) => (
+                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={
+                        product.product_images?.[0]?.image_url || 
+                        "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=60"
+                      } 
+                      alt={product.name}
+                      className="w-16 h-16 object-cover rounded-md"
+                    />
+                    <div className="space-y-1">
+                      <h3 className="font-medium">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        SKU: {product.sku || 'N/A'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{product.category}</Badge>
+                        <Badge 
+                          variant={
+                            product.status === "approved" || product.status === "active" ? "default" :
+                            product.quantity === 0 ? "destructive" :
+                            "outline"
+                          }
+                        >
+                          {product.quantity === 0 ? "Out of Stock" : 
+                           product.status === "approved" ? "Active" : product.status}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-medium">${product.price}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Stock: {product.stock}
-                    </p>
-                  </div>
                   
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-medium">R{product.price}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Stock: {product.quantity || 0}
+                      </p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
