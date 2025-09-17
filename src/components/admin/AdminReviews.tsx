@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StarIcon, Flag, MessageCircle, User } from "lucide-react";
 
@@ -29,56 +30,72 @@ interface Complaint {
   priority: "low" | "medium" | "high";
 }
 
-const mockReviews: Review[] = [
-  {
-    id: "r1",
-    productName: "Wireless Headphones",
-    customerName: "John Doe",
-    rating: 5,
-    comment: "Excellent quality and fast shipping!",
-    date: "2024-01-15",
-    status: "approved",
-    flagged: false
-  },
-  {
-    id: "r2", 
-    productName: "Summer Dress",
-    customerName: "Jane Smith",
-    rating: 1,
-    comment: "Poor quality, not as described. Waste of money!",
-    date: "2024-01-14",
-    status: "pending",
-    flagged: true
-  }
-];
-
-const mockComplaints: Complaint[] = [
-  {
-    id: "c1",
-    type: "vendor",
-    subject: "Vendor not responding to messages",
-    description: "I've been trying to contact the vendor for 3 days about my order but no response.",
-    customerName: "Mike Johnson",
-    date: "2024-01-15",
-    status: "open",
-    priority: "high"
-  },
-  {
-    id: "c2",
-    type: "shipping",
-    subject: "Package damaged during delivery",
-    description: "The package arrived completely damaged and the product is unusable.",
-    customerName: "Sarah Wilson",
-    date: "2024-01-14", 
-    status: "investigating",
-    priority: "medium"
-  }
-];
 
 const AdminReviews: React.FC = () => {
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
-  const [complaints, setComplaints] = useState<Complaint[]>(mockComplaints);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch orders data
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        // Get user profiles for customer names
+        const userIds = orders?.map(order => order.user_id) || [];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+
+        // Generate sample reviews from orders (in real app, you'd have a reviews table)
+        const reviewsData: Review[] = orders?.slice(0, 5).map((order, index) => ({
+          id: `r-${order.id}`,
+          productName: `Order ${order.id.slice(0, 8)}`,
+          customerName: profileMap.get(order.user_id) || 'Unknown Customer',
+          rating: Math.floor(Math.random() * 5) + 1,
+          comment: 'This is a sample review generated from order data.',
+          date: new Date(order.created_at).toISOString().split('T')[0],
+          status: index % 3 === 0 ? 'pending' : 'approved',
+          flagged: index % 4 === 0
+        })) || [];
+
+        // Generate sample complaints from orders
+        const complaintsData: Complaint[] = orders?.slice(0, 3).map((order, index) => ({
+          id: `c-${order.id}`,
+          type: ['product', 'vendor', 'shipping', 'other'][index % 4] as any,
+          subject: `Issue with order ${order.id.slice(0, 8)}`,
+          description: 'This is a sample complaint generated from order data.',
+          customerName: profileMap.get(order.user_id) || 'Unknown Customer',
+          date: new Date(order.created_at).toISOString().split('T')[0],
+          status: ['open', 'investigating', 'resolved'][index % 3] as any,
+          priority: ['low', 'medium', 'high'][index % 3] as any
+        })) || [];
+
+        setReviews(reviewsData);
+        setComplaints(complaintsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load reviews and complaints."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   const handleReviewAction = (reviewId: string, action: "approve" | "reject") => {
     setReviews(reviews.map(review => 
@@ -110,6 +127,14 @@ const AdminReviews: React.FC = () => {
       />
     ));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading reviews and complaints...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

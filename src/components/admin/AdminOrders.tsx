@@ -1,6 +1,7 @@
 
-import React, { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -23,64 +24,99 @@ interface Order {
   items: number;
 }
 
-// Mock data for demonstration
-const mockOrders: Order[] = [
-  {
-    id: "ORD-001",
-    customerName: "John Smith",
-    date: "2023-06-15",
-    status: "delivered",
-    total: 2499.99,
-    items: 3,
-  },
-  {
-    id: "ORD-002",
-    customerName: "Sarah Johnson",
-    date: "2023-06-18",
-    status: "shipped",
-    total: 899.95,
-    items: 2,
-  },
-  {
-    id: "ORD-003",
-    customerName: "Michael Brown",
-    date: "2023-06-20",
-    status: "processing",
-    total: 1299.50,
-    items: 1,
-  },
-  {
-    id: "ORD-004",
-    customerName: "Emily Davis",
-    date: "2023-06-21",
-    status: "pending",
-    total: 599.99,
-    items: 4,
-  },
-];
-
 const AdminOrders: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const { data: ordersData, error } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items(quantity)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Get user profiles for customer names
+        const userIds = ordersData?.map(order => order.user_id) || [];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+
+        const formattedOrders: Order[] = ordersData?.map(order => ({
+          id: order.id.slice(0, 8),
+          customerName: profileMap.get(order.user_id) || 'Unknown Customer',
+          date: new Date(order.created_at).toISOString().split('T')[0],
+          status: order.status as any,
+          total: parseFloat(order.total?.toString() || '0'),
+          items: order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0
+        })) || [];
+
+        setOrders(formattedOrders);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load orders."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [toast]);
 
   const filteredOrders = statusFilter === "all" 
     ? orders 
     : orders.filter(order => order.status === statusFilter);
 
-  const handleUpdateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
-    // In a real app, this would be an API call
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
 
-    toast({
-      title: "Order status updated",
-      description: `Order ${orderId} has been updated to ${newStatus}.`,
-    });
+      if (error) throw error;
+
+      setOrders(
+        orders.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+
+      toast({
+        title: "Order status updated",
+        description: `Order ${orderId} has been updated to ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update order status."
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading orders...</div>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -49,8 +49,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Check vendor access
-  if (requireVendor && (!user || !isVendor)) {
+  // Check vendor access - allow vendors with any status to access dashboard
+  if (requireVendor && (!user || user.role !== 'vendor')) {
     return <Navigate to="/vendor/login" replace />;
   }
 

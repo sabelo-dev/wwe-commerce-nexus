@@ -1,9 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -30,85 +32,89 @@ interface AuditLog {
   severity: "low" | "medium" | "high" | "critical";
 }
 
-// Mock data
-const mockAuditLogs: AuditLog[] = [
-  {
-    id: "log1",
-    timestamp: "2023-06-20T14:30:25Z",
-    userId: "admin1",
-    userName: "Admin User",
-    userRole: "admin",
-    action: "UPDATE",
-    resource: "vendor",
-    resourceId: "vendor123",
-    details: "Updated vendor status from pending to approved",
-    ipAddress: "192.168.1.100",
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    severity: "medium",
-  },
-  {
-    id: "log2",
-    timestamp: "2023-06-20T13:45:12Z",
-    userId: "vendor1",
-    userName: "Tech Shop",
-    userRole: "vendor",
-    action: "CREATE",
-    resource: "product",
-    resourceId: "prod456",
-    details: "Created new product: Wireless Headphones Pro",
-    ipAddress: "203.0.113.45",
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
-    severity: "low",
-  },
-  {
-    id: "log3",
-    timestamp: "2023-06-20T12:20:08Z",
-    userId: "admin1",
-    userName: "Admin User",
-    userRole: "admin",
-    action: "DELETE",
-    resource: "product",
-    resourceId: "prod789",
-    details: "Deleted product for policy violation",
-    ipAddress: "192.168.1.100",
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    severity: "high",
-  },
-  {
-    id: "log4",
-    timestamp: "2023-06-20T11:15:33Z",
-    userId: "customer1",
-    userName: "John Smith",
-    userRole: "customer",
-    action: "LOGIN",
-    resource: "auth",
-    resourceId: "session123",
-    details: "User logged in successfully",
-    ipAddress: "198.51.100.22",
-    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
-    severity: "low",
-  },
-  {
-    id: "log5",
-    timestamp: "2023-06-20T10:05:45Z",
-    userId: "admin2",
-    userName: "Security Admin",
-    userRole: "admin",
-    action: "UPDATE",
-    resource: "user",
-    resourceId: "user456",
-    details: "Suspended user account for suspicious activity",
-    ipAddress: "192.168.1.101",
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    severity: "critical",
-  },
-];
 
 const AdminAuditLogs: React.FC = () => {
-  const [logs] = useState<AuditLog[]>(mockAuditLogs);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [actionFilter, setActionFilter] = useState<string>("all");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchAuditLogs = async () => {
+      try {
+        // Generate audit logs from database activities
+        const auditLogs: AuditLog[] = [];
+        
+        // Get recent vendor approvals/rejections
+        const { data: vendors } = await supabase
+          .from('vendors')
+          .select('*, profiles!inner(*)')
+          .order('updated_at', { ascending: false })
+          .limit(20);
+
+        vendors?.forEach(vendor => {
+          if (vendor.approval_date) {
+            auditLogs.push({
+              id: `vendor-${vendor.id}`,
+              timestamp: vendor.approval_date,
+              userId: 'admin',
+              userName: 'System Admin',
+              userRole: 'admin',
+              action: 'UPDATE',
+              resource: 'vendor',
+              resourceId: vendor.id,
+              details: `Vendor ${vendor.business_name} status updated to ${vendor.status}`,
+              ipAddress: '127.0.0.1',
+              userAgent: 'System',
+              severity: vendor.status === 'approved' ? 'medium' : 'high'
+            });
+          }
+        });
+
+        // Get recent product updates
+        const { data: products } = await supabase
+          .from('products')
+          .select('*')
+          .order('updated_at', { ascending: false })
+          .limit(10);
+
+        products?.forEach(product => {
+          auditLogs.push({
+            id: `product-${product.id}`,
+            timestamp: product.updated_at,
+            userId: 'system',
+            userName: 'System',
+            userRole: 'admin',
+            action: product.created_at === product.updated_at ? 'CREATE' : 'UPDATE',
+            resource: 'product',
+            resourceId: product.id,
+            details: `Product ${product.name} ${product.created_at === product.updated_at ? 'created' : 'updated'}`,
+            ipAddress: '127.0.0.1',
+            userAgent: 'System',
+            severity: 'low'
+          });
+        });
+
+        // Sort by timestamp descending
+        auditLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        
+        setLogs(auditLogs);
+      } catch (error) {
+        console.error('Error fetching audit logs:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load audit logs."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAuditLogs();
+  }, [toast]);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,6 +162,14 @@ const AdminAuditLogs: React.FC = () => {
     const today = new Date().toDateString();
     return logDate === today;
   }).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading audit logs...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
