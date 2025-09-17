@@ -1,9 +1,12 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Package, 
   ShoppingCart, 
@@ -24,68 +27,178 @@ import {
 } from "lucide-react";
 
 const VendorOverview = () => {
-  // Mock data - in real app, this would come from API
-  const stats = {
-    totalProducts: 24,
-    activeProducts: 18,
-    pendingApproval: 3,
-    totalOrders: 156,
-    newOrders: 5,
-    pendingOrders: 8,
-    processingOrders: 12,
-    shippedOrders: 23,
-    revenue: 4562.50,
-    todayRevenue: 342.15,
-    weeklyRevenue: 2841.30,
-    monthlyRevenue: 12340.75,
-    storeViews: 2341,
-    todayViews: 89,
-    weeklyViews: 567,
-    lowStockItems: 4,
-    outOfStockItems: 2,
-    rating: 4.3,
-    reviewCount: 89,
-    profileCompletion: 85,
-    conversionRate: 3.2,
-    avgOrderValue: 78.45,
-    returnRate: 2.1,
-    activePromotions: 3,
-    pendingPayouts: 2
-  };
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    activeProducts: 0,
+    pendingApproval: 0,
+    totalOrders: 0,
+    newOrders: 0,
+    pendingOrders: 0,
+    processingOrders: 0,
+    shippedOrders: 0,
+    revenue: 0,
+    todayRevenue: 0,
+    weeklyRevenue: 0,
+    monthlyRevenue: 0,
+    storeViews: 0,
+    todayViews: 0,
+    weeklyViews: 0,
+    lowStockItems: 0,
+    outOfStockItems: 0,
+    rating: 0,
+    reviewCount: 0,
+    profileCompletion: 0,
+    conversionRate: 0,
+    avgOrderValue: 0,
+    returnRate: 0,
+    activePromotions: 0,
+    pendingPayouts: 0
+  });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
 
-  const recentOrders = [
-    {
-      id: "ORD-001",
-      customer: "John Doe",
-      product: "Wireless Headphones",
-      amount: 129.99,
-      status: "new",
-      date: "2 hours ago"
-    },
-    {
-      id: "ORD-002", 
-      customer: "Jane Smith",
-      product: "Smart Watch",
-      amount: 249.99,
-      status: "processing",
-      date: "5 hours ago"
-    },
-    {
-      id: "ORD-003",
-      customer: "Mike Johnson", 
-      product: "Laptop Stand",
-      amount: 79.99,
-      status: "shipped",
-      date: "1 day ago"
-    }
-  ];
+  useEffect(() => {
+    const fetchVendorData = async () => {
+      if (!user?.id) return;
 
-  const lowStockProducts = [
-    { name: "Wireless Mouse", stock: 3, threshold: 10 },
-    { name: "USB Cable", stock: 2, threshold: 15 },
-    { name: "Phone Case", stock: 1, threshold: 5 },
-    { name: "Screen Protector", stock: 4, threshold: 20 }
-  ];
+      try {
+        // Get vendor and store data
+        const { data: vendor } = await supabase
+          .from('vendors')
+          .select('*, stores(*)')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!vendor || !vendor.stores || vendor.stores.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        const storeIds = vendor.stores.map((store: any) => store.id);
+
+        // Fetch products data
+        const { data: products } = await supabase
+          .from('products')
+          .select('*')
+          .in('store_id', storeIds);
+
+        // Fetch orders data
+        const { data: orders } = await supabase
+          .from('order_items')
+          .select(`
+            *,
+            orders(*)
+          `)
+          .in('store_id', storeIds)
+          .order('created_at', { ascending: false });
+
+        // Fetch payouts data
+        const { data: payouts } = await supabase
+          .from('payouts')
+          .select('*')
+          .eq('vendor_id', vendor.id);
+
+        // Calculate stats
+        const totalProducts = products?.length || 0;
+        const activeProducts = products?.filter(p => p.status === 'approved' || p.status === 'active').length || 0;
+        const pendingApproval = products?.filter(p => p.status === 'pending').length || 0;
+        const lowStock = products?.filter(p => p.quantity > 0 && p.quantity <= 5).length || 0;
+        const outOfStock = products?.filter(p => p.quantity === 0).length || 0;
+
+        const totalOrders = orders?.length || 0;
+        const newOrders = orders?.filter(o => o.status === 'pending').length || 0;
+        const pendingOrders = orders?.filter(o => o.status === 'pending').length || 0;
+        const processingOrders = orders?.filter(o => o.status === 'processing').length || 0;
+        const shippedOrders = orders?.filter(o => o.status === 'shipped').length || 0;
+
+        const totalRevenue = orders?.reduce((sum, order) => sum + (parseFloat(order.price?.toString() || '0') * order.quantity), 0) || 0;
+        const today = new Date().toDateString();
+        const todayRevenue = orders?.filter(o => new Date(o.created_at).toDateString() === today)
+          .reduce((sum, order) => sum + (parseFloat(order.price?.toString() || '0') * order.quantity), 0) || 0;
+
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const weeklyRevenue = orders?.filter(o => new Date(o.created_at) >= weekAgo)
+          .reduce((sum, order) => sum + (parseFloat(order.price?.toString() || '0') * order.quantity), 0) || 0;
+
+        const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const monthlyRevenue = orders?.filter(o => new Date(o.created_at) >= monthAgo)
+          .reduce((sum, order) => sum + (parseFloat(order.price?.toString() || '0') * order.quantity), 0) || 0;
+
+        const pendingPayoutsCount = payouts?.filter(p => p.status === 'pending').length || 0;
+
+        // Calculate profile completion
+        let completionScore = 0;
+        if (vendor.business_name) completionScore += 25;
+        if (vendor.description) completionScore += 25;
+        if (vendor.logo_url) completionScore += 25;
+        if (vendor.status === 'approved') completionScore += 25;
+
+        // Get recent orders with customer info
+        const recentOrdersData = orders?.slice(0, 3).map(order => ({
+          id: order.id,
+          customer: 'Customer', // Customer data not available in current schema
+          product: 'Product', // Product name would need join
+          amount: parseFloat(order.price?.toString() || '0') * order.quantity,
+          status: order.status,
+          date: new Date(order.created_at).toLocaleDateString()
+        })) || [];
+
+        // Get low stock products
+        const lowStockData = products?.filter(p => p.quantity > 0 && p.quantity <= 5)
+          .slice(0, 4).map(product => ({
+            name: product.name,
+            stock: product.quantity,
+            threshold: 10 // Default threshold
+          })) || [];
+
+        setStats({
+          totalProducts,
+          activeProducts,
+          pendingApproval,
+          totalOrders,
+          newOrders,
+          pendingOrders,
+          processingOrders,
+          shippedOrders,
+          revenue: totalRevenue,
+          todayRevenue,
+          weeklyRevenue,
+          monthlyRevenue,
+          storeViews: 0, // Not tracked in current schema
+          todayViews: 0,
+          weeklyViews: 0,
+          lowStockItems: lowStock,
+          outOfStockItems: outOfStock,
+          rating: 0, // Not implemented yet
+          reviewCount: 0, // Not implemented yet
+          profileCompletion: completionScore,
+          conversionRate: 0, // Would need view tracking
+          avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+          returnRate: 0, // Not tracked yet
+          activePromotions: 0, // Not implemented yet
+          pendingPayouts: pendingPayoutsCount
+        });
+
+        setRecentOrders(recentOrdersData);
+        setLowStockProducts(lowStockData);
+
+      } catch (error) {
+        console.error('Error fetching vendor data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load dashboard data."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVendorData();
+  }, [user?.id, toast]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -96,6 +209,14 @@ const VendorOverview = () => {
       default: return "outline";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading dashboard data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

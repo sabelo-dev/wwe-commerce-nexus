@@ -1,8 +1,10 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, 
   ShoppingBag, 
@@ -56,22 +58,145 @@ const KPICard: React.FC<KPICardProps> = ({
 );
 
 const AdminOverview: React.FC = () => {
-  // Mock data - replace with real data from your API
-  const kpiData = {
-    totalVendors: 125,
-    activeVendors: 98,
-    totalSales: 45234.50,
-    todaySales: 2341.20,
-    pendingOrders: 23,
-    fulfilledOrders: 567,
-    lowStockAlerts: 12,
-    outOfStockAlerts: 5,
-    openTickets: 8,
-    commissionToday: 234.12,
-    commissionMonth: 4523.45,
-    newVendorSignups: 5,
-    newCustomerSignups: 34
-  };
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [kpiData, setKpiData] = useState({
+    totalVendors: 0,
+    activeVendors: 0,
+    totalSales: 0,
+    todaySales: 0,
+    pendingOrders: 0,
+    fulfilledOrders: 0,
+    lowStockAlerts: 0,
+    outOfStockAlerts: 0,
+    openTickets: 0,
+    commissionToday: 0,
+    commissionMonth: 0,
+    newVendorSignups: 0,
+    newCustomerSignups: 0
+  });
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        // Fetch vendors data
+        const { data: vendors } = await supabase
+          .from('vendors')
+          .select('*');
+
+        // Fetch orders data
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('*');
+
+        // Fetch products data
+        const { data: products } = await supabase
+          .from('products')
+          .select('*');
+
+        // Fetch profiles data
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('*');
+
+        // Fetch payouts data
+        const { data: payouts } = await supabase
+          .from('payouts')
+          .select('*');
+
+        // Calculate KPIs
+        const totalVendors = vendors?.length || 0;
+        const activeVendors = vendors?.filter(v => v.status === 'approved').length || 0;
+        
+        const totalSales = orders?.reduce((sum, order) => sum + parseFloat(order.total?.toString() || '0'), 0) || 0;
+        const today = new Date().toDateString();
+        const todaySales = orders?.filter(o => new Date(o.created_at).toDateString() === today)
+          .reduce((sum, order) => sum + parseFloat(order.total?.toString() || '0'), 0) || 0;
+
+        const pendingOrders = orders?.filter(o => o.status === 'pending').length || 0;
+        const fulfilledOrders = orders?.filter(o => o.status === 'completed' || o.status === 'shipped').length || 0;
+
+        const lowStockItems = products?.filter(p => p.quantity > 0 && p.quantity <= 5).length || 0;
+        const outOfStockItems = products?.filter(p => p.quantity === 0).length || 0;
+
+        // Commission calculation (assuming 15% platform fee)
+        const commissionToday = todaySales * 0.15;
+        const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const monthlyOrders = orders?.filter(o => new Date(o.created_at) >= monthAgo) || [];
+        const monthlySales = monthlyOrders.reduce((sum, order) => sum + parseFloat(order.total?.toString() || '0'), 0);
+        const commissionMonth = monthlySales * 0.15;
+
+        // New signups in the last week
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const newVendorSignups = vendors?.filter(v => new Date(v.created_at) >= weekAgo).length || 0;
+        const newCustomerSignups = profiles?.filter(p => p.role === 'consumer' && new Date(p.created_at) >= weekAgo).length || 0;
+
+        // Recent activities
+        const activities = [
+          ...vendors?.filter(v => v.status === 'pending').slice(0, 2).map(v => ({
+            type: 'vendor_application',
+            title: 'New vendor application',
+            description: v.business_name,
+            status: 'Pending',
+            variant: 'outline'
+          })) || [],
+          ...products?.filter(p => p.status === 'pending').slice(0, 2).map(p => ({
+            type: 'product_review',
+            title: 'Product flagged for review',
+            description: p.name,
+            status: 'Urgent',
+            variant: 'destructive'
+          })) || [],
+          ...orders?.filter(o => parseFloat(o.total?.toString() || '0') > 1000).slice(0, 1).map(o => ({
+            type: 'large_order',
+            title: 'Large order placed',
+            description: formatCurrency(parseFloat(o.total?.toString() || '0')),
+            status: 'Completed',
+            variant: 'default'
+          })) || []
+        ];
+
+        setKpiData({
+          totalVendors,
+          activeVendors,
+          totalSales,
+          todaySales,
+          pendingOrders,
+          fulfilledOrders,
+          lowStockAlerts: lowStockItems,
+          outOfStockAlerts: outOfStockItems,
+          openTickets: 0, // Not implemented
+          commissionToday,
+          commissionMonth,
+          newVendorSignups,
+          newCustomerSignups
+        });
+
+        setRecentActivities(activities);
+
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load dashboard data."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminData();
+  }, [toast]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">Loading dashboard data...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -161,27 +286,19 @@ const AdminOverview: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">New vendor application</p>
-                  <p className="text-xs text-muted-foreground">Tech Store Inc.</p>
-                </div>
-                <Badge variant="outline">Pending</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Product flagged for review</p>
-                  <p className="text-xs text-muted-foreground">Wireless Headphones</p>
-                </div>
-                <Badge variant="destructive">Urgent</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Large order placed</p>
-                  <p className="text-xs text-muted-foreground">{formatCurrency(2500)}</p>
-                </div>
-                <Badge variant="default">Completed</Badge>
-              </div>
+              {recentActivities.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No recent activities</p>
+              ) : (
+                recentActivities.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{activity.title}</p>
+                      <p className="text-xs text-muted-foreground">{activity.description}</p>
+                    </div>
+                    <Badge variant={activity.variant}>{activity.status}</Badge>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
