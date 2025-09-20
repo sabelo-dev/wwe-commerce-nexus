@@ -1,9 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   DollarSign, 
   Calendar, 
@@ -24,50 +27,142 @@ import {
 } from "@/components/ui/table";
 
 const VendorPayouts = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Mock payout data
-  const payoutData = {
-    availableBalance: 1250.75,
-    pendingBalance: 340.50,
-    totalEarnings: 8945.25,
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [payoutData, setPayoutData] = useState({
+    availableBalance: 0,
+    pendingBalance: 0,
+    totalEarnings: 0,
     commissionRate: 10, // 10%
     minimumPayout: 50.00,
     nextPayoutDate: "2024-01-20"
+  });
+
+  useEffect(() => {
+    fetchPayoutData();
+  }, [user?.id]);
+
+  const fetchPayoutData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      
+      // Get vendor data first
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Get payouts for this vendor
+      const { data: payoutsData, error: payoutsError } = await supabase
+        .from('payouts')
+        .select('*')
+        .eq('vendor_id', vendor.id)
+        .order('created_at', { ascending: false });
+
+      if (payoutsError) throw payoutsError;
+
+      // Get vendor earnings from order items
+      const { data: stores, error: storesError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('vendor_id', vendor.id);
+
+      if (storesError) throw storesError;
+
+      if (stores.length > 0) {
+        const storeIds = stores.map(store => store.id);
+        
+        const { data: orderItems, error: orderItemsError } = await supabase
+          .from('order_items')
+          .select('price, quantity, vendor_status')
+          .in('store_id', storeIds);
+
+        if (orderItemsError) throw orderItemsError;
+
+        const totalRevenue = orderItems?.reduce((sum, item) => 
+          sum + (parseFloat(item.price?.toString() || '0') * item.quantity), 0) || 0;
+        
+        const availableBalance = totalRevenue * 0.9; // After 10% commission
+        const totalEarnings = totalRevenue;
+
+        setPayoutData(prev => ({
+          ...prev,
+          availableBalance,
+          totalEarnings,
+          pendingBalance: totalRevenue * 0.1 // Simulated pending
+        }));
+      }
+
+      setPayouts(payoutsData || []);
+    } catch (error) {
+      console.error('Error fetching payout data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch payout data",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const payoutHistory = [
-    {
-      id: "PAY-001",
-      amount: 890.50,
-      commission: 89.05,
-      netAmount: 801.45,
-      status: "completed",
-      requestDate: "2024-01-10",
-      paidDate: "2024-01-12",
-      method: "Bank Transfer"
-    },
-    {
-      id: "PAY-002",
-      amount: 1245.75,
-      commission: 124.58,
-      netAmount: 1121.17,
-      status: "processing",
-      requestDate: "2024-01-15",
-      paidDate: null,
-      method: "Bank Transfer"
-    },
-    {
-      id: "PAY-003",
-      amount: 567.30,
-      commission: 56.73,
-      netAmount: 510.57,
-      status: "pending",
-      requestDate: "2024-01-18",
-      paidDate: null,
-      method: "Bank Transfer"
+  const requestPayout = async () => {
+    if (!user?.id || !canRequestPayout) return;
+
+    try {
+      // Get vendor data first
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      const { error } = await supabase
+        .from('payouts')
+        .insert({
+          vendor_id: vendor.id,
+          amount: payoutData.availableBalance,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Payout Requested",
+        description: "Your payout request has been submitted successfully.",
+      });
+
+      fetchPayoutData(); // Refresh data
+    } catch (error) {
+      console.error('Error requesting payout:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to request payout",
+      });
     }
-  ];
+  };
+
+  const payoutHistory = payouts.map(payout => ({
+    id: `PAY-${payout.id.slice(-3)}`,
+    amount: parseFloat(payout.amount?.toString() || '0'),
+    commission: parseFloat(payout.amount?.toString() || '0') * 0.1,
+    netAmount: parseFloat(payout.amount?.toString() || '0') * 0.9,
+    status: payout.status,
+    requestDate: new Date(payout.created_at).toLocaleDateString(),
+    paidDate: payout.payout_date ? new Date(payout.payout_date).toLocaleDateString() : null,
+    method: "Bank Transfer"
+  }));
 
   const filteredPayouts = payoutHistory.filter(payout =>
     payout.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -100,6 +195,7 @@ const VendorPayouts = () => {
         <Button 
           disabled={!canRequestPayout}
           className="bg-green-600 hover:bg-green-700"
+          onClick={requestPayout}
         >
           <DollarSign className="h-4 w-4 mr-2" />
           Request Payout
@@ -264,36 +360,44 @@ const VendorPayouts = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Payout ID</TableHead>
-                <TableHead>Gross Amount</TableHead>
-                <TableHead>Commission</TableHead>
-                <TableHead>Net Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Request Date</TableHead>
-                <TableHead>Paid Date</TableHead>
-                <TableHead>Method</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPayouts.map((payout) => (
-                <TableRow key={payout.id}>
-                  <TableCell className="font-medium">{payout.id}</TableCell>
-                  <TableCell>${payout.amount.toFixed(2)}</TableCell>
-                  <TableCell className="text-red-600">-${payout.commission.toFixed(2)}</TableCell>
-                  <TableCell className="font-medium text-green-600">
-                    ${payout.netAmount.toFixed(2)}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(payout.status)}</TableCell>
-                  <TableCell>{payout.requestDate}</TableCell>
-                  <TableCell>{payout.paidDate || "-"}</TableCell>
-                  <TableCell>{payout.method}</TableCell>
+          {loading ? (
+            <div className="text-center py-8">Loading payout history...</div>
+          ) : filteredPayouts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No payout history found.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payout ID</TableHead>
+                  <TableHead>Gross Amount</TableHead>
+                  <TableHead>Commission</TableHead>
+                  <TableHead>Net Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Request Date</TableHead>
+                  <TableHead>Paid Date</TableHead>
+                  <TableHead>Method</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredPayouts.map((payout) => (
+                  <TableRow key={payout.id}>
+                    <TableCell className="font-medium">{payout.id}</TableCell>
+                    <TableCell>${payout.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-red-600">-${payout.commission.toFixed(2)}</TableCell>
+                    <TableCell className="font-medium text-green-600">
+                      ${payout.netAmount.toFixed(2)}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(payout.status)}</TableCell>
+                    <TableCell>{payout.requestDate}</TableCell>
+                    <TableCell>{payout.paidDate || "-"}</TableCell>
+                    <TableCell>{payout.method}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

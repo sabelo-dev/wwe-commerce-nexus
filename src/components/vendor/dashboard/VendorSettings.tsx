@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Store, 
   User, 
@@ -17,6 +20,160 @@ import {
 } from "lucide-react";
 
 const VendorSettings = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [storeData, setStoreData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    logo_url: ''
+  });
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+  const [notifications, setNotifications] = useState({
+    newOrders: true,
+    lowStock: true,
+    marketing: false
+  });
+
+  useEffect(() => {
+    fetchSettingsData();
+  }, [user?.id]);
+
+  const fetchSettingsData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+
+      // Get vendor data
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Get store data
+      const { data: store, error: storeError } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('vendor_id', vendor.id)
+        .single();
+
+      if (store && !storeError) {
+        setStoreData({
+          name: store.name || '',
+          slug: store.slug || '',
+          description: store.description || '',
+          logo_url: store.logo_url || ''
+        });
+      }
+
+      // Get profile data
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile && !profileError) {
+        setProfileData({
+          name: profile.name || '',
+          email: profile.email || '',
+          phone: '' // Phone field not in profiles table yet
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load settings",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveStoreSettings = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Get vendor data
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Update store data
+      const { error } = await supabase
+        .from('stores')
+        .upsert({
+          vendor_id: vendor.id,
+          name: storeData.name,
+          slug: storeData.slug,
+          description: storeData.description,
+          logo_url: storeData.logo_url
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Settings Saved",
+        description: "Store settings have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving store settings:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save store settings",
+      });
+    }
+  };
+
+  const saveProfileSettings = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profileData.name,
+          email: profileData.email
+          // Note: phone would need to be added to profiles table
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile Updated",
+        description: "Profile settings have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving profile settings:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save profile settings",
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading settings...</div>;
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -41,26 +198,40 @@ const VendorSettings = () => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="store-name">Store Name</Label>
-              <Input id="store-name" defaultValue="Tech Store" />
+              <Input 
+                id="store-name" 
+                value={storeData.name}
+                onChange={(e) => setStoreData({...storeData, name: e.target.value})}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="store-slug">Store URL</Label>
-              <Input id="store-slug" defaultValue="tech-store" />
+              <Input 
+                id="store-slug" 
+                value={storeData.slug}
+                onChange={(e) => setStoreData({...storeData, slug: e.target.value})}
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="store-description">Description</Label>
             <Textarea 
               id="store-description" 
-              defaultValue="Your one-stop shop for the latest tech gadgets and accessories."
+              value={storeData.description}
+              onChange={(e) => setStoreData({...storeData, description: e.target.value})}
               rows={3}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="store-logo">Store Logo URL</Label>
-            <Input id="store-logo" placeholder="https://example.com/logo.png" />
+            <Input 
+              id="store-logo" 
+              value={storeData.logo_url}
+              onChange={(e) => setStoreData({...storeData, logo_url: e.target.value})}
+              placeholder="https://example.com/logo.png" 
+            />
           </div>
-          <Button>
+          <Button onClick={saveStoreSettings}>
             <Save className="h-4 w-4 mr-2" />
             Save Store Settings
           </Button>
@@ -82,18 +253,31 @@ const VendorSettings = () => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="full-name">Full Name</Label>
-              <Input id="full-name" defaultValue="John Doe" />
+              <Input 
+                id="full-name" 
+                value={profileData.name}
+                onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="john@example.com" />
+              <Input 
+                id="email" 
+                type="email" 
+                value={profileData.email}
+                onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" defaultValue="+1 (555) 123-4567" />
+            <Input 
+              id="phone" 
+              value={profileData.phone}
+              onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+            />
           </div>
-          <Button>
+          <Button onClick={saveProfileSettings}>
             <Save className="h-4 w-4 mr-2" />
             Save Profile
           </Button>
@@ -119,7 +303,10 @@ const VendorSettings = () => {
                 Get notified when you receive new orders
               </p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={notifications.newOrders}
+              onCheckedChange={(checked) => setNotifications({...notifications, newOrders: checked})}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -129,7 +316,10 @@ const VendorSettings = () => {
                 Get alerts when product inventory is low
               </p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={notifications.lowStock}
+              onCheckedChange={(checked) => setNotifications({...notifications, lowStock: checked})}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -139,7 +329,10 @@ const VendorSettings = () => {
                 Receive updates about new features and promotions
               </p>
             </div>
-            <Switch />
+            <Switch 
+              checked={notifications.marketing}
+              onCheckedChange={(checked) => setNotifications({...notifications, marketing: checked})}
+            />
           </div>
         </CardContent>
       </Card>

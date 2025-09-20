@@ -1,9 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
   MoreHorizontal, 
@@ -22,59 +25,122 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const VendorOrders = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock orders data
-  const orders = [
-    {
-      id: "ORD-001",
-      customer: "John Doe",
-      email: "john@example.com",
-      products: [
-        { name: "Wireless Earbuds", quantity: 1, price: 129.99 }
-      ],
-      total: 129.99,
-      status: "pending",
-      date: "2024-01-15",
-      shippingAddress: "123 Main St, City, State 12345"
-    },
-    {
-      id: "ORD-002",
-      customer: "Jane Smith",
-      email: "jane@example.com",
-      products: [
-        { name: "Smart Watch", quantity: 1, price: 249.99 }
-      ],
-      total: 249.99,
-      status: "processing",
-      date: "2024-01-14",
-      shippingAddress: "456 Oak Ave, City, State 67890"
-    },
-    {
-      id: "ORD-003",
-      customer: "Mike Johnson",
-      email: "mike@example.com",
-      products: [
-        { name: "Laptop Stand", quantity: 2, price: 79.99 }
-      ],
-      total: 159.98,
-      status: "shipped",
-      date: "2024-01-13",
-      shippingAddress: "789 Pine St, City, State 11111"
-    },
-    {
-      id: "ORD-004",
-      customer: "Sarah Wilson",
-      email: "sarah@example.com",
-      products: [
-        { name: "Organic T-Shirt", quantity: 3, price: 24.99 }
-      ],
-      total: 74.97,
-      status: "delivered",
-      date: "2024-01-12",
-      shippingAddress: "321 Elm Dr, City, State 22222"
+  useEffect(() => {
+    fetchOrders();
+  }, [user?.id]);
+
+  const fetchOrders = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      
+      // Get vendor data first
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Get stores for this vendor
+      const { data: stores, error: storesError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('vendor_id', vendor.id);
+
+      if (storesError) throw storesError;
+
+      if (stores.length === 0) {
+        setOrders([]);
+        return;
+      }
+
+      const storeIds = stores.map(store => store.id);
+
+      // Get order items from vendor's stores with order details
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          *,
+          orders(*),
+          products(name)
+        `)
+        .in('store_id', storeIds)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Group order items by order
+      const groupedOrders = data?.reduce((acc: any, item: any) => {
+        const orderId = item.order_id;
+        if (!acc[orderId]) {
+          acc[orderId] = {
+            id: item.orders.id,
+            customer: 'Customer', // Would need profile lookup
+            email: 'customer@example.com', // Would need profile lookup
+            products: [],
+            total: 0,
+            status: item.vendor_status,
+            date: new Date(item.created_at).toLocaleDateString(),
+            shippingAddress: item.orders.shipping_address || {}
+          };
+        }
+        acc[orderId].products.push({
+          name: item.products?.name || 'Product',
+          quantity: item.quantity,
+          price: parseFloat(item.price?.toString() || '0')
+        });
+        acc[orderId].total += parseFloat(item.price?.toString() || '0') * item.quantity;
+        return acc;
+      }, {}) || {};
+
+      setOrders(Object.values(groupedOrders));
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch orders",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('order_items')
+        .update({ vendor_status: newStatus })
+        .eq('order_id', orderId);
+
+      if (error) throw error;
+
+      setOrders(orders.map(order => 
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ));
+
+      toast({
+        title: "Order Updated",
+        description: "Order status has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update order status",
+      });
+    }
+  };
 
   const filteredOrders = orders.filter(order =>
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,8 +207,15 @@ const VendorOrders = () => {
           <CardTitle>Recent Orders ({filteredOrders.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredOrders.map((order) => (
+          {loading ? (
+            <div className="text-center py-8">Loading orders...</div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No orders found.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredOrders.map((order) => (
               <div key={order.id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -165,8 +238,15 @@ const VendorOrders = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Update Status</DropdownMenuItem>
-                        <DropdownMenuItem>Print Label</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'confirmed')}>
+                          Mark as Confirmed
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'shipped')}>
+                          Mark as Shipped
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'delivered')}>
+                          Mark as Delivered
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>Contact Customer</DropdownMenuItem>
                       </DropdownMenuContent>
@@ -182,7 +262,11 @@ const VendorOrders = () => {
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Shipping Address</h4>
-                    <p className="text-sm text-muted-foreground">{order.shippingAddress}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {typeof order.shippingAddress === 'string' 
+                        ? order.shippingAddress 
+                        : `${order.shippingAddress?.street || ''} ${order.shippingAddress?.city || ''} ${order.shippingAddress?.state || ''} ${order.shippingAddress?.zipCode || ''}`}
+                    </p>
                   </div>
                 </div>
 
@@ -202,8 +286,9 @@ const VendorOrders = () => {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
