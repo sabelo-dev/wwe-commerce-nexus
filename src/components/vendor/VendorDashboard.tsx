@@ -13,6 +13,15 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import VendorOverview from "./dashboard/VendorOverview";
 import VendorShopfront from "./dashboard/VendorShopfront";
 import VendorProducts from "./dashboard/VendorProducts";
@@ -37,14 +46,24 @@ import {
   DollarSign,
   MessageSquare,
   Settings, 
-  Headphones
+  Headphones,
+  LogOut,
+  User
 } from "lucide-react";
 
 const VendorDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [vendorData, setVendorData] = useState<any>(null);
   const [isTrialExpired, setIsTrialExpired] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchVendorData = async () => {
@@ -119,11 +138,42 @@ const VendorDashboard = () => {
           </Sidebar>
           
           <SidebarInset className="flex-1">
-            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <SidebarTrigger className="-ml-1" />
-              <h1 className="text-lg font-semibold text-foreground">
-                {sidebarItems.find(item => item.id === activeTab)?.title}
-              </h1>
+            <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <h1 className="text-lg font-semibold text-foreground">
+                  {sidebarItems.find(item => item.id === activeTab)?.title}
+                </h1>
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar_url || ''} alt={user?.name || 'Vendor'} />
+                      <AvatarFallback>
+                        {user?.name?.charAt(0)?.toUpperCase() || 'V'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex flex-col space-y-1 p-2">
+                    <p className="text-sm font-medium leading-none">{user?.name || 'Vendor'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setActiveTab('settings')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </header>
             
             <main className="flex-1 p-6 bg-background">

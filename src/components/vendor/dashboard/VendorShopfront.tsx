@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Camera, 
   MapPin, 
@@ -22,39 +25,151 @@ import {
 } from "lucide-react";
 
 const VendorShopfront = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [storeData, setStoreData] = useState<any>(null);
+  const [vendorData, setVendorData] = useState<any>(null);
   
-  // Mock shop data - in real app, this would come from API
-  const [shopData, setShopData] = useState({
-    name: "Premium Electronics Store",
-    description: "Your trusted partner for high-quality electronics and gadgets. We offer the latest technology products with excellent customer service and competitive prices.",
-    logo: "/api/placeholder/120/120",
-    banner: "/api/placeholder/800/300",
-    location: "New York, NY",
-    phone: "+1 (555) 123-4567",
-    email: "contact@premiumelectronics.com",
-    website: "www.premiumelectronics.com",
-    businessHours: "Mon-Fri: 9AM-6PM, Sat: 10AM-4PM",
-    rating: 4.8,
-    totalReviews: 2847,
-    established: "2018",
-    categories: ["Electronics", "Gadgets", "Accessories"],
-    policies: {
-      shipping: "Free shipping on orders over $50. Same-day delivery available in NYC.",
-      returns: "30-day return policy. Items must be in original condition.",
-      warranty: "1-year warranty on all electronics. Extended warranty available."
-    }
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    logo_url: "",
+    banner_url: "",
+    shipping_policy: "",
+    return_policy: "",
   });
 
-  const handleSave = () => {
-    // In real app, save to API
-    setIsEditing(false);
+  useEffect(() => {
+    fetchStoreData();
+  }, [user?.id]);
+
+  const fetchStoreData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      
+      // First get vendor data
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+      setVendorData(vendor);
+
+      // Then get store data
+      const { data: store, error: storeError } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('vendor_id', vendor.id)
+        .maybeSingle();
+
+      if (storeError && storeError.code !== 'PGRST116') throw storeError;
+
+      if (store) {
+        setStoreData(store);
+        setFormData({
+          name: store.name || "",
+          description: store.description || "",
+          logo_url: store.logo_url || "",
+          banner_url: store.banner_url || "",
+          shipping_policy: store.shipping_policy || "",
+          return_policy: store.return_policy || "",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching store data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load store data",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!vendorData?.id) return;
+
+    try {
+      setSaving(true);
+
+      if (storeData) {
+        // Update existing store
+        const { error } = await supabase
+          .from('stores')
+          .update({
+            name: formData.name,
+            description: formData.description,
+            logo_url: formData.logo_url,
+            banner_url: formData.banner_url,
+            shipping_policy: formData.shipping_policy,
+            return_policy: formData.return_policy,
+          })
+          .eq('id', storeData.id);
+
+        if (error) throw error;
+      } else {
+        // Create new store
+        const { data: newStore, error } = await supabase
+          .from('stores')
+          .insert({
+            vendor_id: vendorData.id,
+            name: formData.name,
+            slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+            description: formData.description,
+            logo_url: formData.logo_url,
+            banner_url: formData.banner_url,
+            shipping_policy: formData.shipping_policy,
+            return_policy: formData.return_policy,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setStoreData(newStore);
+      }
+
+      setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Store information saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving store data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save store data",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    // Reset changes in real app
+    if (storeData) {
+      setFormData({
+        name: storeData.name || "",
+        description: storeData.description || "",
+        logo_url: storeData.logo_url || "",
+        banner_url: storeData.banner_url || "",
+        shipping_policy: storeData.shipping_policy || "",
+        return_policy: storeData.return_policy || "",
+      });
+    }
     setIsEditing(false);
   };
+
+  if (loading) {
+    return <div>Loading store data...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -70,11 +185,11 @@ const VendorShopfront = () => {
           </Button>
         ) : (
           <div className="flex gap-2">
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              Save Changes
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={saving}>
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
@@ -99,7 +214,7 @@ const VendorShopfront = () => {
             <Label>Banner Image (1200x400px recommended)</Label>
             <div className="relative h-48 w-full bg-muted rounded-lg overflow-hidden border-2 border-dashed border-border">
               <img 
-                src={shopData.banner} 
+                src={formData.banner_url || "/api/placeholder/800/300"} 
                 alt="Shop banner"
                 className="w-full h-full object-cover"
               />
@@ -120,7 +235,7 @@ const VendorShopfront = () => {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={shopData.logo} alt="Shop logo" />
+                  <AvatarImage src={formData.logo_url || ""} alt="Shop logo" />
                   <AvatarFallback>
                     <Store className="h-8 w-8" />
                   </AvatarFallback>
@@ -157,24 +272,10 @@ const VendorShopfront = () => {
               <Label htmlFor="shopName">Shop Name</Label>
               <Input
                 id="shopName"
-                value={shopData.name}
+                value={formData.name}
                 disabled={!isEditing}
-                onChange={(e) => setShopData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="location"
-                  value={shopData.location}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  onChange={(e) => setShopData(prev => ({ ...prev, location: e.target.value }))}
-                />
-              </div>
             </div>
           </div>
 
@@ -182,135 +283,12 @@ const VendorShopfront = () => {
             <Label htmlFor="description">Shop Description</Label>
             <Textarea
               id="description"
-              value={shopData.description}
+              value={formData.description}
               disabled={!isEditing}
               rows={4}
-              onChange={(e) => setShopData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe your shop and what makes it special..."
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Contact Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
-          <CardDescription>
-            How customers can reach you
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  value={shopData.phone}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  onChange={(e) => setShopData(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  value={shopData.email}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  onChange={(e) => setShopData(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <div className="relative">
-                <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="website"
-                  value={shopData.website}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  onChange={(e) => setShopData(prev => ({ ...prev, website: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="hours">Business Hours</Label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="hours"
-                  value={shopData.businessHours}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  onChange={(e) => setShopData(prev => ({ ...prev, businessHours: e.target.value }))}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Shop Statistics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Shop Performance</CardTitle>
-          <CardDescription>
-            Current shop statistics and ratings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="flex items-center justify-center gap-1 mb-2">
-                <Star className="h-5 w-5 fill-current text-yellow-500" />
-                <span className="text-2xl font-bold">{shopData.rating}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">Average Rating</p>
-            </div>
-            
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold mb-2">{shopData.totalReviews.toLocaleString()}</div>
-              <p className="text-sm text-muted-foreground">Total Reviews</p>
-            </div>
-            
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold mb-2">{shopData.established}</div>
-              <p className="text-sm text-muted-foreground">Established</p>
-            </div>
-            
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold mb-2">{shopData.categories.length}</div>
-              <p className="text-sm text-muted-foreground">Categories</p>
-            </div>
-          </div>
-
-          <Separator className="my-4" />
-
-          <div className="space-y-2">
-            <Label>Shop Categories</Label>
-            <div className="flex flex-wrap gap-2">
-              {shopData.categories.map((category, index) => (
-                <Badge key={index} variant="secondary">
-                  {category}
-                </Badge>
-              ))}
-              {isEditing && (
-                <Button variant="outline" size="sm">
-                  Add Category
-                </Button>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -328,12 +306,12 @@ const VendorShopfront = () => {
             <Label htmlFor="shippingPolicy">Shipping Policy</Label>
             <Textarea
               id="shippingPolicy"
-              value={shopData.policies.shipping}
+              value={formData.shipping_policy}
               disabled={!isEditing}
               rows={2}
-              onChange={(e) => setShopData(prev => ({ 
+              onChange={(e) => setFormData(prev => ({ 
                 ...prev, 
-                policies: { ...prev.policies, shipping: e.target.value }
+                shipping_policy: e.target.value
               }))}
             />
           </div>
@@ -342,26 +320,12 @@ const VendorShopfront = () => {
             <Label htmlFor="returnsPolicy">Returns Policy</Label>
             <Textarea
               id="returnsPolicy"
-              value={shopData.policies.returns}
+              value={formData.return_policy}
               disabled={!isEditing}
               rows={2}
-              onChange={(e) => setShopData(prev => ({ 
+              onChange={(e) => setFormData(prev => ({ 
                 ...prev, 
-                policies: { ...prev.policies, returns: e.target.value }
-              }))}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="warrantyPolicy">Warranty Policy</Label>
-            <Textarea
-              id="warrantyPolicy"
-              value={shopData.policies.warranty}
-              disabled={!isEditing}
-              rows={2}
-              onChange={(e) => setShopData(prev => ({ 
-                ...prev, 
-                policies: { ...prev.policies, warranty: e.target.value }
+                return_policy: e.target.value
               }))}
             />
           </div>

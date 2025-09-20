@@ -1,9 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Package, 
   Search, 
@@ -24,65 +27,122 @@ import {
 } from "@/components/ui/table";
 
 const VendorInventory = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
 
-  // Mock inventory data
-  const inventory = [
-    {
-      id: "1",
-      name: "Wireless Bluetooth Earbuds",
-      sku: "WBE-001",
-      currentStock: 45,
-      lowStockThreshold: 10,
-      status: "in_stock",
-      lastUpdated: "2024-01-15"
-    },
-    {
-      id: "2", 
-      name: "Smart Fitness Watch",
-      sku: "SFW-002",
-      currentStock: 8,
-      lowStockThreshold: 15,
-      status: "low_stock",
-      lastUpdated: "2024-01-14"
-    },
-    {
-      id: "3",
-      name: "Organic Cotton T-Shirt", 
-      sku: "OCT-003",
-      currentStock: 0,
-      lowStockThreshold: 5,
-      status: "out_of_stock",
-      lastUpdated: "2024-01-13"
-    },
-    {
-      id: "4",
-      name: "Laptop Stand",
-      sku: "LS-004", 
-      currentStock: 23,
-      lowStockThreshold: 10,
-      status: "in_stock",
-      lastUpdated: "2024-01-12"
+  useEffect(() => {
+    fetchProducts();
+  }, [user?.id]);
+
+  const fetchProducts = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoading(true);
+      
+      // Get vendor data first
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Get stores for this vendor
+      const { data: stores, error: storesError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('vendor_id', vendor.id);
+
+      if (storesError) throw storesError;
+
+      if (stores.length === 0) {
+        setProducts([]);
+        return;
+      }
+
+      const storeIds = stores.map(store => store.id);
+
+      // Get products from all vendor stores
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .in('store_id', storeIds)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch products",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredInventory = inventory.filter(item =>
+  const updateStock = async (productId: string, newQuantity: number) => {
+    if (newQuantity < 0) return;
+
+    try {
+      setUpdating(productId);
+      
+      const { error } = await supabase
+        .from('products')
+        .update({ quantity: newQuantity })
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts(products.map(p => 
+        p.id === productId ? { ...p, quantity: newQuantity } : p
+      ));
+
+      toast({
+        title: "Stock updated",
+        description: "Product inventory has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update stock",
+      });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const filteredProducts = products.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const getStatusBadge = (status: string, stock: number, threshold: number) => {
+  const getStatusBadge = (stock: number, lowStockThreshold = 10) => {
     if (stock === 0) {
       return <Badge variant="destructive">Out of Stock</Badge>;
-    } else if (stock <= threshold) {
+    } else if (stock <= lowStockThreshold) {
       return <Badge variant="outline" className="border-orange-500 text-orange-600">Low Stock</Badge>;
     } else {
       return <Badge variant="default">In Stock</Badge>;
     }
   };
 
-  const lowStockCount = inventory.filter(item => item.currentStock <= item.lowStockThreshold && item.currentStock > 0).length;
-  const outOfStockCount = inventory.filter(item => item.currentStock === 0).length;
+  const lowStockCount = products.filter(item => item.quantity <= 10 && item.quantity > 0).length;
+  const outOfStockCount = products.filter(item => item.quantity === 0).length;
+
+  if (loading) {
+    return <div>Loading inventory...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -113,7 +173,7 @@ const VendorInventory = () => {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inventory.length}</div>
+            <div className="text-2xl font-bold">{products.length}</div>
             <p className="text-xs text-muted-foreground">
               Products in inventory
             </p>
@@ -186,43 +246,57 @@ const VendorInventory = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredInventory.map((item) => (
+              {filteredProducts.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{item.sku}</TableCell>
+                  <TableCell>{item.sku || 'N/A'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className={`font-medium ${
-                        item.currentStock === 0 ? 'text-red-600' :
-                        item.currentStock <= item.lowStockThreshold ? 'text-orange-600' :
+                        item.quantity === 0 ? 'text-red-600' :
+                        item.quantity <= 10 ? 'text-orange-600' :
                         'text-green-600'
                       }`}>
-                        {item.currentStock}
+                        {item.quantity}
                       </span>
                       <span className="text-muted-foreground">units</span>
                     </div>
                   </TableCell>
-                  <TableCell>{item.lowStockThreshold}</TableCell>
+                  <TableCell>10</TableCell>
                   <TableCell>
-                    {getStatusBadge(item.status, item.currentStock, item.lowStockThreshold)}
+                    {getStatusBadge(item.quantity, 10)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{item.lastUpdated}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(item.updated_at).toLocaleDateString()}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled={updating === item.id}
+                        onClick={() => updateStock(item.id, Math.max(0, item.quantity - 1))}
+                      >
                         <Minus className="h-3 w-3" />
                       </Button>
                       <Input 
                         type="number" 
-                        value={item.currentStock}
+                        value={item.quantity}
                         className="w-16 h-8 text-center"
                         min="0"
+                        disabled={updating === item.id}
+                        onChange={(e) => {
+                          const newValue = parseInt(e.target.value) || 0;
+                          updateStock(item.id, newValue);
+                        }}
                       />
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled={updating === item.id}
+                        onClick={() => updateStock(item.id, item.quantity + 1)}
+                      >
                         <Plus className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <RotateCcw className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
