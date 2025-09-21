@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,8 @@ import {
   Store,
   Globe,
   Phone,
-  Mail
+  Mail,
+  Upload
 } from "lucide-react";
 
 const VendorShopfront = () => {
@@ -30,8 +31,11 @@ const VendorShopfront = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [storeData, setStoreData] = useState<any>(null);
   const [vendorData, setVendorData] = useState<any>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -153,6 +157,71 @@ const VendorShopfront = () => {
     }
   };
 
+  const uploadFile = async (file: File, bucket: string, folder: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${user?.id}/${Date.now()}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file);
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const url = await uploadFile(file, 'vendor-banners', 'banners');
+      setFormData(prev => ({ ...prev, banner_url: url }));
+      toast({
+        title: "Success",
+        description: "Banner uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading banner:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to upload banner",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const url = await uploadFile(file, 'vendor-logos', 'logos');
+      setFormData(prev => ({ ...prev, logo_url: url }));
+      toast({
+        title: "Success",
+        description: "Logo uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to upload logo",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleCancel = () => {
     if (storeData) {
       setFormData({
@@ -213,20 +282,41 @@ const VendorShopfront = () => {
           <div className="space-y-2">
             <Label>Banner Image (1200x400px recommended)</Label>
             <div className="relative h-48 w-full bg-muted rounded-lg overflow-hidden border-2 border-dashed border-border">
-              <img 
-                src={formData.banner_url || "/api/placeholder/800/300"} 
-                alt="Shop banner"
-                className="w-full h-full object-cover"
-              />
+              {formData.banner_url ? (
+                <img 
+                  src={formData.banner_url} 
+                  alt="Shop banner"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  <div className="text-center">
+                    <Camera className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No banner image</p>
+                  </div>
+                </div>
+              )}
               {isEditing && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Button variant="secondary" size="sm">
-                    <Camera className="h-4 w-4 mr-2" />
-                    Change Banner
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading ? "Uploading..." : "Change Banner"}
                   </Button>
                 </div>
               )}
             </div>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleBannerUpload}
+              className="hidden"
+            />
           </div>
 
           {/* Logo */}
@@ -245,8 +335,10 @@ const VendorShopfront = () => {
                     size="sm" 
                     variant="secondary" 
                     className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploading}
                   >
-                    <Camera className="h-4 w-4" />
+                    <Upload className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -254,6 +346,13 @@ const VendorShopfront = () => {
                 Square format recommended (200x200px minimum)
               </div>
             </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
           </div>
         </CardContent>
       </Card>
