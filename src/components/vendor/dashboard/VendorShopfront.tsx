@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Camera, 
@@ -99,10 +99,28 @@ const VendorShopfront = () => {
   };
 
   const handleSave = async () => {
-    if (!vendorData?.id) return;
+    if (!vendorData?.id) {
+      console.error('No vendor data found');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Vendor information not found. Please refresh the page.",
+      });
+      return;
+    }
+
+    if (!formData.name?.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Shop name is required",
+      });
+      return;
+    }
 
     try {
       setSaving(true);
+      console.log('Saving store data:', formData);
 
       if (storeData) {
         // Update existing store
@@ -118,7 +136,11 @@ const VendorShopfront = () => {
           })
           .eq('id', storeData.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
+        console.log('Store updated successfully');
       } else {
         // Create new store
         const { data: newStore, error } = await supabase
@@ -136,7 +158,11 @@ const VendorShopfront = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
+        console.log('Store created successfully:', newStore);
         setStoreData(newStore);
       }
 
@@ -178,9 +204,30 @@ const VendorShopfront = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File",
+        description: "Please select an image file",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Please select an image smaller than 10MB",
+      });
+      return;
+    }
+
     try {
       setUploading(true);
+      console.log('Uploading banner file:', file.name);
       const url = await uploadFile(file, 'vendor-banners', 'banners');
+      console.log('Banner uploaded successfully:', url);
       setFormData(prev => ({ ...prev, banner_url: url }));
       toast({
         title: "Success",
@@ -191,7 +238,7 @@ const VendorShopfront = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to upload banner",
+        description: `Failed to upload banner: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setUploading(false);
@@ -202,9 +249,30 @@ const VendorShopfront = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File",
+        description: "Please select an image file",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit for logos
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Please select an image smaller than 5MB",
+      });
+      return;
+    }
+
     try {
       setUploading(true);
+      console.log('Uploading logo file:', file.name);
       const url = await uploadFile(file, 'vendor-logos', 'logos');
+      console.log('Logo uploaded successfully:', url);
       setFormData(prev => ({ ...prev, logo_url: url }));
       toast({
         title: "Success",
@@ -215,7 +283,7 @@ const VendorShopfront = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to upload logo",
+        description: `Failed to upload logo: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setUploading(false);
