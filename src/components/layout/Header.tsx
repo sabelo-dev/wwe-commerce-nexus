@@ -30,7 +30,7 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 flex items-center">
-            <span className="text-xl font-bold text-wwe-navy">LSI</span>
+            <span className="text-xl font-bold text-primary">LSI</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -55,7 +55,7 @@ const Header: React.FC = () => {
             >
               <ShoppingCart className="h-5 w-5" />
               {items.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-wwe-navy text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
                   {items.length}
                 </span>
               )}
@@ -71,7 +71,7 @@ const Header: React.FC = () => {
             >
               <ShoppingCart className="h-6 w-6" />
               {items.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-wwe-navy text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
                   {items.length}
                 </span>
               )}

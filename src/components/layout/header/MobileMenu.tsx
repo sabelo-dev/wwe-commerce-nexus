@@ -186,7 +186,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             </div>
             <input
               type="search"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-wwe-navy focus:border-wwe-navy sm:text-sm"
+              className="block w-full pl-10 pr-3 py-2 border border-input rounded-md leading-5 bg-background placeholder-muted-foreground focus:outline-none focus:ring-ring focus:border-ring sm:text-sm"
               placeholder="Search"
             />
           </div>
@@ -219,7 +219,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           <div className="px-3 py-2">
             <Link
               to="/login"
-              className="block w-full text-center px-3 py-2 rounded-md bg-wwe-navy text-white font-medium"
+              className="block w-full text-center px-3 py-2 rounded-md bg-primary text-primary-foreground font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Sign in
