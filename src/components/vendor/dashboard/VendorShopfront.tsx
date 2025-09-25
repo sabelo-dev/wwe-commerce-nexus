@@ -47,6 +47,11 @@ const VendorShopfront = () => {
   });
 
   useEffect(() => {
+    console.log('VendorShopfront: User authentication status:', { 
+      userId: user?.id, 
+      email: user?.email,
+      isAuthenticated: !!user 
+    });
     fetchStoreData();
   }, [user?.id]);
 
@@ -184,25 +189,48 @@ const VendorShopfront = () => {
   };
 
   const uploadFile = async (file: File, bucket: string, folder: string) => {
+    console.log('uploadFile called with:', { file: file.name, bucket, folder, userId: user?.id });
+    
+    if (!user?.id) {
+      console.error('No user ID found for upload');
+      throw new Error('User not authenticated');
+    }
+    
     const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${user?.id}/${Date.now()}.${fileExt}`;
+    const fileName = `${folder}/${user.id}/${Date.now()}.${fileExt}`;
+    console.log('Generated fileName:', fileName);
     
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(fileName, file);
 
+    console.log('Upload result:', { data, error });
     if (error) throw error;
     
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName);
     
+    console.log('Generated publicUrl:', publicUrl);
     return publicUrl;
   };
 
   const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    console.log('Banner upload initiated:', { fileName: file.name, fileSize: file.size, fileType: file.type });
+
+    // Check authentication first
+    if (!user?.id) {
+      console.error('User not authenticated for banner upload');
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in to upload images",
+      });
+      return;
+    }
 
     // Validate file type and size
     if (!file.type.startsWith('image/')) {
@@ -248,6 +276,19 @@ const VendorShopfront = () => {
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    console.log('Logo upload initiated:', { fileName: file.name, fileSize: file.size, fileType: file.type });
+
+    // Check authentication first
+    if (!user?.id) {
+      console.error('User not authenticated for logo upload');
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in to upload images",
+      });
+      return;
+    }
 
     // Validate file type and size
     if (!file.type.startsWith('image/')) {
