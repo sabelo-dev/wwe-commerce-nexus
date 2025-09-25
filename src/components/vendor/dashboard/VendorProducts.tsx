@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -23,58 +23,124 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import ProductFormModal from "./ProductFormModal";
+import ProductViewModal from "./ProductViewModal";
 
 const VendorProducts = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
+  const [productToDelete, setProductToDelete] = useState<any>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
   // Fetch vendor products from database
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (!user?.id) return;
+  const fetchProducts = async () => {
+    if (!user?.id) return;
 
-      try {
-        const { data: products, error } = await supabase
-          .from('products')
-          .select(`
-            *,
-            product_images(image_url, position),
-            stores!inner(vendor_id, vendors!inner(user_id))
-          `)
-          .eq('stores.vendors.user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        setProducts(products || []);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load products.",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, [user?.id]);
-
-  const handleDeleteProduct = async (productId: string) => {
     try {
-      const { error } = await supabase
+      const { data: products, error } = await supabase
         .from('products')
-        .delete()
-        .eq('id', productId);
+        .select(`
+          *,
+          product_images(id, image_url, position),
+          stores!inner(vendor_id, vendors!inner(user_id))
+        `)
+        .eq('stores.vendors.user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setProducts(products.filter(p => p.id !== productId));
+      setProducts(products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load products.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [user?.id]);
+
+  const handleAddProduct = () => {
+    setSelectedProduct(null);
+    setFormMode("add");
+    setShowFormModal(true);
+  };
+
+  const handleEditProduct = (product: any) => {
+    setSelectedProduct(product);
+    setFormMode("edit");
+    setShowFormModal(true);
+  };
+
+  const handleViewProduct = (product: any) => {
+    setSelectedProduct(product);
+    setShowViewModal(true);
+  };
+
+  const handleDeleteProduct = (product: any) => {
+    setProductToDelete(product);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+
+    try {
+      // Delete product images from storage first
+      const { data: images } = await supabase
+        .from('product_images')
+        .select('image_url')
+        .eq('product_id', productToDelete.id);
+
+      if (images) {
+        for (const image of images) {
+          const path = image.image_url.split('/').pop();
+          if (path) {
+            await supabase.storage
+              .from('product-images')
+              .remove([`${productToDelete.id}/${path}`]);
+          }
+        }
+      }
+
+      // Delete product images records
+      await supabase
+        .from('product_images')
+        .delete()
+        .eq('product_id', productToDelete.id);
+
+      // Delete the product
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productToDelete.id);
+
+      if (error) throw error;
+
+      setProducts(products.filter(p => p.id !== productToDelete.id));
       toast({
         title: "Product Deleted",
         description: "Product has been successfully deleted.",
@@ -86,7 +152,14 @@ const VendorProducts = () => {
         title: "Error",
         description: "Failed to delete product.",
       });
+    } finally {
+      setShowDeleteDialog(false);
+      setProductToDelete(null);
     }
+  };
+
+  const handleFormSuccess = () => {
+    fetchProducts();
   };
 
   const filteredProducts = products.filter(product =>
@@ -103,7 +176,7 @@ const VendorProducts = () => {
             Manage your product inventory and listings.
           </p>
         </div>
-        <Button>
+        <Button onClick={handleAddProduct}>
           <Plus className="h-4 w-4 mr-2" />
           Add Product
         </Button>
@@ -188,18 +261,18 @@ const VendorProducts = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewProduct(product)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditProduct(product)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive"
-                          onClick={() => handleDeleteProduct(product.id)}
+                          onClick={() => handleDeleteProduct(product)}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
@@ -213,6 +286,43 @@ const VendorProducts = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <ProductFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        onSuccess={handleFormSuccess}
+        product={selectedProduct}
+        mode={formMode}
+      />
+
+      <ProductViewModal
+        isOpen={showViewModal}
+        onClose={() => setShowViewModal(false)}
+        onEdit={() => {
+          setShowViewModal(false);
+          handleEditProduct(selectedProduct);
+        }}
+        product={selectedProduct}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone and will remove all associated images.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
