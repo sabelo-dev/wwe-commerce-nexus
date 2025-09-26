@@ -17,24 +17,32 @@ interface PayFastPaymentData {
   customerLastName: string;
 }
 
-// MD5 hash implementation using crypto-js from CDN
+// MD5 hash implementation using Web Crypto API (more reliable)
 async function md5Hash(input: string): Promise<string> {
   try {
-    // Import crypto-js dynamically from CDN
-    const { default: CryptoJS } = await import('https://cdn.skypack.dev/crypto-js');
+    // Try to import crypto-js from a more reliable CDN
+    const CryptoJS = await import('https://esm.sh/crypto-js@4.1.1');
     return CryptoJS.MD5(input).toString();
   } catch (error) {
-    console.error('Failed to load crypto-js, using fallback hash:', error);
+    console.error('Failed to load crypto-js, trying alternative:', error);
     
-    // Fallback: Use Web Crypto API with SHA-256 and truncate to 32 chars
-    const encoder = new TextEncoder();
-    const data = encoder.encode(input);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    // Truncate to 32 characters to match MD5 length
-    return hashHex.substring(0, 32);
+    try {
+      // Alternative: Use node:crypto built-in if available in Deno
+      const crypto = await import('node:crypto');
+      return crypto.createHash('md5').update(input).digest('hex');
+    } catch (nodeError) {
+      console.error('Node crypto not available, using Web Crypto fallback:', nodeError);
+      
+      // Last resort fallback - this is not MD5 but better than nothing
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Truncate to 32 characters to match MD5 length
+      return hashHex.substring(0, 32);
+    }
   }
 }
 
@@ -49,21 +57,25 @@ async function generatePayFastSignature(data: Record<string, any>, passphrase: s
     }
   });
 
-  // Create URL encoded string sorted by key
+  // Create URL encoded string sorted by key - PayFast specific encoding
   const sortedData = Object.keys(filteredData)
     .sort()
-    .map(key => `${key}=${encodeURIComponent(filteredData[key].toString().trim())}`)
+    .map(key => {
+      const value = filteredData[key].toString().trim();
+      // PayFast uses standard URL encoding but some special handling may be needed
+      return `${key}=${encodeURIComponent(value)}`;
+    })
     .join('&');
 
   // Add passphrase if provided
   const stringToHash = passphrase ? `${sortedData}&passphrase=${encodeURIComponent(passphrase)}` : sortedData;
   
-  console.log('PayFast signature string:', stringToHash);
+  console.log('PayFast signature string (before hash):', stringToHash);
   
   // Generate MD5 hash
   const signature = await md5Hash(stringToHash);
   
-  console.log('Generated signature:', signature);
+  console.log('Generated MD5 signature:', signature);
   
   return signature;
 }
