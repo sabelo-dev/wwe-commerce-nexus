@@ -157,7 +157,8 @@ export const fetchAllProducts = async (): Promise<Product[]> => {
  */
 export const fetchCategories = async (): Promise<Category[]> => {
   try {
-    const { data: categories, error } = await supabase
+    // First, get categories that have at least one approved product
+    const { data: categoriesWithProducts, error: categoriesError } = await supabase
       .from('categories')
       .select(`
         *,
@@ -171,12 +172,29 @@ export const fetchCategories = async (): Promise<Category[]> => {
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching categories from database:', error);
+    if (categoriesError) {
+      console.error('Error fetching categories from database:', categoriesError);
       return [];
     }
 
-    return (categories || []).map(category => ({
+    // Filter categories that have products
+    const filteredCategories = [];
+    
+    for (const category of categoriesWithProducts || []) {
+      // Check if this category has any approved products
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('category', category.name)
+        .in('status', ['approved', 'active'])
+        .limit(1);
+
+      if (!productsError && products && products.length > 0) {
+        filteredCategories.push(category);
+      }
+    }
+
+    return filteredCategories.map(category => ({
       id: category.id,
       name: category.name,
       slug: category.slug,
