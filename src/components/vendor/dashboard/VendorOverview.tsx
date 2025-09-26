@@ -23,13 +23,16 @@ import {
   Calendar,
   Bell,
   MessageSquare,
-  Percent
+  Percent,
+  ExternalLink,
+  Copy
 } from "lucide-react";
 
 const VendorOverview = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [storeInfo, setStoreInfo] = useState<any>(null);
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeProducts: 0,
@@ -77,6 +80,8 @@ const VendorOverview = () => {
           return;
         }
 
+        const store = vendor.stores[0]; // Get the first store
+        setStoreInfo(store);
         const storeIds = vendor.stores.map((store: any) => store.id);
 
         // Fetch products data
@@ -226,6 +231,39 @@ const VendorOverview = () => {
           <p className="text-muted-foreground">
             Welcome back! Here's what's happening with your store today.
           </p>
+          {/* Storefront Link */}
+          {storeInfo?.slug && (
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const storefrontUrl = `${window.location.origin}/store/${storeInfo.slug}`;
+                  window.open(storefrontUrl, '_blank');
+                }}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Storefront
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const storefrontUrl = `${window.location.origin}/store/${storeInfo.slug}`;
+                  navigator.clipboard.writeText(storefrontUrl);
+                  toast({
+                    title: "Copied!",
+                    description: "Storefront link copied to clipboard."
+                  });
+                }}
+                className="flex items-center gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                Copy Link
+              </Button>
+            </div>
+          )}
         </div>
         <div className="text-right space-y-1">
           <div className="flex items-center gap-2">

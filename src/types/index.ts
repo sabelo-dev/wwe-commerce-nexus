@@ -32,6 +32,7 @@ export interface Product {
   inStock: boolean;
   vendorId: string;
   vendorName: string;
+  vendorSlug?: string;
   createdAt: string;
 }
 

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { Toaster } from "@/components/ui/toaster";
+import StorefrontPage from "@/pages/StorefrontPage";
 import Layout from "@/components/layout/Layout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
@@ -68,6 +69,7 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
                 <Route path="shop" element={<ShopPage />} />
+                <Route path="store/:storeSlug" element={<StorefrontPage />} />
                 <Route path="product/:slug" element={<ProductPage />} />
                 <Route path="categories" element={<CategoriesPage />} />
                 <Route path="category/:slug" element={<CategoryPage />} />

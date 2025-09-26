@@ -5,6 +5,9 @@ import { Product, Category } from "@/types";
  * Converts database product to frontend Product type
  */
 const mapDatabaseProduct = (dbProduct: any, images: any[] = []): Product => {
+  const store = dbProduct.stores || {};
+  const vendor = store.vendors || {};
+  
   return {
     id: dbProduct.id,
     name: dbProduct.name,
@@ -18,8 +21,9 @@ const mapDatabaseProduct = (dbProduct: any, images: any[] = []): Product => {
     rating: Number(dbProduct.rating) || 0,
     reviewCount: dbProduct.review_count || 0,
     inStock: dbProduct.quantity > 0,
-    vendorId: dbProduct.store_id,
-    vendorName: "Store", // We'll enhance this later with store names
+    vendorId: store.id,
+    vendorName: store.name || vendor.business_name || "Store",
+    vendorSlug: store.slug,
     createdAt: dbProduct.created_at,
   };
 };
@@ -36,6 +40,15 @@ export const fetchDatabaseProducts = async (): Promise<Product[]> => {
         product_images (
           image_url,
           position
+        ),
+        stores (
+          id,
+          name,
+          slug,
+          vendors (
+            id,
+            business_name
+          )
         )
       `)
       .eq('status', 'approved')
@@ -52,6 +65,78 @@ export const fetchDatabaseProducts = async (): Promise<Product[]> => {
   } catch (error) {
     console.error('Error fetching database products:', error);
     return [];
+  }
+};
+
+/**
+ * Fetches products by vendor store slug
+ */
+export const fetchProductsByStore = async (storeSlug: string): Promise<Product[]> => {
+  try {
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select(`
+        *,
+        product_images (
+          image_url,
+          position
+        ),
+        stores!inner (
+          id,
+          name,
+          slug,
+          vendors (
+            id,
+            business_name
+          )
+        )
+      `)
+      .eq('stores.slug', storeSlug)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (productsError) {
+      console.error('Error fetching products by store:', productsError);
+      return [];
+    }
+
+    return (products || []).map(product => 
+      mapDatabaseProduct(product, product.product_images || [])
+    );
+  } catch (error) {
+    console.error('Error fetching products by store:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetches store information by slug
+ */
+export const fetchStoreBySlug = async (storeSlug: string) => {
+  try {
+    const { data: store, error } = await supabase
+      .from('stores')
+      .select(`
+        *,
+        vendors (
+          id,
+          business_name,
+          description,
+          logo_url
+        )
+      `)
+      .eq('slug', storeSlug)
+      .single();
+
+    if (error) {
+      console.error('Error fetching store:', error);
+      return null;
+    }
+
+    return store;
+  } catch (error) {
+    console.error('Error fetching store:', error);
+    return null;
   }
 };
 

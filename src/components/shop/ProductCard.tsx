@@ -71,6 +71,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
           <h3 className="font-medium text-gray-900 text-sm md:text-base mb-1 line-clamp-2">
             {product.name}
           </h3>
+          
+          {/* Vendor Info */}
+          {product.vendorName && product.vendorSlug && (
+            <div className="text-xs text-gray-500 mb-2">
+              <Link 
+                to={`/store/${product.vendorSlug}`}
+                className="hover:text-primary transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                by {product.vendorName}
+              </Link>
+            </div>
+          )}
+          
           <div className="flex items-baseline gap-2 mb-2">
             <span className="font-semibold">{formatCurrency(product.price)}</span>
             {isOnSale && (
