@@ -20,8 +20,14 @@ interface Vendor {
   user_id: string;
   status: "pending" | "approved" | "rejected";
   created_at: string;
+  description?: string;
+  logo_url?: string;
+  subscription_tier?: string;
+  subscription_status?: string;
+  trial_end_date?: string;
   profiles?: {
     email: string;
+    name?: string;
   };
 }
 
@@ -34,6 +40,7 @@ const AdminVendors: React.FC = () => {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
+        // First get vendors data
         const { data: vendorsData, error } = await supabase
           .from('vendors')
           .select(`
@@ -41,36 +48,51 @@ const AdminVendors: React.FC = () => {
             business_name,
             user_id,
             status,
-            created_at
+            created_at,
+            description,
+            logo_url,
+            subscription_tier,
+            subscription_status,
+            trial_end_date
           `)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error fetching vendors:', error);
+          throw error;
+        }
 
-        // Get user emails separately
-        const vendorsWithEmails = await Promise.all(
+        console.log('Fetched vendors data:', vendorsData);
+
+        // Get profile data for each vendor
+        const vendorsWithProfiles = await Promise.all(
           (vendorsData || []).map(async (vendor) => {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
-              .select('email')
+              .select('email, name')
               .eq('id', vendor.user_id)
-              .single();
+              .maybeSingle();
+
+            if (profileError) {
+              console.error('Error fetching profile for vendor:', vendor.id, profileError);
+            }
 
             return {
               ...vendor,
               status: vendor.status as "pending" | "approved" | "rejected",
-              profiles: profile ? { email: profile.email } : undefined
+              profiles: profile || undefined
             };
           })
         );
 
-        setVendors(vendorsWithEmails);
+        console.log('Vendors with profiles:', vendorsWithProfiles);
+        setVendors(vendorsWithProfiles);
       } catch (error) {
         console.error('Error fetching vendors:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load vendors.",
+          description: `Failed to load vendors: ${error.message}`,
         });
       } finally {
         setLoading(false);
@@ -78,7 +100,7 @@ const AdminVendors: React.FC = () => {
     };
 
     fetchVendors();
-  }, []);
+  }, [toast]);
 
   const handleUpdateStatus = async (vendorId: string, newStatus: "approved" | "rejected") => {
     try {
