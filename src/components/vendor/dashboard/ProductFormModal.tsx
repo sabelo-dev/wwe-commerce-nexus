@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Upload, X, Plus, Trash2, GripVertical } from "lucide-react";
 import { z } from "zod";
-import { fetchCategories } from "@/services/products";
+import { fetchCategories, fetchSubcategoriesByCategory } from "@/services/products";
 import {
   DndContext,
   closestCenter,
@@ -171,11 +171,25 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   // Update subcategories when category changes
   useEffect(() => {
-    const selectedCategory = categories.find(cat => cat.name === formData.category);
-    setSubcategories(selectedCategory?.subcategories || []);
-    if (formData.category && !selectedCategory?.subcategories?.some((sub: any) => sub.name === formData.subcategory)) {
-      setFormData(prev => ({ ...prev, subcategory: "" }));
-    }
+    const loadSubcategories = async () => {
+      if (formData.category) {
+        const selectedCategory = categories.find(cat => cat.name === formData.category);
+        if (selectedCategory) {
+          const subs = await fetchSubcategoriesByCategory(selectedCategory.id);
+          setSubcategories(subs);
+          
+          // Reset subcategory if current selection is not valid for new category
+          if (formData.subcategory && !subs.some((sub: any) => sub.name === formData.subcategory)) {
+            setFormData(prev => ({ ...prev, subcategory: "" }));
+          }
+        }
+      } else {
+        setSubcategories([]);
+        setFormData(prev => ({ ...prev, subcategory: "" }));
+      }
+    };
+
+    loadSubcategories();
   }, [formData.category, categories]);
 
   useEffect(() => {

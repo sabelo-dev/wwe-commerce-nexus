@@ -194,6 +194,27 @@ export const fetchCategories = async (): Promise<Category[]> => {
 };
 
 /**
+ * Fetches subcategories for a specific category
+ */
+export const fetchSubcategoriesByCategory = async (categoryId: string): Promise<any[]> => {
+  try {
+    const { data: subcategories, error } = await supabase
+      .from('subcategories')
+      .select('id, name, slug')
+      .eq('category_id', categoryId)
+      .eq('is_active', true)
+      .order('sort_order');
+
+    if (error) throw error;
+
+    return subcategories || [];
+  } catch (error) {
+    console.error('Error fetching subcategories:', error);
+    return [];
+  }
+};
+
+/**
  * Fetches featured products from database
  */
 export const fetchFeaturedProducts = async (limit: number = 4): Promise<Product[]> => {
