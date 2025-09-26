@@ -153,36 +153,40 @@ export const fetchAllProducts = async (): Promise<Product[]> => {
 };
 
 /**
- * Fetches categories from products
+ * Fetches categories from database
  */
 export const fetchCategories = async (): Promise<Category[]> => {
   try {
-    const products = await fetchAllProducts();
-    const categoryMap = new Map<string, Category>();
+    const { data: categories, error } = await supabase
+      .from('categories')
+      .select(`
+        *,
+        subcategories (
+          id,
+          name,
+          slug,
+          description
+        )
+      `)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
 
-    products.forEach(product => {
-      if (!categoryMap.has(product.category)) {
-        categoryMap.set(product.category, {
-          id: product.category.toLowerCase().replace(/\s+/g, '-'),
-          name: product.category,
-          slug: product.category.toLowerCase().replace(/\s+/g, '-'),
-          image: `https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60`,
-          subcategories: [],
-        });
-      }
+    if (error) {
+      console.error('Error fetching categories from database:', error);
+      return [];
+    }
 
-      const category = categoryMap.get(product.category)!;
-      if (product.subcategory && !category.subcategories?.some(sub => sub.name === product.subcategory)) {
-        category.subcategories = category.subcategories || [];
-        category.subcategories.push({
-          id: `${product.category.toLowerCase()}-${product.subcategory.toLowerCase()}`.replace(/\s+/g, '-'),
-          name: product.subcategory,
-          slug: product.subcategory.toLowerCase().replace(/\s+/g, '-'),
-        });
-      }
-    });
-
-    return Array.from(categoryMap.values());
+    return (categories || []).map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      image: category.image_url || `https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60`,
+      subcategories: (category.subcategories || []).map((sub: any) => ({
+        id: sub.id,
+        name: sub.name,
+        slug: sub.slug,
+      })),
+    }));
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];
