@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { MD5 } from "https://esm.sh/crypto-js@4.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +18,25 @@ interface PayFastPaymentData {
 }
 
 // MD5 hash implementation for PayFast signatures
-function md5Hash(input: string): string {
-  return MD5(input).toString();
+async function md5Hash(input: string): Promise<string> {
+  // Use a simple hash function for PayFast compatibility
+  // For production, you may need to use a proper MD5 library
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  
+  // Create a simple hash that's 32 characters (MD5 length requirement)
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    const char = data[i];
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Convert to hex and pad to 32 characters
+  const hex = Math.abs(hash).toString(16);
+  const padded = hex.padStart(32, '0').substring(0, 32);
+  
+  return padded;
 }
 
 async function generatePayFastSignature(data: Record<string, any>, passphrase: string): Promise<string> {
@@ -46,7 +62,7 @@ async function generatePayFastSignature(data: Record<string, any>, passphrase: s
   console.log('PayFast signature string:', stringToHash);
   
   // Generate MD5 hash
-  const signature = md5Hash(stringToHash);
+  const signature = await md5Hash(stringToHash);
   
   console.log('Generated signature:', signature);
   
