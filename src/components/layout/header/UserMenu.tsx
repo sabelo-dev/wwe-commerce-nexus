@@ -2,7 +2,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { User, Store, Shield } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, Store, Shield, ChevronDown } from "lucide-react";
 import { User as UserType } from "@/types";
 
 interface UserMenuProps {
@@ -21,55 +29,75 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, isAdmin, isVendor, logout }) 
     );
   }
 
+  const getInitials = (name: string | undefined, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    }
+    return email[0].toUpperCase();
+  };
+
   return (
-    <div className="relative inline-block text-left group">
-      <Button variant="ghost">
-        <User className="h-5 w-5 mr-2" />
-        {user.name || user.email}
-        {isAdmin && <Shield className="h-4 w-4 ml-2 text-red-500" />}
-      </Button>
-      <div className="hidden group-hover:block absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
-        <Link
-          to="/account"
-          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-        >
-          Account
-        </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="flex items-center space-x-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.avatar_url} />
+            <AvatarFallback className="text-sm">
+              {getInitials(user.name, user.email)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="hidden md:flex items-center">
+            {user.name || user.email}
+            {isAdmin && <Shield className="h-4 w-4 ml-2 text-destructive" />}
+            <ChevronDown className="h-4 w-4 ml-1" />
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end">
+        <DropdownMenuItem asChild>
+          <Link to="/account" className="flex items-center">
+            <User className="h-4 w-4 mr-2" />
+            Account Settings
+          </Link>
+        </DropdownMenuItem>
+        
         {user?.role === 'consumer' && (
-          <Link
-            to="/vendor/register"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <Store className="h-4 w-4 inline-block mr-2" />
-            Become a Vendor
-          </Link>
+          <DropdownMenuItem asChild>
+            <Link to="/vendor/register" className="flex items-center">
+              <Store className="h-4 w-4 mr-2" />
+              Become a Vendor
+            </Link>
+          </DropdownMenuItem>
         )}
+        
         {isVendor && (
-          <Link
-            to="/vendor/dashboard"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <Store className="h-4 w-4 inline-block mr-2" />
-            Vendor Dashboard
-          </Link>
+          <DropdownMenuItem asChild>
+            <Link to="/vendor/dashboard" className="flex items-center">
+              <Store className="h-4 w-4 mr-2" />
+              Vendor Dashboard
+            </Link>
+          </DropdownMenuItem>
         )}
+        
         {isAdmin && (
-          <Link
-            to="/admin/dashboard"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            <Shield className="h-4 w-4 inline-block mr-2" />
-            Admin Dashboard
-          </Link>
+          <DropdownMenuItem asChild>
+            <Link to="/admin/dashboard" className="flex items-center">
+              <Shield className="h-4 w-4 mr-2" />
+              Admin Dashboard
+            </Link>
+          </DropdownMenuItem>
         )}
-        <button
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem 
           onClick={() => logout()}
-          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          className="text-destructive focus:text-destructive"
         >
           Sign out
-        </button>
-      </div>
-    </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
