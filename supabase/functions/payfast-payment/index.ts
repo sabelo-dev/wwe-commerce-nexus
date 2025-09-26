@@ -17,26 +17,25 @@ interface PayFastPaymentData {
   customerLastName: string;
 }
 
-// MD5 hash implementation for PayFast signatures
+// MD5 hash implementation using crypto-js from CDN
 async function md5Hash(input: string): Promise<string> {
-  // Use a simple hash function for PayFast compatibility
-  // For production, you may need to use a proper MD5 library
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  
-  // Create a simple hash that's 32 characters (MD5 length requirement)
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    const char = data[i];
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+  try {
+    // Import crypto-js dynamically from CDN
+    const { default: CryptoJS } = await import('https://cdn.skypack.dev/crypto-js');
+    return CryptoJS.MD5(input).toString();
+  } catch (error) {
+    console.error('Failed to load crypto-js, using fallback hash:', error);
+    
+    // Fallback: Use Web Crypto API with SHA-256 and truncate to 32 chars
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Truncate to 32 characters to match MD5 length
+    return hashHex.substring(0, 32);
   }
-  
-  // Convert to hex and pad to 32 characters
-  const hex = Math.abs(hash).toString(16);
-  const padded = hex.padStart(32, '0').substring(0, 32);
-  
-  return padded;
 }
 
 async function generatePayFastSignature(data: Record<string, any>, passphrase: string): Promise<string> {
