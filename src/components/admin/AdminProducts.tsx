@@ -23,12 +23,8 @@ interface AdminProduct {
   category: string;
   created_at: string;
   store_id: string;
-  stores?: {
-    name: string;
-    vendors?: {
-      business_name: string;
-    };
-  };
+  store_name?: string;
+  vendor_business_name?: string;
 }
 
 const AdminProducts: React.FC = () => {
@@ -40,31 +36,50 @@ const AdminProducts: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data: productsData, error } = await supabase
+        // First, get basic product data
+        const { data: basicData, error: basicError } = await supabase
           .from('products')
-          .select(`
-            id,
-            name,
-            price,
-            status,
-            category,
-            created_at,
-            store_id,
-            stores(
-              name,
-              vendors(
-                business_name
-              )
-            )
-          `)
+          .select('*')
           .order('created_at', { ascending: false });
+        
+        if (basicError) throw basicError;
 
-        if (error) throw error;
+        // Then get store and vendor info for each product
+        const productsWithDetails = await Promise.all(
+          (basicData || []).map(async (product) => {
+            let storeName = 'Unknown Store';
+            let vendorBusinessName = 'Unknown Vendor';
 
-        setProducts((productsData || []).map(p => ({
-          ...p,
-          status: p.status as "pending" | "approved" | "rejected"
-        })));
+            if (product.store_id) {
+              const { data: storeData } = await supabase
+                .from('stores')
+                .select(`
+                  name,
+                  vendors(business_name)
+                `)
+                .eq('id', product.store_id)
+                .single();
+
+              if (storeData) {
+                storeName = storeData.name || 'Unknown Store';
+                if (storeData.vendors && Array.isArray(storeData.vendors) && storeData.vendors[0]) {
+                  vendorBusinessName = storeData.vendors[0].business_name || 'Unknown Vendor';
+                } else if (storeData.vendors && !Array.isArray(storeData.vendors)) {
+                  vendorBusinessName = (storeData.vendors as any).business_name || 'Unknown Vendor';
+                }
+              }
+            }
+
+            return {
+              ...product,
+              status: product.status as "pending" | "approved" | "rejected",
+              store_name: storeName,
+              vendor_business_name: vendorBusinessName
+            };
+          })
+        );
+
+        setProducts(productsWithDetails);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast({
@@ -139,8 +154,8 @@ const AdminProducts: React.FC = () => {
             {products.map((product) => (
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.stores?.vendors?.business_name || 'N/A'}</TableCell>
-                <TableCell>R{product.price.toFixed(2)}</TableCell>
+                <TableCell>{product.vendor_business_name || 'N/A'}</TableCell>
+                <TableCell>R{(product.price || 0).toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
