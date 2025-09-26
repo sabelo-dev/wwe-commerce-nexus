@@ -51,7 +51,15 @@ const variationSchema = z.object({
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
-type ProductVariation = z.infer<typeof variationSchema>;
+
+interface ProductVariation {
+  id?: string;
+  attributes: Record<string, string>;
+  price: number;
+  quantity: number;
+  sku?: string;
+  images?: ImageWithPreview[];
+}
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -305,6 +313,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       price: formData.price,
       quantity: 0,
       sku: "",
+      images: [],
     };
     setVariations(prev => [...prev, newVariation]);
   };
@@ -349,6 +358,34 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     );
   };
 
+  const handleVariationImageChange = (variationIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      const newImages: ImageWithPreview[] = newFiles.map((file, index) => ({
+        file,
+        url: URL.createObjectURL(file),
+        position: (variations[variationIndex].images?.length || 0) + index,
+      }));
+      
+      const updatedVariations = [...variations];
+      updatedVariations[variationIndex] = {
+        ...updatedVariations[variationIndex],
+        images: [...(updatedVariations[variationIndex].images || []), ...newImages]
+      };
+      setVariations(updatedVariations);
+    }
+  };
+
+  const removeVariationImage = (variationIndex: number, imageIndex: number) => {
+    const updatedVariations = [...variations];
+    const currentImages = updatedVariations[variationIndex].images || [];
+    updatedVariations[variationIndex] = {
+      ...updatedVariations[variationIndex],
+      images: currentImages.filter((_, index) => index !== imageIndex)
+    };
+    setVariations(updatedVariations);
+  };
+
   const uploadImages = async (productId: string) => {
     const uploadPromises = images
       .filter(img => img.file) // Only upload new files
@@ -390,19 +427,65 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         .eq('product_id', productId);
     }
 
-    const variationInserts = variations.map(variation => ({
-      product_id: productId,
-      attributes: variation.attributes,
-      price: variation.price,
-      quantity: variation.quantity,
-      sku: variation.sku,
-    }));
+    // Create variations and handle their images
+    for (const variation of variations) {
+      if (Object.keys(variation.attributes).length > 0) {
+        const { data: variationResult, error: variationError } = await supabase
+          .from('product_variations')
+          .insert({
+            product_id: productId,
+            attributes: variation.attributes,
+            price: variation.price,
+            quantity: variation.quantity,
+            sku: variation.sku
+          })
+          .select()
+          .single();
 
-    const { error } = await supabase
-      .from('product_variations')
-      .insert(variationInserts);
+        if (variationError) {
+          console.error('Error creating variation:', variationError);
+          continue;
+        }
 
-    if (error) throw error;
+        // Handle variation images
+        if (variation.images && variation.images.length > 0) {
+          for (let i = 0; i < variation.images.length; i++) {
+            const image = variation.images[i];
+            if (image.file) {
+              const fileExt = image.file.name.split('.').pop();
+              const fileName = `variation-images/${Date.now()}-${Math.random()}.${fileExt}`;
+              const filePath = fileName;
+
+              const { error: uploadError } = await supabase.storage
+                .from('product-images')
+                .upload(filePath, image.file);
+
+              if (uploadError) {
+                console.error('Error uploading variation image:', uploadError);
+                continue;
+              }
+
+              const { data: urlData } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(filePath);
+
+              // Save variation image record
+              const { error: imageError } = await supabase
+                .from('variation_images')
+                .insert({
+                  variation_id: variationResult.id,
+                  image_url: urlData.publicUrl,
+                  position: i
+                });
+
+              if (imageError) {
+                console.error('Error saving variation image:', imageError);
+              }
+            }
+          }
+        }
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -414,15 +497,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       // Validate form data
       const validatedData = productSchema.parse(formData);
 
-      // Validate variations if any
-      if (variations.length > 0) {
-        variations.forEach(variation => variationSchema.parse(variation));
-      }
-
-      // Get vendor's store
+      // Get vendor's store and info
       const { data: vendorData, error: vendorError } = await supabase
         .from('vendors')
-        .select('id, stores(id)')
+        .select('id, business_name, stores(id)')
         .eq('user_id', user?.id)
         .single();
 
@@ -433,7 +511,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       const storeId = vendorData.stores[0].id;
 
       if (mode === "add") {
-        // Create new product
+        // Create new product with vendor tracking
         const { data: newProduct, error: productError } = await supabase
           .from('products')
           .insert({
@@ -462,7 +540,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         toast({
           title: "Product Created",
-          description: "Your product has been created and is pending approval.",
+          description: `Your product has been created by ${vendorData.business_name} and is pending approval.`,
         });
       } else {
         // Update existing product
@@ -749,6 +827,43 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       onChange={(e) => updateVariation(variationIndex, 'sku', e.target.value)}
                       placeholder="Variation SKU"
                     />
+                  </div>
+                </div>
+
+                {/* Variation Images */}
+                <div>
+                  <Label>Variation Images</Label>
+                  <div className="mt-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleVariationImageChange(variationIndex, e)}
+                      className="mb-4"
+                    />
+                    
+                    {variation.images && variation.images.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {variation.images.map((image, imgIndex) => (
+                          <div key={imgIndex} className="relative">
+                            <img
+                              src={image.url}
+                              alt={`Variation ${variationIndex + 1} image ${imgIndex + 1}`}
+                              className="w-full h-20 object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                              onClick={() => removeVariationImage(variationIndex, imgIndex)}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

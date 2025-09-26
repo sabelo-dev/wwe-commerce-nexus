@@ -366,6 +366,7 @@ export type Database = {
           attributes: Json
           created_at: string
           id: string
+          image_url: string | null
           price: number
           product_id: string
           quantity: number
@@ -376,6 +377,7 @@ export type Database = {
           attributes: Json
           created_at?: string
           id?: string
+          image_url?: string | null
           price: number
           product_id: string
           quantity?: number
@@ -386,6 +388,7 @@ export type Database = {
           attributes?: Json
           created_at?: string
           id?: string
+          image_url?: string | null
           price?: number
           product_id?: string
           quantity?: number
@@ -664,6 +667,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      variation_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          position: number
+          variation_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          position?: number
+          variation_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          position?: number
+          variation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variation_images_variation_id_fkey"
+            columns: ["variation_id"]
+            isOneToOne: false
+            referencedRelation: "product_variations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendor_documents: {
         Row: {

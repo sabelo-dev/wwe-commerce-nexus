@@ -25,6 +25,8 @@ interface AdminProduct {
   store_id: string;
   store_name?: string;
   vendor_business_name?: string;
+  vendor_id?: string;
+  vendor_email?: string;
 }
 
 const AdminProducts: React.FC = () => {
@@ -49,23 +51,37 @@ const AdminProducts: React.FC = () => {
           (basicData || []).map(async (product) => {
             let storeName = 'Unknown Store';
             let vendorBusinessName = 'Unknown Vendor';
+            let vendorId = '';
+            let vendorEmail = '';
 
             if (product.store_id) {
               const { data: storeData } = await supabase
                 .from('stores')
                 .select(`
                   name,
-                  vendors(business_name)
+                  vendors(
+                    id,
+                    business_name,
+                    user_id,
+                    profiles(email)
+                  )
                 `)
                 .eq('id', product.store_id)
                 .single();
 
               if (storeData) {
                 storeName = storeData.name || 'Unknown Store';
-                if (storeData.vendors && Array.isArray(storeData.vendors) && storeData.vendors[0]) {
-                  vendorBusinessName = storeData.vendors[0].business_name || 'Unknown Vendor';
-                } else if (storeData.vendors && !Array.isArray(storeData.vendors)) {
-                  vendorBusinessName = (storeData.vendors as any).business_name || 'Unknown Vendor';
+                const vendor = Array.isArray(storeData.vendors) ? storeData.vendors[0] : storeData.vendors;
+                
+                if (vendor) {
+                  vendorBusinessName = vendor.business_name || 'Unknown Vendor';
+                  vendorId = vendor.id || '';
+                  
+                  // Get vendor email from profiles
+                  if (vendor.profiles) {
+                    const profile = Array.isArray(vendor.profiles) ? vendor.profiles[0] : vendor.profiles;
+                    vendorEmail = profile?.email || '';
+                  }
                 }
               }
             }
@@ -74,7 +90,9 @@ const AdminProducts: React.FC = () => {
               ...product,
               status: product.status as "pending" | "approved" | "rejected",
               store_name: storeName,
-              vendor_business_name: vendorBusinessName
+              vendor_business_name: vendorBusinessName,
+              vendor_id: vendorId,
+              vendor_email: vendorEmail
             };
           })
         );
@@ -143,7 +161,8 @@ const AdminProducts: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Product Name</TableHead>
-              <TableHead>Vendor</TableHead>
+              <TableHead>Vendor Info</TableHead>
+              <TableHead>Store</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date Added</TableHead>
@@ -154,7 +173,15 @@ const AdminProducts: React.FC = () => {
             {products.map((product) => (
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.vendor_business_name || 'N/A'}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="font-medium">{product.vendor_business_name || 'N/A'}</div>
+                    {product.vendor_email && (
+                      <div className="text-sm text-muted-foreground">{product.vendor_email}</div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>{product.store_name || 'N/A'}</TableCell>
                 <TableCell>R{(product.price || 0).toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge
