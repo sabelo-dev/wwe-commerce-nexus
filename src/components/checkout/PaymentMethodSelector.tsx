@@ -32,13 +32,13 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ control }
               <Card className="border-2 hover:border-wwe-navy/20 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="payfast" id="payfast" />
-                    <FormLabel htmlFor="payfast" className="flex items-center space-x-3 cursor-pointer flex-1">
-                      <Smartphone className="h-6 w-6 text-green-600" />
+                    <RadioGroupItem value="card" id="card" />
+                    <FormLabel htmlFor="card" className="flex items-center space-x-3 cursor-pointer flex-1">
+                      <CreditCard className="h-6 w-6 text-blue-600" />
                       <div>
-                        <div className="font-medium">PayFast</div>
+                        <div className="font-medium">Credit/Debit Card</div>
                         <div className="text-sm text-gray-500">
-                          Secure South African payment gateway
+                          Visa, Mastercard, American Express
                         </div>
                       </div>
                     </FormLabel>
@@ -46,16 +46,16 @@ const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ control }
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-wwe-navy/20 transition-colors opacity-75">
+              <Card className="border-2 hover:border-wwe-navy/20 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-3">
-                    <RadioGroupItem value="card" id="card" disabled />
-                    <FormLabel htmlFor="card" className="flex items-center space-x-3 cursor-pointer flex-1">
-                      <CreditCard className="h-6 w-6 text-gray-400" />
+                    <RadioGroupItem value="eft" id="eft" />
+                    <FormLabel htmlFor="eft" className="flex items-center space-x-3 cursor-pointer flex-1">
+                      <Smartphone className="h-6 w-6 text-green-600" />
                       <div>
-                        <div className="font-medium text-gray-400">Credit Card</div>
-                        <div className="text-sm text-gray-400">
-                          Coming soon
+                        <div className="font-medium">EFT (Instant Transfer)</div>
+                        <div className="text-sm text-gray-500">
+                          Secure electronic funds transfer
                         </div>
                       </div>
                     </FormLabel>

@@ -21,7 +21,7 @@ const checkoutSchema = z.object({
   city: z.string().min(1, "City is required"),
   postalCode: z.string().min(1, "Postal code is required"),
   phone: z.string().min(1, "Phone number is required"),
-  paymentMethod: z.enum(["payfast", "card"], {
+  paymentMethod: z.enum(["card", "eft"], {
     required_error: "Please select a payment method",
   }),
 });
@@ -51,7 +51,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       city: "",
       postalCode: "",
       phone: "",
-      paymentMethod: "payfast",
+      paymentMethod: "card",
     },
   });
 
@@ -75,8 +75,8 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         userId: user?.id,
       };
 
-      if (values.paymentMethod === "payfast") {
-        // Use the PayFast edge function
+      if (values.paymentMethod === "card" || values.paymentMethod === "eft") {
+        // Use the PayFast edge function for both card and EFT payments
         const { data: paymentData, error } = await supabase.functions.invoke('payfast-payment', {
           body: {
             amount: cart.subtotal || 0,
@@ -87,6 +87,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
             customerEmail: values.email,
             customerFirstName: values.firstName,
             customerLastName: values.lastName,
+            paymentMethod: values.paymentMethod, // Pass the specific payment method
           },
         });
 
