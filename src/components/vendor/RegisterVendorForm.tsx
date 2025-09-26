@@ -31,7 +31,7 @@ const vendorSchema = z.object({
 type VendorFormValues = z.infer<typeof vendorSchema>;
 
 const RegisterVendorForm: React.FC = () => {
-  const { user, refreshUserProfile } = useAuth();
+  const { user, register: registerUser, refreshUserProfile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -45,12 +45,9 @@ const RegisterVendorForm: React.FC = () => {
   });
 
   const onSubmit = async (values: VendorFormValues) => {
+    // If user is not logged in, redirect to main registration with vendor role
     if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: "You must be logged in to register as a vendor",
-      });
+      navigate('/register', { state: { role: 'vendor', businessName: values.businessName, description: values.description } });
       return;
     }
 

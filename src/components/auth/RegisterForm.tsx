@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,15 +16,17 @@ import SocialLoginButtons from "./register/SocialLoginButtons";
 const RegisterForm: React.FC = () => {
   const { register: registerUser, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as any;
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      name: state?.businessName || "",
       email: "",
       password: "",
       confirmPassword: "",
-      role: "consumer",
+      role: state?.role || "consumer",
       terms: false,
     },
   });

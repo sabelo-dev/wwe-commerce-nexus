@@ -270,10 +270,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('Registration error:', error);
         loadingManager.stopLoading('register');
+        
+        // Handle specific error cases
+        let errorMessage = error.message;
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+          errorMessage = "This email is already registered. Please try logging in instead.";
+        } else if (error.message.includes('User already registered')) {
+          errorMessage = "An account with this email already exists. Please sign in instead.";
+        }
+        
         toast({
           variant: "destructive",
           title: "Registration Failed",
-          description: error.message,
+          description: errorMessage,
         });
         throw error;
       }
