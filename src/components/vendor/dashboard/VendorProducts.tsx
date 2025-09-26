@@ -132,6 +132,12 @@ const VendorProducts = () => {
         .delete()
         .eq('product_id', productToDelete.id);
 
+      // Delete product variations
+      await supabase
+        .from('product_variations')
+        .delete()
+        .eq('product_id', productToDelete.id);
+
       // Delete the product
       const { error } = await supabase
         .from('products')
