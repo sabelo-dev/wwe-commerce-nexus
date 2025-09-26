@@ -50,9 +50,9 @@ const AdminProducts: React.FC = () => {
             category,
             created_at,
             store_id,
-            stores!inner(
+            stores(
               name,
-              vendors!inner(
+              vendors(
                 business_name
               )
             )
