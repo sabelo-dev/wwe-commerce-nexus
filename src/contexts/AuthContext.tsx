@@ -30,8 +30,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (userRole === 'admin') return '/admin/dashboard';
     if (userRole === 'vendor') {
       // For login: always go to dashboard if vendor exists, onboarding will redirect if needed
-      // For register: go to onboarding for new vendor setup
-      return isLogin ? '/vendor/dashboard' : '/vendor/onboarding';
+      // For register: redirect to login page so they can sign in after email confirmation
+      return isLogin ? '/vendor/dashboard' : '/login';
     }
     return '/'; // Consumer goes to home page
   };
