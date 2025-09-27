@@ -45,12 +45,17 @@ const RegisterVendorForm: React.FC = () => {
   });
 
   const onSubmit = async (values: VendorFormValues) => {
+    console.log('RegisterVendorForm onSubmit called with:', values);
+    console.log('User context:', user);
+    
     // If user is not logged in, redirect to main registration with vendor role
     if (!user) {
+      console.log('No user found, redirecting to /register');
       navigate('/register', { state: { role: 'vendor', businessName: values.businessName, description: values.description } });
       return;
     }
 
+    console.log('User is logged in, proceeding with vendor creation');
     try {
       // Update user role to vendor in profiles table
       const { error: profileError } = await supabase
