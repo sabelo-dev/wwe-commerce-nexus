@@ -47,6 +47,7 @@ const RegisterVendorForm: React.FC = () => {
   const onSubmit = async (values: VendorFormValues) => {
     console.log('RegisterVendorForm onSubmit called with:', values);
     console.log('User context:', user);
+    console.log('Auth UID:', (await supabase.auth.getUser())?.data?.user?.id);
     
     // If user is not logged in, redirect to main registration with vendor role
     if (!user) {
@@ -57,19 +58,46 @@ const RegisterVendorForm: React.FC = () => {
 
     console.log('User is logged in, proceeding with vendor creation');
     try {
+      // Check if vendor already exists
+      const { data: existingVendor, error: checkError } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing vendor:', checkError);
+        throw checkError;
+      }
+
+      if (existingVendor) {
+        console.log('Vendor already exists, redirecting to dashboard');
+        toast({
+          title: "Already Registered",
+          description: "You're already registered as a vendor.",
+        });
+        navigate('/vendor/dashboard');
+        return;
+      }
+
+      console.log('Updating user profile role...');
       // Update user role to vendor in profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ role: 'vendor' })
         .eq('id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
 
+      console.log('Creating vendor record...');
       // Create vendor profile in Supabase with trial subscription
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 90); // 90 days trial
 
-      const { data, error } = await supabase.from("vendors").insert({
+      const vendorData = {
         user_id: user.id,
         business_name: values.businessName,
         description: values.description,
@@ -78,9 +106,21 @@ const RegisterVendorForm: React.FC = () => {
         trial_start_date: new Date().toISOString(),
         trial_end_date: trialEndDate.toISOString(),
         subscription_status: "trial"
-      }).select();
+      };
 
-      if (error) throw error;
+      console.log('Inserting vendor data:', vendorData);
+
+      const { data, error } = await supabase
+        .from("vendors")
+        .insert(vendorData)
+        .select();
+
+      if (error) {
+        console.error('Vendor insert error:', error);
+        throw error;
+      }
+
+      console.log('Vendor created successfully:', data);
 
       // Refresh user profile to update the auth context
       await refreshUserProfile();
@@ -97,7 +137,7 @@ const RegisterVendorForm: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: "Failed to register as a vendor. Please try again later.",
+        description: `Failed to register as a vendor: ${error.message || 'Please try again later.'}`,
       });
     }
   };
