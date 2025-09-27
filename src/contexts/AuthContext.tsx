@@ -51,7 +51,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .maybeSingle();
       
-      return !!vendor && vendor.status === 'approved';
+      // Return true if vendor record exists (regardless of approval status)
+      // This allows vendors to access their dashboard even while pending approval
+      return !!vendor;
     } catch (error) {
       console.error('Error checking vendor status:', error);
       return false;
