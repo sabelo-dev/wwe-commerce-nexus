@@ -2,8 +2,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { User, Store, Shield } from "lucide-react";
 
 const Hero: React.FC = () => {
+  const { user, isAdmin, isVendor } = useAuth();
+  
   return (
     <div className="relative overflow-hidden bg-gray-800">
       <div className="absolute inset-0">
@@ -24,16 +28,52 @@ const Hero: React.FC = () => {
             Discover millions of products from thousands of trusted sellers around the world. Quality products, competitive prices, fast delivery.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/shop">
-              <Button size="lg" className="bg-wwe-gold text-wwe-navy hover:bg-wwe-gold/90">
-                Shop Now
-              </Button>
-            </Link>
-            <Link to="/categories">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                Browse Categories
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                {isAdmin && (
+                  <Link to="/admin/dashboard">
+                    <Button size="lg" className="bg-wwe-gold text-wwe-navy hover:bg-wwe-gold/90">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin Dashboard
+                    </Button>
+                  </Link>
+                )}
+                {isVendor && (
+                  <Link to="/vendor/dashboard">
+                    <Button size="lg" className="bg-wwe-gold text-wwe-navy hover:bg-wwe-gold/90">
+                      <Store className="h-4 w-4 mr-2" />
+                      Vendor Dashboard
+                    </Button>
+                  </Link>
+                )}
+                {!isVendor && !isAdmin && (
+                  <Link to="/account">
+                    <Button size="lg" className="bg-wwe-gold text-wwe-navy hover:bg-wwe-gold/90">
+                      <User className="h-4 w-4 mr-2" />
+                      My Account
+                    </Button>
+                  </Link>
+                )}
+                <Link to="/shop">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                    Shop Now
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/shop">
+                  <Button size="lg" className="bg-wwe-gold text-wwe-navy hover:bg-wwe-gold/90">
+                    Shop Now
+                  </Button>
+                </Link>
+                <Link to="/categories">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                    Browse Categories
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
