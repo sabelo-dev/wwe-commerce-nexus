@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const vendorSchema = z.object({
   businessName: z.string().min(2, "Business name must be at least 2 characters"),
@@ -34,6 +35,7 @@ const RegisterVendorForm: React.FC = () => {
   const { user, register: registerUser, refreshUserProfile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   
   const form = useForm<VendorFormValues>({
     resolver: zodResolver(vendorSchema),
@@ -47,7 +49,6 @@ const RegisterVendorForm: React.FC = () => {
   const onSubmit = async (values: VendorFormValues) => {
     console.log('RegisterVendorForm onSubmit called with:', values);
     console.log('User context:', user);
-    console.log('Auth UID:', (await supabase.auth.getUser())?.data?.user?.id);
     
     // If user is not logged in, redirect to main registration with vendor role
     if (!user) {
@@ -57,12 +58,23 @@ const RegisterVendorForm: React.FC = () => {
     }
 
     console.log('User is logged in, proceeding with vendor creation');
+    setIsLoading(true);
+    
     try {
+      // Get fresh user data to ensure we have the latest session
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !currentUser) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      console.log('Current authenticated user ID:', currentUser.id);
+
       // Check if vendor already exists
       const { data: existingVendor, error: checkError } = await supabase
         .from('vendors')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .maybeSingle();
 
       if (checkError) {
@@ -80,25 +92,13 @@ const RegisterVendorForm: React.FC = () => {
         return;
       }
 
-      console.log('Updating user profile role...');
-      // Update user role to vendor in profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: 'vendor' })
-        .eq('id', user.id);
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
-      }
-
       console.log('Creating vendor record...');
       // Create vendor profile in Supabase with trial subscription
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 90); // 90 days trial
 
       const vendorData = {
-        user_id: user.id,
+        user_id: currentUser.id,
         business_name: values.businessName,
         description: values.description,
         status: "pending",
@@ -110,17 +110,31 @@ const RegisterVendorForm: React.FC = () => {
 
       console.log('Inserting vendor data:', vendorData);
 
-      const { data, error } = await supabase
+      const { data: vendorResult, error: vendorError } = await supabase
         .from("vendors")
         .insert(vendorData)
-        .select();
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Vendor insert error:', error);
-        throw error;
+      if (vendorError) {
+        console.error('Vendor insert error:', vendorError);
+        throw vendorError;
       }
 
-      console.log('Vendor created successfully:', data);
+      console.log('Vendor created successfully:', vendorResult);
+
+      // Update user role to vendor in profiles table AFTER successful vendor creation
+      console.log('Updating user profile role...');
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'vendor' })
+        .eq('id', currentUser.id);
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        // Don't throw here as vendor was created successfully
+        console.warn('Failed to update profile role, but vendor record created');
+      }
 
       // Refresh user profile to update the auth context
       await refreshUserProfile();
@@ -129,16 +143,18 @@ const RegisterVendorForm: React.FC = () => {
         title: "Registration Successful",
         description: "Welcome! You have a 90-day free trial to explore all features.",
       });
-      
+
       // Redirect to vendor onboarding
-      navigate(`/vendor/onboarding/${data[0].id}`);
-    } catch (error) {
-      console.error("Error registering vendor:", error);
+      navigate(`/vendor/onboarding/${vendorResult.id}`);
+    } catch (error: any) {
+      console.error("Error during vendor registration:", error);
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: `Failed to register as a vendor: ${error.message || 'Please try again later.'}`,
+        description: error.message || 'Failed to register as a vendor. Please try again later.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -201,8 +217,15 @@ const RegisterVendorForm: React.FC = () => {
             )}
           />
           
-          <Button type="submit" className="w-full bg-wwe-navy">
-            Register as Vendor
+          <Button type="submit" disabled={isLoading} className="w-full bg-wwe-navy">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Registering...
+              </>
+            ) : (
+              "Register as Vendor"
+            )}
           </Button>
         </form>
       </Form>

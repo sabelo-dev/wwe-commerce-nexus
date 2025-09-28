@@ -21,6 +21,8 @@ interface UserMenuProps {
 }
 
 const UserMenu: React.FC<UserMenuProps> = ({ user, isAdmin, isVendor, logout }) => {
+  console.log('UserMenu props:', { user: !!user, isAdmin, isVendor, userRole: user?.role });
+  
   if (!user) {
     return (
       <Link to="/login">

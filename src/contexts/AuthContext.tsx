@@ -45,15 +45,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkVendorStatus = async (userId: string): Promise<boolean> => {
     try {
+      console.log('Checking vendor status for user:', userId);
       const { data: vendor } = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
       
+      console.log('Vendor status check result:', vendor);
       // Return true if vendor record exists (regardless of approval status)
       // This allows vendors to access their dashboard even while pending approval
-      return !!vendor;
+      const isVendor = !!vendor;
+      console.log('Is vendor:', isVendor);
+      return isVendor;
     } catch (error) {
       console.error('Error checking vendor status:', error);
       return false;
@@ -95,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Check vendor status
         const vendorStatus = await checkVendorStatus(profile.id);
+        console.log('Setting vendor status to:', vendorStatus);
         setIsVendor(vendorStatus);
       } else {
         // Create basic user data from session if no profile exists
