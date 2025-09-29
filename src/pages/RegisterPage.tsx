@@ -19,7 +19,7 @@ const RegisterPage: React.FC = () => {
           Create an Account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Join LSI to start shopping and tracking your orders
+          Join SIM Online to start shopping and tracking your orders
         </p>
       </div>
 

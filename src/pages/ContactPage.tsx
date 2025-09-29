@@ -39,7 +39,7 @@ const ContactPage: React.FC = () => {
                   <Phone className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="font-medium text-green-900">WhatsApp</p>
-                    <p className="text-green-700">0639776666</p>
+                    <p className="text-green-700">0761597719</p>
                   </div>
                 </div>
                 
@@ -47,7 +47,7 @@ const ContactPage: React.FC = () => {
                   <Mail className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-900">General Support</p>
-                    <p className="text-blue-700">support@wwecommerce.co.za</p>
+                    <p className="text-blue-700">support@sim-o.com</p>
                   </div>
                 </div>
                 
@@ -55,7 +55,7 @@ const ContactPage: React.FC = () => {
                   <Mail className="h-5 w-5 text-purple-600" />
                   <div>
                     <p className="font-medium text-purple-900">Sales Inquiries</p>
-                    <p className="text-purple-700">sales@wwecommerce.co.za</p>
+                    <p className="text-purple-700">sales@sim-o.co.za</p>
                   </div>
                 </div>
                 
@@ -63,7 +63,7 @@ const ContactPage: React.FC = () => {
                   <MapPin className="h-5 w-5 text-gray-600" />
                   <div>
                     <p className="font-medium text-gray-900">Address</p>
-                    <p className="text-gray-700">123 E-Commerce St, Digital City, 12345</p>
+                    <p className="text-gray-700">E-Commerce Street, International</p>
                   </div>
                 </div>
                 
