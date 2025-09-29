@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Column */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">About LSI</h3>
+            <h3 className="text-lg font-semibold mb-4">About SIM-O</h3>
             <p className="text-sm text-gray-300 mb-4">
               SIM-O connecting buyers and sellers since 2025. Our mission is to provide the best shopping experience with quality products and exceptional service.
             </p>
