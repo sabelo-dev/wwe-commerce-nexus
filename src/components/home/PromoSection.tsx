@@ -28,7 +28,7 @@ const PromoSection: React.FC = () => {
     {
       icon: <Truck className="h-6 w-6 text-wwe-navy" />,
       title: "Fast Shipping",
-      description: "Free shipping on orders over $50",
+      description: "Free shipping on orders over R1000",
     },
     {
       icon: <CreditCard className="h-6 w-6 text-wwe-navy" />,
