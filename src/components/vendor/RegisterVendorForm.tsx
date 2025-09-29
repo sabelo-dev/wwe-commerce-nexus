@@ -144,8 +144,8 @@ const RegisterVendorForm: React.FC = () => {
         description: "Welcome! You have a 90-day free trial to explore all features.",
       });
 
-      // Redirect to vendor onboarding
-      navigate('/vendor/onboarding');
+      // Redirect to vendor dashboard
+      navigate('/vendor/dashboard');
     } catch (error: any) {
       console.error("Error during vendor registration:", error);
       toast({
