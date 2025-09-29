@@ -30,9 +30,9 @@ export const Steps: React.FC<StepsProps> = ({ steps, currentStep }) => {
                   className="absolute inset-0 flex items-center"
                   aria-hidden="true"
                 >
-                  <div className="h-0.5 w-full bg-wwe-navy" />
+                  <div className="h-0.5 w-full bg-primary" />
                 </div>
-                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-wwe-navy">
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary">
                   <svg
                     className="h-5 w-5 text-white"
                     viewBox="0 0 20 20"
@@ -52,14 +52,14 @@ export const Steps: React.FC<StepsProps> = ({ steps, currentStep }) => {
                   className="absolute inset-0 flex items-center"
                   aria-hidden="true"
                 >
-                  <div className="h-0.5 w-full bg-gray-200" />
+                  <div className="h-0.5 w-full bg-border" />
                 </div>
                 <div
-                  className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-wwe-navy bg-white"
+                  className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary bg-background"
                   aria-current="step"
                 >
                   <span
-                    className="h-2.5 w-2.5 rounded-full bg-wwe-navy"
+                    className="h-2.5 w-2.5 rounded-full bg-primary"
                     aria-hidden="true"
                   />
                 </div>
@@ -70,9 +70,9 @@ export const Steps: React.FC<StepsProps> = ({ steps, currentStep }) => {
                   className="absolute inset-0 flex items-center"
                   aria-hidden="true"
                 >
-                  <div className="h-0.5 w-full bg-gray-200" />
+                  <div className="h-0.5 w-full bg-border" />
                 </div>
-                <div className="group relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white">
+                <div className="group relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-border bg-background">
                   <span
                     className="h-2.5 w-2.5 rounded-full bg-transparent"
                     aria-hidden="true"
