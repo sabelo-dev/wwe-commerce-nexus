@@ -37,7 +37,18 @@ const VendorOnboarding: React.FC = () => {
   // Get or create vendor record
   useEffect(() => {
     const initializeVendor = async () => {
-      if (!user?.id) return;
+      // If user is null/undefined, we're still loading auth
+      if (user === null) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // If user is defined but no id, there's an auth issue
+      if (!user?.id) {
+        console.error('User authenticated but no ID available');
+        setIsLoading(false);
+        return;
+      }
 
       try {
         // Check if vendor exists
@@ -77,7 +88,7 @@ const VendorOnboarding: React.FC = () => {
     };
 
     initializeVendor();
-  }, [user?.id]);
+  }, [user]);
 
   const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
     if (!e.target.files || e.target.files.length === 0 || !vendorData) return;
