@@ -305,8 +305,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           return {};
         } else {
-          // User is signed in immediately
-          const redirectPath = getRedirectPathForRole(role, false, false);
+          // User is signed in immediately - always redirect to homepage after registration
+          const redirectPath = '/';
           
           toast({
             title: "Registration Successful",
