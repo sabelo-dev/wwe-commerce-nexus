@@ -63,7 +63,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, isAdmin, isVendor, logout }) 
           </Link>
         </DropdownMenuItem>
         
-        {user?.role === 'consumer' && (
+        {!isVendor && user?.role === 'consumer' && (
           <DropdownMenuItem asChild>
             <Link to="/vendor/register" className="flex items-center">
               <Store className="h-4 w-4 mr-2" />
