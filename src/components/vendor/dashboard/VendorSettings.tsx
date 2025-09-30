@@ -88,7 +88,7 @@ const VendorSettings = () => {
         setProfileData({
           name: profile.name || '',
           email: profile.email || '',
-          phone: '' // Phone field not in profiles table yet
+          phone: profile.phone || ''
         });
       }
 
@@ -143,8 +143,8 @@ const VendorSettings = () => {
         .from('profiles')
         .update({
           name: profileData.name,
-          email: profileData.email
-          // Note: phone would need to be added to profiles table
+          email: profileData.email,
+          phone: profileData.phone
         })
         .eq('id', user.id);
 
