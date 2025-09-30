@@ -75,6 +75,17 @@ const StorefrontPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Store Banner */}
+      {store.banner_url && (
+        <div className="w-full h-48 md:h-64 lg:h-80 overflow-hidden">
+          <img 
+            src={store.banner_url} 
+            alt={`${store.name} banner`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Store Header */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
         <div className="container mx-auto px-4 py-8">
