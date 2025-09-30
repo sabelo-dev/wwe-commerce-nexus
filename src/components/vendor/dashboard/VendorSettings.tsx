@@ -24,6 +24,7 @@ const VendorSettings = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [storeData, setStoreData] = useState({
+    id: '',
     name: '',
     slug: '',
     description: '',
@@ -68,6 +69,7 @@ const VendorSettings = () => {
 
       if (store && !storeError) {
         setStoreData({
+          id: store.id,
           name: store.name || '',
           slug: store.slug || '',
           description: store.description || '',
@@ -103,28 +105,19 @@ const VendorSettings = () => {
   };
 
   const saveStoreSettings = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !storeData.id) return;
 
     try {
-      // Get vendor data
-      const { data: vendor, error: vendorError } = await supabase
-        .from('vendors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (vendorError) throw vendorError;
-
-      // Update store data
+      // Update store data using the store ID
       const { error } = await supabase
         .from('stores')
-        .upsert({
-          vendor_id: vendor.id,
+        .update({
           name: storeData.name,
           slug: storeData.slug,
           description: storeData.description,
           logo_url: storeData.logo_url
-        });
+        })
+        .eq('id', storeData.id);
 
       if (error) throw error;
 
