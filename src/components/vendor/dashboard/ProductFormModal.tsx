@@ -691,10 +691,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 onValueChange={(value) => handleInputChange("category", value)}
                 disabled={loadingCategories}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder={loadingCategories ? "Loading..." : "Select category"} />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
+                <SelectContent className="bg-popover border border-border z-[100] max-h-[300px]" position="popper" sideOffset={5}>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}
@@ -714,14 +714,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 onValueChange={(value) => handleInputChange("subcategory", value)}
                 disabled={!formData.category || subcategories.length === 0}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder={
                     !formData.category ? "Select category first" : 
                     subcategories.length === 0 ? "No subcategories available" : 
                     "Select subcategory"
                   } />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
+                <SelectContent className="bg-popover border border-border z-[100] max-h-[300px]" position="popper" sideOffset={5}>
                   {subcategories.map((subcategory) => (
                     <SelectItem key={subcategory.id} value={subcategory.name}>
                       {subcategory.name}
