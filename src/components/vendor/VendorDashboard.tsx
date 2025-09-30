@@ -201,7 +201,7 @@ const VendorDashboard = () => {
                 </TabsList>
                 
                 <TabsContent value="overview" className="mt-0">
-                  <VendorOverview />
+                  <VendorOverview onNavigate={setActiveTab} />
                 </TabsContent>
                 <TabsContent value="shopfront" className="mt-0">
                   <VendorShopfront />

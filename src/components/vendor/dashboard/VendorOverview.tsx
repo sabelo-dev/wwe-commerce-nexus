@@ -28,7 +28,11 @@ import {
   Copy
 } from "lucide-react";
 
-const VendorOverview = () => {
+interface VendorOverviewProps {
+  onNavigate: (tab: string) => void;
+}
+
+const VendorOverview: React.FC<VendorOverviewProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -454,23 +458,34 @@ const VendorOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {lowStockProducts.map((product, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Threshold: {product.threshold} units
-                    </p>
+              {lowStockProducts.length > 0 ? (
+                lowStockProducts.map((product, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Threshold: {product.threshold} units
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="destructive" className="text-xs">
+                        {product.stock} left
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <Badge variant="destructive" className="text-xs">
-                      {product.stock} left
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  All products are well stocked!
+                </p>
+              )}
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-4"
+              onClick={() => onNavigate('inventory')}
+            >
               Update Stock Levels
             </Button>
           </CardContent>
@@ -485,27 +500,51 @@ const VendorOverview = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-6">
-            <Button variant="outline" className="justify-start">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => onNavigate('products')}
+            >
               <Package className="h-4 w-4 mr-2" />
               Add Product
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => onNavigate('promotions')}
+            >
               <Percent className="h-4 w-4 mr-2" />
               Create Promotion
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => onNavigate('orders')}
+            >
               <ShoppingCart className="h-4 w-4 mr-2" />
               Process Orders
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => onNavigate('payouts')}
+            >
               <DollarSign className="h-4 w-4 mr-2" />
               Request Payout
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => onNavigate('support')}
+            >
               <MessageSquare className="h-4 w-4 mr-2" />
               Contact Support
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => onNavigate('settings')}
+            >
               <Bell className="h-4 w-4 mr-2" />
               Set Alerts
             </Button>
@@ -529,10 +568,21 @@ const VendorOverview = () => {
               <div className="flex-1">
                 <h4 className="font-medium">Demand Spike Detected</h4>
                 <p className="text-sm text-muted-foreground">
-                  Your "Wireless Earbuds" are trending. Consider increasing inventory by 20 units.
+                  Your trending products need more inventory. Consider restocking to meet demand.
                 </p>
               </div>
-              <Button size="sm">Act Now</Button>
+              <Button 
+                size="sm"
+                onClick={() => {
+                  onNavigate('inventory');
+                  toast({
+                    title: "Navigating to Inventory",
+                    description: "Review and update your stock levels."
+                  });
+                }}
+              >
+                Act Now
+              </Button>
             </div>
             
             <div className="flex items-start gap-3 p-3 bg-white rounded-lg border">
@@ -540,10 +590,22 @@ const VendorOverview = () => {
               <div className="flex-1">
                 <h4 className="font-medium">Dynamic Pricing Opportunity</h4>
                 <p className="text-sm text-muted-foreground">
-                  Increase Smart Watch price by 8% based on competitor analysis (+$3.2K monthly).
+                  Optimize your pricing strategy with promotions to increase revenue.
                 </p>
               </div>
-              <Button size="sm" variant="outline">Review</Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  onNavigate('products');
+                  toast({
+                    title: "Navigating to Products",
+                    description: "Review and adjust your product pricing."
+                  });
+                }}
+              >
+                Review
+              </Button>
             </div>
 
             <div className="flex items-start gap-3 p-3 bg-white rounded-lg border">
@@ -551,10 +613,22 @@ const VendorOverview = () => {
               <div className="flex-1">
                 <h4 className="font-medium">Seasonal Preparation</h4>
                 <p className="text-sm text-muted-foreground">
-                  Valentine's Day approaches. Create romantic product bundles to boost sales.
+                  Plan ahead with seasonal promotions and product bundles to boost sales.
                 </p>
               </div>
-              <Button size="sm" variant="outline">Plan</Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  onNavigate('promotions');
+                  toast({
+                    title: "Navigating to Promotions",
+                    description: "Create seasonal promotions and bundles."
+                  });
+                }}
+              >
+                Plan
+              </Button>
             </div>
           </div>
         </CardContent>
