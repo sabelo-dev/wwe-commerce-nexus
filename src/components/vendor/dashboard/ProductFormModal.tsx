@@ -52,9 +52,15 @@ const variationSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
+interface AttributeWithImage {
+  name: string;
+  value: string;
+  image?: ImageWithPreview;
+}
+
 interface ProductVariation {
   id?: string;
-  attributes: Record<string, string>;
+  attributes: AttributeWithImage[];
   price: number;
   quantity: number;
   sku?: string;
@@ -309,7 +315,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const addVariation = () => {
     const newVariation: ProductVariation = {
       id: `temp-${Date.now()}`,
-      attributes: {},
+      attributes: [],
       price: formData.price,
       quantity: 0,
       sku: "",
@@ -330,32 +336,61 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     );
   };
 
-  const addVariationAttribute = (variationIndex: number, key: string, value: string) => {
+  const addVariationAttribute = (variationIndex: number) => {
     setVariations(prev => 
       prev.map((variation, i) => 
         i === variationIndex 
           ? { 
               ...variation, 
-              attributes: { ...variation.attributes, [key]: value }
+              attributes: [...variation.attributes, { name: '', value: '', image: undefined }]
             } 
           : variation
       )
     );
   };
 
-  const removeVariationAttribute = (variationIndex: number, key: string) => {
+  const updateVariationAttribute = (variationIndex: number, attrIndex: number, field: keyof AttributeWithImage, value: any) => {
+    setVariations(prev => 
+      prev.map((variation, i) => 
+        i === variationIndex 
+          ? {
+              ...variation,
+              attributes: variation.attributes.map((attr, ai) =>
+                ai === attrIndex ? { ...attr, [field]: value } : attr
+              )
+            }
+          : variation
+      )
+    );
+  };
+
+  const removeVariationAttribute = (variationIndex: number, attrIndex: number) => {
     setVariations(prev => 
       prev.map((variation, i) => 
         i === variationIndex 
           ? { 
               ...variation, 
-              attributes: Object.fromEntries(
-                Object.entries(variation.attributes).filter(([k]) => k !== key)
-              )
+              attributes: variation.attributes.filter((_, ai) => ai !== attrIndex)
             } 
           : variation
       )
     );
+  };
+
+  const handleAttributeImageChange = (variationIndex: number, attrIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const newImage: ImageWithPreview = {
+        file,
+        url: URL.createObjectURL(file),
+        position: 0,
+      };
+      updateVariationAttribute(variationIndex, attrIndex, 'image', newImage);
+    }
+  };
+
+  const removeAttributeImage = (variationIndex: number, attrIndex: number) => {
+    updateVariationAttribute(variationIndex, attrIndex, 'image', undefined);
   };
 
   const handleVariationImageChange = (variationIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -429,12 +464,40 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
     // Create variations and handle their images
     for (const variation of variations) {
-      if (Object.keys(variation.attributes).length > 0) {
+      if (variation.attributes.length > 0) {
+        // Convert attributes array to object for storage and upload attribute images
+        const attributesObject: Record<string, string> = {};
+        const attributeImageUrls: Record<string, string> = {};
+        
+        for (const attr of variation.attributes) {
+          if (attr.name && attr.value) {
+            attributesObject[attr.name] = attr.value;
+            
+            // Upload attribute image if exists
+            if (attr.image?.file) {
+              const fileExt = attr.image.file.name.split('.').pop();
+              const fileName = `attribute-images/${Date.now()}-${Math.random()}.${fileExt}`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from('product-images')
+                .upload(fileName, attr.image.file);
+
+              if (!uploadError) {
+                const { data: urlData } = supabase.storage
+                  .from('product-images')
+                  .getPublicUrl(fileName);
+                
+                attributeImageUrls[attr.name] = urlData.publicUrl;
+              }
+            }
+          }
+        }
+
         const { data: variationResult, error: variationError } = await supabase
           .from('product_variations')
           .insert({
             product_id: productId,
-            attributes: variation.attributes,
+            attributes: { ...attributesObject, _images: attributeImageUrls },
             price: variation.price,
             quantity: variation.quantity,
             sku: variation.sku
@@ -447,7 +510,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           continue;
         }
 
-        // Handle variation images
+        // Handle variation gallery images
         if (variation.images && variation.images.length > 0) {
           for (let i = 0; i < variation.images.length; i++) {
             const image = variation.images[i];
@@ -756,42 +819,69 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 {/* Variation Attributes */}
                 <div className="space-y-2">
                   <Label>Attributes (e.g., Color: Red, Size: Large)</Label>
-                  <div className="space-y-2">
-                    {Object.entries(variation.attributes).map(([key, value]) => (
-                      <div key={key} className="flex gap-2">
-                        <Input
-                          placeholder="Attribute name"
-                          value={key}
-                          onChange={(e) => {
-                            const newKey = e.target.value;
-                            if (newKey !== key) {
-                              removeVariationAttribute(variationIndex, key);
-                              if (newKey) {
-                                addVariationAttribute(variationIndex, newKey, value);
-                              }
-                            }
-                          }}
-                        />
-                        <Input
-                          placeholder="Attribute value"
-                          value={value}
-                          onChange={(e) => addVariationAttribute(variationIndex, key, e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeVariationAttribute(variationIndex, key)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                  <div className="space-y-3">
+                    {variation.attributes.map((attr, attrIndex) => (
+                      <div key={attrIndex} className="border rounded p-3 space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Attribute name (e.g., Color)"
+                            value={attr.name}
+                            onChange={(e) => updateVariationAttribute(variationIndex, attrIndex, 'name', e.target.value)}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="Attribute value (e.g., Red)"
+                            value={attr.value}
+                            onChange={(e) => updateVariationAttribute(variationIndex, attrIndex, 'value', e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeVariationAttribute(variationIndex, attrIndex)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Attribute Image */}
+                        <div className="space-y-2">
+                          <Label className="text-sm">Attribute Image (optional)</Label>
+                          <div className="flex gap-2 items-start">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleAttributeImageChange(variationIndex, attrIndex, e)}
+                              className="flex-1"
+                            />
+                            {attr.image && (
+                              <div className="relative">
+                                <img
+                                  src={attr.image.url}
+                                  alt={`${attr.name} ${attr.value}`}
+                                  className="w-16 h-16 object-cover rounded border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0"
+                                  onClick={() => removeAttributeImage(variationIndex, attrIndex)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => addVariationAttribute(variationIndex, '', '')}
+                      onClick={() => addVariationAttribute(variationIndex)}
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Attribute
@@ -830,9 +920,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   </div>
                 </div>
 
-                {/* Variation Images */}
-                <div>
-                  <Label>Variation Images</Label>
+                {/* Variation Gallery */}
+                <div className="space-y-2">
+                  <Label>Variation Gallery (Multiple Images)</Label>
+                  <p className="text-sm text-muted-foreground">Add multiple images showcasing this variation</p>
                   <div className="mt-2">
                     <Input
                       type="file"
@@ -843,22 +934,22 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     />
                     
                     {variation.images && variation.images.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         {variation.images.map((image, imgIndex) => (
-                          <div key={imgIndex} className="relative">
+                          <div key={imgIndex} className="relative group">
                             <img
                               src={image.url}
-                              alt={`Variation ${variationIndex + 1} image ${imgIndex + 1}`}
-                              className="w-full h-20 object-cover rounded border"
+                              alt={`Variation ${variationIndex + 1} gallery ${imgIndex + 1}`}
+                              className="w-full h-24 object-cover rounded border"
                             />
                             <Button
                               type="button"
                               variant="destructive"
-                              size="sm"
-                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => removeVariationImage(variationIndex, imgIndex)}
                             >
-                              ×
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
                         ))}
