@@ -694,9 +694,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder={loadingCategories ? "Loading..." : "Select category"} />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-[100] max-h-[300px]" position="popper" sideOffset={5}>
+                <SelectContent className="bg-background dark:bg-popover border border-border shadow-lg z-[9999]">
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
+                    <SelectItem key={category.id} value={category.name} className="bg-background dark:bg-popover hover:bg-accent">
                       {category.name}
                     </SelectItem>
                   ))}
@@ -721,9 +721,9 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     "Select subcategory"
                   } />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-[100] max-h-[300px]" position="popper" sideOffset={5}>
+                <SelectContent className="bg-background dark:bg-popover border border-border shadow-lg z-[9999]">
                   {subcategories.map((subcategory) => (
-                    <SelectItem key={subcategory.id} value={subcategory.name}>
+                    <SelectItem key={subcategory.id} value={subcategory.name} className="bg-background dark:bg-popover hover:bg-accent">
                       {subcategory.name}
                     </SelectItem>
                   ))}
