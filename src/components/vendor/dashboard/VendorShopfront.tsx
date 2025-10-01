@@ -148,12 +148,30 @@ const VendorShopfront = () => {
         console.log('Store updated successfully');
       } else {
         // Create new store
+        // Generate slug from name
+        let slug = formData.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+
+        // Check if slug already exists
+        const { data: existingStore } = await supabase
+          .from('stores')
+          .select('slug')
+          .eq('slug', slug)
+          .maybeSingle();
+
+        if (existingStore) {
+          // Generate unique slug by appending random number
+          slug = `${slug}-${Math.floor(Math.random() * 10000)}`;
+        }
+
         const { data: newStore, error } = await supabase
           .from('stores')
           .insert({
             vendor_id: vendorData.id,
             name: formData.name,
-            slug: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+            slug: slug,
             description: formData.description,
             logo_url: formData.logo_url,
             banner_url: formData.banner_url,
@@ -165,6 +183,15 @@ const VendorShopfront = () => {
 
         if (error) {
           console.error('Insert error:', error);
+          // Check if it's still a duplicate slug error (race condition)
+          if (error.code === '23505' && error.message.includes('stores_slug_key')) {
+            toast({
+              variant: "destructive",
+              title: "Store URL Conflict",
+              description: "This store name is already taken. Please try a different name.",
+            });
+            return;
+          }
           throw error;
         }
         console.log('Store created successfully:', newStore);
