@@ -46,7 +46,7 @@ const ShopPage: React.FC = () => {
         setLoading(true);
         const [productsData, categoriesData] = await Promise.all([
           fetchAllProducts(),
-          fetchCategories()
+          fetchCategories(true) // Only show categories with products
         ]);
 
         setProducts(productsData);

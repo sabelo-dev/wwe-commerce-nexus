@@ -12,7 +12,7 @@ const CategoriesPage: React.FC = () => {
     const loadCategories = async () => {
       try {
         setLoading(true);
-        const categoriesData = await fetchCategories();
+        const categoriesData = await fetchCategories(true); // Only show categories with products
         setCategories(categoriesData);
       } catch (error) {
         console.error('Error loading categories:', error);

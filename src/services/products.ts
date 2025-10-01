@@ -154,11 +154,12 @@ export const fetchAllProducts = async (): Promise<Product[]> => {
 
 /**
  * Fetches categories from database
+ * @param filterByProducts - If true, only returns categories with approved products (default: false)
  */
-export const fetchCategories = async (): Promise<Category[]> => {
+export const fetchCategories = async (filterByProducts: boolean = false): Promise<Category[]> => {
   try {
-    // First, get categories that have at least one approved product
-    const { data: categoriesWithProducts, error: categoriesError } = await supabase
+    // Get all active categories
+    const { data: categoriesData, error: categoriesError } = await supabase
       .from('categories')
       .select(`
         *,
@@ -177,24 +178,30 @@ export const fetchCategories = async (): Promise<Category[]> => {
       return [];
     }
 
-    // Filter categories that have products
-    const filteredCategories = [];
-    
-    for (const category of categoriesWithProducts || []) {
-      // Check if this category has any approved products
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('id')
-        .eq('category', category.name)
-        .in('status', ['approved', 'active'])
-        .limit(1);
+    let categoriesToReturn = categoriesData || [];
 
-      if (!productsError && products && products.length > 0) {
-        filteredCategories.push(category);
+    // Only filter by products if requested (for consumer-facing pages)
+    if (filterByProducts) {
+      const filteredCategories = [];
+      
+      for (const category of categoriesData || []) {
+        // Check if this category has any approved products
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('category', category.name)
+          .in('status', ['approved', 'active'])
+          .limit(1);
+
+        if (!productsError && products && products.length > 0) {
+          filteredCategories.push(category);
+        }
       }
+      
+      categoriesToReturn = filteredCategories;
     }
 
-    return filteredCategories.map(category => ({
+    return categoriesToReturn.map(category => ({
       id: category.id,
       name: category.name,
       slug: category.slug,

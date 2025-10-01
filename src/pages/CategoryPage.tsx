@@ -16,7 +16,7 @@ const CategoryPage: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const categories = await fetchCategories();
+        const categories = await fetchCategories(true); // Only show categories with products
         const foundCategory = categories.find((c) => c.slug === slug);
         
         if (foundCategory) {

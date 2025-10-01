@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
         );
         
         const dataPromise = Promise.all([
-          fetchCategories(),
+          fetchCategories(true), // Only show categories with products
           fetchFeaturedProducts(4),
           fetchNewArrivals(4),
           fetchPopularProducts(4)
