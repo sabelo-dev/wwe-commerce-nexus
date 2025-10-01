@@ -59,7 +59,19 @@ const VendorProducts = () => {
         .select(`
           *,
           product_images(id, image_url, position),
-          stores!inner(vendor_id, vendors!inner(user_id))
+          stores!inner(
+            id,
+            name,
+            slug,
+            description,
+            logo_url,
+            banner_url,
+            vendors!inner(
+              id,
+              business_name,
+              user_id
+            )
+          )
         `)
         .eq('stores.vendors.user_id', user.id)
         .order('created_at', { ascending: false });
