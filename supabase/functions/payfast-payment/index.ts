@@ -24,6 +24,18 @@ async function md5Hash(input: string): Promise<string> {
   return crypto.createHash('md5').update(input).digest('hex');
 }
 
+// PHP urlencode equivalent for JavaScript
+function phpUrlencode(str: string): string {
+  return encodeURIComponent(str)
+    .replace(/!/g, '%21')
+    .replace(/'/g, '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29')
+    .replace(/\*/g, '%2A')
+    .replace(/~/g, '%7E')
+    .replace(/%20/g, '+'); // PHP urlencode uses + for spaces
+}
+
 async function generatePayFastSignature(data: Record<string, any>, passphrase: string): Promise<string> {
   // Filter out empty values and signature field - PayFast requirement
   const filteredData: Record<string, any> = {};
@@ -36,19 +48,19 @@ async function generatePayFastSignature(data: Record<string, any>, passphrase: s
     }
   });
 
-  // Sort by key and create parameter string WITHOUT URL encoding
-  // PayFast expects raw values for signature generation, not URL encoded
+  // Sort by key and create parameter string with PHP urlencode
+  // PayFast uses PHP's urlencode() function for signature generation
   const sortedKeys = Object.keys(filteredData).sort();
   const paramString = sortedKeys
     .map(key => {
       const value = filteredData[key].toString().trim();
-      // No encoding - PayFast uses raw values for signature
-      return `${key}=${value}`;
+      // Use PHP-compatible URL encoding
+      return `${key}=${phpUrlencode(value)}`;
     })
     .join('&');
 
-  // Add passphrase (also without encoding as it has no special chars in test mode)
-  const stringToHash = `${paramString}&passphrase=${passphrase}`;
+  // Add passphrase with URL encoding
+  const stringToHash = `${paramString}&passphrase=${phpUrlencode(passphrase)}`;
   
   console.log('PayFast parameter string:', paramString);
   console.log('Full string to hash:', stringToHash);
