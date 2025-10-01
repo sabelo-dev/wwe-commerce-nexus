@@ -108,18 +108,41 @@ const VendorSettings = () => {
     if (!user?.id || !storeData.id) return;
 
     try {
+      // Generate slug from name if slug is empty
+      let slug = storeData.slug.trim();
+      if (!slug && storeData.name) {
+        slug = storeData.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+      }
+
       // Update store data using the store ID
       const { error } = await supabase
         .from('stores')
         .update({
           name: storeData.name,
-          slug: storeData.slug,
+          slug: slug,
           description: storeData.description,
           logo_url: storeData.logo_url
         })
         .eq('id', storeData.id);
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a duplicate slug error
+        if (error.code === '23505' && error.message.includes('stores_slug_key')) {
+          toast({
+            variant: "destructive",
+            title: "Duplicate Store URL",
+            description: "This store URL is already taken. Please choose a different one.",
+          });
+          return;
+        }
+        throw error;
+      }
+
+      // Update local state with the generated slug
+      setStoreData(prev => ({ ...prev, slug }));
 
       toast({
         title: "Settings Saved",
