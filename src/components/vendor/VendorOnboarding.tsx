@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Steps } from "@/components/vendor/Steps";
@@ -136,18 +136,50 @@ const VendorOnboarding: React.FC = () => {
     if (!vendorData) return;
 
     try {
+      // Generate slug from name if slug is empty
+      let slug = storeDetails.slug.trim();
+      if (!slug && storeDetails.name) {
+        slug = storeDetails.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+      }
+
+      // Check if slug already exists
+      const { data: existingStore } = await supabase
+        .from('stores')
+        .select('slug')
+        .eq('slug', slug)
+        .maybeSingle();
+
+      if (existingStore) {
+        // Generate unique slug by appending random number
+        slug = `${slug}-${Math.floor(Math.random() * 10000)}`;
+      }
+
       // Create store
       const { data, error } = await supabase
         .from('stores')
         .insert({
           vendor_id: vendorData.id,
           name: storeDetails.name,
-          slug: storeDetails.slug,
+          slug: slug,
           description: storeDetails.description,
         })
         .select();
         
-      if (error) throw error;
+      if (error) {
+        // Check if it's still a duplicate slug error (race condition)
+        if (error.code === '23505' && error.message.includes('stores_slug_key')) {
+          toast({
+            variant: "destructive",
+            title: "Store URL Conflict",
+            description: "This store URL is taken. Please try a different name.",
+          });
+          return;
+        }
+        throw error;
+      }
       
       // Add store categories
       if (storeDetails.categories.length > 0) {
