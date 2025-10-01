@@ -168,12 +168,37 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     })
   );
 
-  // Load categories on mount
+  // Load ALL categories directly from database (vendor needs to see all categories)
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const categoriesData = await fetchCategories();
-        setCategories(categoriesData);
+        // Fetch directly from database to ensure we get ALL active categories
+        const { data: categoriesData, error } = await supabase
+          .from('categories')
+          .select(`
+            id,
+            name,
+            slug,
+            image_url,
+            subcategories (
+              id,
+              name,
+              slug
+            )
+          `)
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (error) {
+          console.error('Error loading categories:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load categories.",
+          });
+        } else {
+          setCategories(categoriesData || []);
+        }
       } catch (error) {
         console.error('Error loading categories:', error);
       } finally {
@@ -181,7 +206,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
     };
     loadCategories();
-  }, []);
+  }, [toast]);
 
   // Update subcategories when category changes
   useEffect(() => {
