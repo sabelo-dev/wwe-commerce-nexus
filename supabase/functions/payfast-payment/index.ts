@@ -36,29 +36,22 @@ async function generatePayFastSignature(data: Record<string, any>, passphrase: s
     }
   });
 
-  // Sort by key and create parameter string
-  // PayFast uses PHP's rawurlencode, which is similar to encodeURIComponent
-  // but encodes spaces as %20 and keeps more characters unencoded
+  // Sort by key and create parameter string WITHOUT URL encoding
+  // PayFast expects raw values for signature generation, not URL encoded
   const sortedKeys = Object.keys(filteredData).sort();
   const paramString = sortedKeys
     .map(key => {
-      let value = filteredData[key].toString().trim();
-      // Use encodeURIComponent then replace certain characters to match PHP rawurlencode
-      value = encodeURIComponent(value)
-        .replace(/!/g, '%21')
-        .replace(/'/g, '%27')
-        .replace(/\(/g, '%28')
-        .replace(/\)/g, '%29')
-        .replace(/\*/g, '%2A');
+      const value = filteredData[key].toString().trim();
+      // No encoding - PayFast uses raw values for signature
       return `${key}=${value}`;
     })
     .join('&');
 
-  // Add passphrase to the string before hashing
-  const stringToHash = `${paramString}&passphrase=${encodeURIComponent(passphrase)}`;
+  // Add passphrase (also without encoding as it has no special chars in test mode)
+  const stringToHash = `${paramString}&passphrase=${passphrase}`;
   
-  console.log('PayFast data to hash:', paramString);
-  console.log('Full string with passphrase length:', stringToHash.length);
+  console.log('PayFast parameter string:', paramString);
+  console.log('Full string to hash:', stringToHash);
   
   // Generate MD5 hash
   const signature = await md5Hash(stringToHash);
