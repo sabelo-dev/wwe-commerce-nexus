@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ const VendorInventory = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -122,6 +123,142 @@ const VendorInventory = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    if (products.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No data",
+        description: "No products to export.",
+      });
+      return;
+    }
+
+    // Create CSV header
+    const headers = ['Product Name', 'SKU', 'Current Stock', 'Status', 'Last Updated'];
+    
+    // Create CSV rows
+    const rows = products.map(product => [
+      product.name,
+      product.sku || 'N/A',
+      product.quantity,
+      product.quantity === 0 ? 'Out of Stock' : product.quantity <= 10 ? 'Low Stock' : 'In Stock',
+      new Date(product.updated_at).toLocaleDateString()
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export successful",
+      description: "Inventory data has been exported to CSV.",
+    });
+  };
+
+  const handleBulkImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file",
+        description: "Please upload a CSV file.",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        toast({
+          variant: "destructive",
+          title: "Empty file",
+          description: "CSV file is empty or has no data rows.",
+        });
+        return;
+      }
+
+      // Skip header row
+      const dataLines = lines.slice(1);
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const line of dataLines) {
+        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        const [, sku, quantity] = values;
+
+        if (!sku || !quantity) continue;
+
+        // Find product by SKU
+        const product = products.find(p => p.sku === sku);
+        if (!product) {
+          errorCount++;
+          continue;
+        }
+
+        const newQuantity = parseInt(quantity);
+        if (isNaN(newQuantity) || newQuantity < 0) {
+          errorCount++;
+          continue;
+        }
+
+        // Update stock
+        const { error } = await supabase
+          .from('products')
+          .update({ quantity: newQuantity })
+          .eq('id', product.id);
+
+        if (error) {
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      }
+
+      // Refresh products
+      await fetchProducts();
+
+      toast({
+        title: "Import completed",
+        description: `Successfully updated ${successCount} products. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+      });
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      toast({
+        variant: "destructive",
+        title: "Import failed",
+        description: "Failed to process CSV file.",
+      });
+    } finally {
+      setLoading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const filteredProducts = products.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -154,11 +291,18 @@ const VendorInventory = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <Button variant="outline" onClick={handleBulkImport}>
             <Upload className="h-4 w-4 mr-2" />
             Bulk Import
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
