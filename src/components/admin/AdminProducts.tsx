@@ -188,9 +188,6 @@ const AdminProducts: React.FC = () => {
                 <TableCell>
                   <div className="space-y-1">
                     <div className="font-medium">{product.vendor_business_name || 'N/A'}</div>
-                    {product.vendor_email && (
-                      <div className="text-sm text-muted-foreground">{product.vendor_email}</div>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell>{product.store_name || 'N/A'}</TableCell>
