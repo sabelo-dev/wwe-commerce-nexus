@@ -24,9 +24,10 @@ async function md5Hash(input: string): Promise<string> {
   return crypto.createHash('md5').update(input).digest('hex');
 }
 
-// PHP urlencode equivalent for JavaScript
+// PHP urlencode equivalent for JavaScript with uppercase encoding
 function phpUrlencode(str: string): string {
-  return encodeURIComponent(str)
+  // First encode the string
+  let encoded = encodeURIComponent(str)
     .replace(/!/g, '%21')
     .replace(/'/g, '%27')
     .replace(/\(/g, '%28')
@@ -34,6 +35,9 @@ function phpUrlencode(str: string): string {
     .replace(/\*/g, '%2A')
     .replace(/~/g, '%7E')
     .replace(/%20/g, '+'); // PHP urlencode uses + for spaces
+  
+  // Convert all hex encoding to uppercase (PayFast requirement)
+  return encoded.replace(/%[0-9a-f]{2}/gi, (match) => match.toUpperCase());
 }
 
 async function generatePayFastSignature(data: Record<string, any>, passphrase: string): Promise<string> {
@@ -48,13 +52,12 @@ async function generatePayFastSignature(data: Record<string, any>, passphrase: s
     }
   });
 
-  // Sort by key and create parameter string with PHP urlencode
-  // PayFast uses PHP's urlencode() function for signature generation
-  const sortedKeys = Object.keys(filteredData).sort();
-  const paramString = sortedKeys
+  // IMPORTANT: Use the order fields appear in data, NOT alphabetical order
+  // PayFast specifically requires: "Do not use the API signature format, which uses alphabetical ordering!"
+  const paramString = Object.keys(filteredData)
     .map(key => {
       const value = filteredData[key].toString().trim();
-      // Use PHP-compatible URL encoding
+      // Use PHP-compatible URL encoding with uppercase hex codes
       return `${key}=${phpUrlencode(value)}`;
     })
     .join('&');
@@ -62,7 +65,7 @@ async function generatePayFastSignature(data: Record<string, any>, passphrase: s
   // Add passphrase without URL encoding (PayFast requirement)
   const stringToHash = `${paramString}&passphrase=${passphrase}`;
   
-  console.log('PayFast parameter string:', paramString);
+  console.log('PayFast parameter string (field order):', paramString);
   console.log('Full string to hash:', stringToHash);
   
   // Generate MD5 hash
