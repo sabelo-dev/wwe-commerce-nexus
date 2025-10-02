@@ -153,11 +153,9 @@ const AdminVendors: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Business Name</TableHead>
-              <TableHead>Account Email</TableHead>
-              <TableHead>Business Email</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Address</TableHead>
-              <TableHead>Website</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Applied On</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -167,23 +165,10 @@ const AdminVendors: React.FC = () => {
             {vendors.map((vendor) => (
               <TableRow key={vendor.id}>
                 <TableCell className="font-medium">{vendor.business_name}</TableCell>
-                <TableCell>{vendor.profiles?.email || 'N/A'}</TableCell>
                 <TableCell>{vendor.business_email || 'N/A'}</TableCell>
                 <TableCell>{vendor.business_phone || 'N/A'}</TableCell>
                 <TableCell className="max-w-xs truncate" title={vendor.business_address}>
                   {vendor.business_address || 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {vendor.website ? (
-                    <a 
-                      href={vendor.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Visit
-                    </a>
-                  ) : 'N/A'}
                 </TableCell>
                 <TableCell>
                   <Badge
