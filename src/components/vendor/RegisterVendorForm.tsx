@@ -50,9 +50,6 @@ const vendorSchema = z.object({
     .trim()
     .min(10, "Please provide a complete business address")
     .max(500, "Address must be less than 500 characters"),
-  businessType: z.enum(["sole_proprietor", "partnership", "llc", "corporation", "other"], {
-    required_error: "Please select your business type",
-  }),
   taxId: z.string()
     .trim()
     .max(50, "Tax ID must be less than 50 characters")
@@ -85,7 +82,6 @@ const RegisterVendorForm: React.FC = () => {
       businessPhone: "",
       description: "",
       businessAddress: "",
-      businessType: undefined,
       taxId: "",
       website: "",
       agreeTerms: false,
@@ -155,7 +151,6 @@ const RegisterVendorForm: React.FC = () => {
         business_email: values.businessEmail,
         business_phone: values.businessPhone,
         business_address: values.businessAddress,
-        business_type: values.businessType,
         tax_id: values.taxId || null,
         website: values.website || null
       };
@@ -232,31 +227,6 @@ const RegisterVendorForm: React.FC = () => {
                   <FormControl>
                     <Input placeholder="ABC Trading Company Ltd" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="businessType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Type *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select business type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="sole_proprietor">Sole Proprietor</SelectItem>
-                      <SelectItem value="partnership">Partnership</SelectItem>
-                      <SelectItem value="llc">LLC</SelectItem>
-                      <SelectItem value="corporation">Corporation</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
