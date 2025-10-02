@@ -70,11 +70,16 @@ const VendorDashboard = () => {
       if (!user?.id) return;
 
       try {
-        const { data: vendor } = await supabase
+        const { data: vendor, error } = await supabase
           .from('vendors')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching vendor data:', error);
+          return;
+        }
 
         if (vendor) {
           setVendorData(vendor);
