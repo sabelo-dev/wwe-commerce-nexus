@@ -183,6 +183,31 @@ const RegisterVendorForm: React.FC = () => {
         console.warn('Failed to update profile role, but vendor record created');
       }
 
+      // Update user_roles table: remove consumer role and add vendor role
+      console.log('Updating user_roles table...');
+      
+      // Delete consumer role
+      const { error: deleteRoleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('role', 'consumer');
+
+      if (deleteRoleError) {
+        console.error('Error deleting consumer role:', deleteRoleError);
+      }
+
+      // Insert vendor role
+      const { error: insertRoleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: currentUser.id, role: 'vendor' })
+        .select()
+        .single();
+
+      if (insertRoleError) {
+        console.error('Error inserting vendor role:', insertRoleError);
+      }
+
       // Refresh user profile to update the auth context
       await refreshUserProfile();
 
