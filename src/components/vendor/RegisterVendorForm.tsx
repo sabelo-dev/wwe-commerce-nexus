@@ -208,16 +208,21 @@ const RegisterVendorForm: React.FC = () => {
         console.error('Error inserting vendor role:', insertRoleError);
       }
 
-      // Refresh user profile to update the auth context
+      // Refresh user profile to update the auth context and wait for completion
+      console.log('Refreshing user profile...');
       await refreshUserProfile();
+      
+      // Add a small delay to ensure context is fully updated
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       toast({
         title: "Registration Successful",
         description: "Welcome! You have a 90-day free trial to explore all features.",
       });
 
-      // Redirect to vendor dashboard
-      navigate('/vendor/dashboard');
+      // Redirect to vendor dashboard after profile refresh
+      console.log('Navigating to vendor dashboard...');
+      navigate('/vendor/dashboard', { replace: true });
     } catch (error: any) {
       console.error("Error during vendor registration:", error);
       toast({
