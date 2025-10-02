@@ -55,8 +55,9 @@ const vendorSchema = z.object({
   }),
   taxId: z.string()
     .trim()
-    .min(5, "Tax ID/VAT number is required")
-    .max(50, "Tax ID must be less than 50 characters"),
+    .max(50, "Tax ID must be less than 50 characters")
+    .optional()
+    .or(z.literal("")),
   website: z.string()
     .trim()
     .url("Please enter a valid URL")
@@ -155,7 +156,7 @@ const RegisterVendorForm: React.FC = () => {
         business_phone: values.businessPhone,
         business_address: values.businessAddress,
         business_type: values.businessType,
-        tax_id: values.taxId,
+        tax_id: values.taxId || null,
         website: values.website || null
       };
 
@@ -355,12 +356,12 @@ const RegisterVendorForm: React.FC = () => {
               name="taxId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tax ID / VAT Number *</FormLabel>
+                  <FormLabel>Tax ID / VAT Number (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter your tax identification number" {...field} />
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    Required for tax compliance and payment processing
+                    Recommended for tax compliance and payment processing
                   </p>
                   <FormMessage />
                 </FormItem>
