@@ -38,66 +38,78 @@ const AdminProducts: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // First, get basic product data
-        const { data: basicData, error: basicError } = await supabase
+        const { data: productsData, error } = await supabase
           .from('products')
-          .select('*')
+          .select(`
+            id,
+            name,
+            price,
+            status,
+            category,
+            created_at,
+            store_id
+          `)
           .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Get all unique store IDs
+        const storeIds = [...new Set(productsData?.map(p => p.store_id) || [])];
         
-        if (basicError) throw basicError;
+        // Fetch all stores with vendors in one query
+        const { data: storesData } = await supabase
+          .from('stores')
+          .select(`
+            id,
+            name,
+            vendor_id,
+            vendors!inner(
+              id,
+              business_name,
+              user_id
+            )
+          `)
+          .in('id', storeIds);
 
-        // Then get store and vendor info for each product
-        const productsWithDetails = await Promise.all(
-          (basicData || []).map(async (product) => {
-            let storeName = 'Unknown Store';
-            let vendorBusinessName = 'Unknown Vendor';
-            let vendorId = '';
-            let vendorEmail = '';
+        // Get all unique vendor user IDs
+        const userIds = [...new Set(storesData?.map(s => s.vendors.user_id) || [])];
+        
+        // Fetch all profiles in one query
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .in('id', userIds);
 
-            if (product.store_id) {
-              const { data: storeData } = await supabase
-                .from('stores')
-                .select(`
-                  name,
-                  vendors(
-                    id,
-                    business_name,
-                    user_id,
-                    profiles(email)
-                  )
-                `)
-                .eq('id', product.store_id)
-                .single();
-
-              if (storeData) {
-                storeName = storeData.name || 'Unknown Store';
-                const vendor = Array.isArray(storeData.vendors) ? storeData.vendors[0] : storeData.vendors;
-                
-                if (vendor) {
-                  vendorBusinessName = vendor.business_name || 'Unknown Vendor';
-                  vendorId = vendor.id || '';
-                  
-                  // Get vendor email from profiles
-                  if (vendor.profiles) {
-                    const profile = Array.isArray(vendor.profiles) ? vendor.profiles[0] : vendor.profiles;
-                    vendorEmail = profile?.email || '';
-                  }
-                }
-              }
-            }
-
-            return {
-              ...product,
-              status: product.status as "pending" | "approved" | "rejected",
-              store_name: storeName,
-              vendor_business_name: vendorBusinessName,
-              vendor_id: vendorId,
-              vendor_email: vendorEmail
-            };
-          })
+        // Create maps for quick lookup
+        const profilesMap = new Map(
+          (profilesData || []).map(p => [p.id, p])
         );
 
-        setProducts(productsWithDetails);
+        const storesMap = new Map(
+          (storesData || []).map(s => [s.id, {
+            ...s,
+            vendor_email: profilesMap.get(s.vendors.user_id)?.email
+          }])
+        );
+
+        const formattedProducts = (productsData || []).map((product) => {
+          const store = storesMap.get(product.store_id);
+          return {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            status: product.status as "pending" | "approved" | "rejected",
+            category: product.category,
+            created_at: product.created_at,
+            store_id: product.store_id,
+            store_name: store?.name || 'N/A',
+            vendor_business_name: store?.vendors?.business_name || 'N/A',
+            vendor_id: store?.vendors?.id || '',
+            vendor_email: store?.vendor_email || 'N/A'
+          };
+        });
+
+        setProducts(formattedProducts);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast({
@@ -111,7 +123,7 @@ const AdminProducts: React.FC = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [toast]);
 
   const handleUpdateProductStatus = async (
     productId: string,

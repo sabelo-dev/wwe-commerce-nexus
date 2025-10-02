@@ -40,7 +40,6 @@ const AdminVendors: React.FC = () => {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        // First get vendors data
         const { data: vendorsData, error } = await supabase
           .from('vendors')
           .select(`
@@ -62,37 +61,33 @@ const AdminVendors: React.FC = () => {
           throw error;
         }
 
-        console.log('Fetched vendors data:', vendorsData);
+        // Get all unique user IDs
+        const userIds = [...new Set(vendorsData?.map(v => v.user_id) || [])];
+        
+        // Fetch all profiles in one query
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, email, name')
+          .in('id', userIds);
 
-        // Get profile data for each vendor
-        const vendorsWithProfiles = await Promise.all(
-          (vendorsData || []).map(async (vendor) => {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('email, name')
-              .eq('id', vendor.user_id)
-              .maybeSingle();
-
-            if (profileError) {
-              console.error('Error fetching profile for vendor:', vendor.id, profileError);
-            }
-
-            return {
-              ...vendor,
-              status: vendor.status as "pending" | "approved" | "rejected",
-              profiles: profile || undefined
-            };
-          })
+        // Create a map for quick lookup
+        const profilesMap = new Map(
+          (profilesData || []).map(p => [p.id, p])
         );
 
-        console.log('Vendors with profiles:', vendorsWithProfiles);
-        setVendors(vendorsWithProfiles);
+        const formattedVendors = (vendorsData || []).map((vendor) => ({
+          ...vendor,
+          status: vendor.status as "pending" | "approved" | "rejected",
+          profiles: profilesMap.get(vendor.user_id)
+        }));
+
+        setVendors(formattedVendors);
       } catch (error) {
         console.error('Error fetching vendors:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: `Failed to load vendors: ${error.message}`,
+          description: `Failed to load vendors: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       } finally {
         setLoading(false);
