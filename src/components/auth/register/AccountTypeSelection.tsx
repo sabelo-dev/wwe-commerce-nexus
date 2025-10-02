@@ -26,19 +26,13 @@ const AccountTypeSelection: React.FC<AccountTypeSelectionProps> = ({ control }) 
           <FormControl>
             <RadioGroup
               onValueChange={field.onChange}
-              defaultValue={field.value}
+              defaultValue={field.value || "consumer"}
               className="flex flex-col space-y-2"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="consumer" id="consumer" />
                 <label htmlFor="consumer" className="text-sm font-medium">
                   Consumer - Shop and buy products
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="vendor" id="vendor" />
-                <label htmlFor="vendor" className="text-sm font-medium">
-                  Vendor - Sell products on our platform
                 </label>
               </div>
             </RadioGroup>
