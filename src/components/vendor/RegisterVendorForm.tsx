@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormField,
@@ -22,8 +29,40 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 const vendorSchema = z.object({
-  businessName: z.string().min(2, "Business name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+  businessName: z.string()
+    .trim()
+    .min(2, "Business name must be at least 2 characters")
+    .max(100, "Business name must be less than 100 characters"),
+  businessEmail: z.string()
+    .trim()
+    .email("Please enter a valid business email")
+    .max(255, "Email must be less than 255 characters"),
+  businessPhone: z.string()
+    .trim()
+    .min(10, "Phone number must be at least 10 characters")
+    .max(20, "Phone number must be less than 20 characters")
+    .regex(/^[0-9+\-() ]+$/, "Please enter a valid phone number"),
+  description: z.string()
+    .trim()
+    .min(50, "Description must be at least 50 characters to help customers understand your business")
+    .max(1000, "Description must be less than 1000 characters"),
+  businessAddress: z.string()
+    .trim()
+    .min(10, "Please provide a complete business address")
+    .max(500, "Address must be less than 500 characters"),
+  businessType: z.enum(["sole_proprietor", "partnership", "llc", "corporation", "other"], {
+    required_error: "Please select your business type",
+  }),
+  taxId: z.string()
+    .trim()
+    .min(5, "Tax ID/VAT number is required")
+    .max(50, "Tax ID must be less than 50 characters"),
+  website: z.string()
+    .trim()
+    .url("Please enter a valid URL")
+    .max(255, "Website URL must be less than 255 characters")
+    .optional()
+    .or(z.literal("")),
   agreeTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions",
   }),
@@ -41,7 +80,13 @@ const RegisterVendorForm: React.FC = () => {
     resolver: zodResolver(vendorSchema),
     defaultValues: {
       businessName: "",
+      businessEmail: "",
+      businessPhone: "",
       description: "",
+      businessAddress: "",
+      businessType: undefined,
+      taxId: "",
+      website: "",
       agreeTerms: false,
     },
   });
@@ -105,7 +150,13 @@ const RegisterVendorForm: React.FC = () => {
         subscription_tier: "trial",
         trial_start_date: new Date().toISOString(),
         trial_end_date: trialEndDate.toISOString(),
-        subscription_status: "trial"
+        subscription_status: "trial",
+        business_email: values.businessEmail,
+        business_phone: values.businessPhone,
+        business_address: values.businessAddress,
+        business_type: values.businessType,
+        tax_id: values.taxId,
+        website: values.website || null
       };
 
       console.log('Inserting vendor data:', vendorData);
@@ -159,43 +210,165 @@ const RegisterVendorForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6">Become a Vendor</h1>
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-2">Become a Vendor</h1>
+      <p className="text-muted-foreground mb-6">
+        Please provide complete information about your business. All fields are required for verification.
+      </p>
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="businessName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your business name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Business Information */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <h3 className="font-semibold text-lg">Business Information</h3>
+            
+            <FormField
+              control={form.control}
+              name="businessName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Legal Business Name *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ABC Trading Company Ltd" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="businessType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Type *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select business type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="sole_proprietor">Sole Proprietor</SelectItem>
+                      <SelectItem value="partnership">Partnership</SelectItem>
+                      <SelectItem value="llc">LLC</SelectItem>
+                      <SelectItem value="corporation">Corporation</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Description *</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Describe your business, products, and what makes you unique. Minimum 50 characters." 
+                      className="resize-none min-h-[120px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">{field.value.length} / 1000 characters</p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Contact Information */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <h3 className="font-semibold text-lg">Contact Information</h3>
+            
+            <FormField
+              control={form.control}
+              name="businessEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Email *</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="contact@yourbusiness.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="businessPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Phone *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+1 (555) 123-4567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="businessAddress"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Address *</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="123 Main Street, Suite 100, City, State/Province, Postal Code, Country" 
+                      className="resize-none min-h-[80px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="website"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Website (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://www.yourbusiness.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Tax Information */}
+          <div className="space-y-4 p-4 border rounded-lg">
+            <h3 className="font-semibold text-lg">Tax Information</h3>
+            
+            <FormField
+              control={form.control}
+              name="taxId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tax ID / VAT Number *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your tax identification number" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Required for tax compliance and payment processing
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business Description</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Tell us about your business..." 
-                    className="resize-none min-h-[100px]"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
+          {/* Terms Agreement */}
           <FormField
             control={form.control}
             name="agreeTerms"
@@ -209,7 +382,7 @@ const RegisterVendorForm: React.FC = () => {
                 </FormControl>
                 <div className="space-y-1 leading-none">
                   <FormLabel>
-                    I agree to the Terms and Conditions and Vendor Guidelines
+                    I confirm that all information provided is accurate and agree to the Terms and Conditions and Vendor Guidelines *
                   </FormLabel>
                   <FormMessage />
                 </div>
@@ -217,25 +390,27 @@ const RegisterVendorForm: React.FC = () => {
             )}
           />
           
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button type="submit" disabled={isLoading} className="w-full" size="lg">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Registering...
+                Submitting Application...
               </>
             ) : (
-              "Register as Vendor"
+              "Submit Vendor Application"
             )}
           </Button>
         </form>
       </Form>
       
-      <div className="mt-6 text-sm text-gray-500">
-        <p>
-          By registering as a vendor, you agree to our vendor guidelines and
-          terms of service. Your application will be reviewed within 1-2 business
-          days.
-        </p>
+      <div className="mt-6 p-4 bg-muted rounded-lg text-sm">
+        <p className="font-semibold mb-2">What happens next?</p>
+        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+          <li>Your application will be reviewed within 1-2 business days</li>
+          <li>You'll receive an email notification once approved</li>
+          <li>After approval, you can start setting up your store and adding products</li>
+          <li>You get a 90-day free trial to explore all vendor features</li>
+        </ul>
       </div>
     </div>
   );

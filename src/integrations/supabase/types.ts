@@ -806,7 +806,11 @@ export type Database = {
       vendors: {
         Row: {
           approval_date: string | null
+          business_address: string | null
+          business_email: string | null
           business_name: string
+          business_phone: string | null
+          business_type: string | null
           created_at: string
           description: string | null
           id: string
@@ -815,14 +819,20 @@ export type Database = {
           subscription_expires_at: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          tax_id: string | null
           trial_end_date: string | null
           trial_start_date: string | null
           updated_at: string
           user_id: string
+          website: string | null
         }
         Insert: {
           approval_date?: string | null
+          business_address?: string | null
+          business_email?: string | null
           business_name: string
+          business_phone?: string | null
+          business_type?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -831,14 +841,20 @@ export type Database = {
           subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tax_id?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
         }
         Update: {
           approval_date?: string | null
+          business_address?: string | null
+          business_email?: string | null
           business_name?: string
+          business_phone?: string | null
+          business_type?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -847,10 +863,12 @@ export type Database = {
           subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tax_id?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
         }
         Relationships: []
       }
