@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +40,7 @@ const productSchema = z.object({
   sku: z.string().optional(),
   quantity: z.number().min(0, "Quantity cannot be negative"),
   category: z.string().min(1, "Category is required"),
-  subcategory: z.string().optional(),
+  subcategories: z.array(z.string()).optional(),
 });
 
 const variationSchema = z.object({
@@ -147,7 +148,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     sku: "",
     quantity: 0,
     category: "",
-    subcategory: "",
+    subcategories: [],
   });
   
   const [variations, setVariations] = useState<ProductVariation[]>([]);
@@ -219,14 +220,17 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           const subs = await fetchSubcategoriesByCategory(selectedCategory.id);
           setSubcategories(subs);
           
-          // Reset subcategory if current selection is not valid for new category
-          if (formData.subcategory && !subs.some((sub: any) => sub.name === formData.subcategory)) {
-            setFormData(prev => ({ ...prev, subcategory: "" }));
+          // Reset subcategories if current selections are not valid for new category
+          if (formData.subcategories && formData.subcategories.length > 0) {
+            const validSubcategories = formData.subcategories.filter(
+              (subcat: string) => subs.some((sub: any) => sub.name === subcat)
+            );
+            setFormData(prev => ({ ...prev, subcategories: validSubcategories }));
           }
         }
       } else {
         setSubcategories([]);
-        setFormData(prev => ({ ...prev, subcategory: "" }));
+        setFormData(prev => ({ ...prev, subcategories: [] }));
       }
     };
 
@@ -235,6 +239,16 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   useEffect(() => {
     if (product && mode === "edit") {
+      // Parse subcategories - it might be stored as comma-separated string or array
+      let subcategoriesArray: string[] = [];
+      if (product.subcategory) {
+        if (Array.isArray(product.subcategory)) {
+          subcategoriesArray = product.subcategory;
+        } else if (typeof product.subcategory === 'string') {
+          subcategoriesArray = product.subcategory.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+      
       setFormData({
         name: product.name || "",
         description: product.description || "",
@@ -243,7 +257,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         sku: product.sku || "",
         quantity: product.quantity || 0,
         category: product.category || "",
-        subcategory: product.subcategory || "",
+        subcategories: subcategoriesArray,
       });
       
       // Load existing images
@@ -268,7 +282,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         sku: "",
         quantity: 0,
         category: "",
-        subcategory: "",
+        subcategories: [],
       });
       setImages([]);
       setVariations([]);
@@ -276,11 +290,25 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     setErrors({});
   }, [product, mode, isOpen]);
 
-  const handleInputChange = (field: keyof ProductFormData, value: string | number) => {
+  const handleInputChange = (field: keyof ProductFormData, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const toggleSubcategory = (subcategoryName: string) => {
+    setFormData(prev => {
+      const currentSubcategories = prev.subcategories || [];
+      const isSelected = currentSubcategories.includes(subcategoryName);
+      
+      return {
+        ...prev,
+        subcategories: isSelected
+          ? currentSubcategories.filter(s => s !== subcategoryName)
+          : [...currentSubcategories, subcategoryName]
+      };
+    });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -614,7 +642,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             sku: validatedData.sku,
             quantity: validatedData.quantity,
             category: validatedData.category,
-            subcategory: validatedData.subcategory,
+            subcategory: validatedData.subcategories?.join(', ') || null,
             status: 'pending'
           })
           .select()
@@ -645,7 +673,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             sku: validatedData.sku,
             quantity: validatedData.quantity,
             category: validatedData.category,
-            subcategory: validatedData.subcategory,
+            subcategory: validatedData.subcategories?.join(', ') || null,
           })
           .eq('id', product.id);
 
@@ -734,28 +762,36 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="subcategory">Subcategory</Label>
-              <Select 
-                value={formData.subcategory} 
-                onValueChange={(value) => handleInputChange("subcategory", value)}
-                disabled={!formData.category || subcategories.length === 0}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder={
-                    !formData.category ? "Select category first" : 
-                    subcategories.length === 0 ? "No subcategories available" : 
-                    "Select subcategory"
-                  } />
-                </SelectTrigger>
-                <SelectContent className="bg-background dark:bg-popover border border-border shadow-lg z-[9999]">
+            <div className="space-y-3">
+              <Label>Subcategories (Select all that apply)</Label>
+              {!formData.category ? (
+                <p className="text-sm text-muted-foreground">Select a category first</p>
+              ) : subcategories.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No subcategories available</p>
+              ) : (
+                <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto bg-background">
                   {subcategories.map((subcategory) => (
-                    <SelectItem key={subcategory.id} value={subcategory.name} className="bg-background dark:bg-popover hover:bg-accent">
-                      {subcategory.name}
-                    </SelectItem>
+                    <div key={subcategory.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`subcategory-${subcategory.id}`}
+                        checked={formData.subcategories?.includes(subcategory.name) || false}
+                        onCheckedChange={() => toggleSubcategory(subcategory.name)}
+                      />
+                      <label
+                        htmlFor={`subcategory-${subcategory.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {subcategory.name}
+                      </label>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
+              {formData.subcategories && formData.subcategories.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {formData.subcategories.join(', ')}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
