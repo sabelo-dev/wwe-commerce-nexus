@@ -72,30 +72,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // Fetch user profile from profiles table
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
+      // Fetch user profile and roles from separate tables (secure implementation)
+      const [profileResult, rolesResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle(),
+        supabase.from('user_roles').select('role').eq('user_id', session.user.id)
+      ]);
       
-      if (error) {
-        console.error('Error fetching profile:', error);
+      if (profileResult.error) {
+        console.error('Error fetching profile:', profileResult.error);
         clearAuthState();
         loadingManager.stopLoading('auth');
         return;
       }
       
+      const profile = profileResult.data;
+      const roles = rolesResult.data || [];
+      const userRoles = roles.map(r => r.role);
+      
       if (profile) {
+        // Determine primary role (for backwards compatibility)
+        const primaryRole = userRoles.includes('admin') ? 'admin' : 
+                          userRoles.includes('vendor') ? 'vendor' : 'consumer';
+        
         const userData: User = {
           id: profile.id,
           email: profile.email,
           name: profile.name,
           avatar_url: profile.avatar_url,
-          role: profile.role
+          role: primaryRole
         };
         setUser(userData);
-        setIsAdmin(profile.role === 'admin');
+        
+        // Set role flags based on user_roles table
+        setIsAdmin(userRoles.includes('admin'));
         
         // Check vendor status
         const vendorStatus = await checkVendorStatus(profile.id);
@@ -221,13 +230,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.user) {
-        // Get user profile and vendor status for redirect
-        const [profileResult, vendorResult] = await Promise.all([
-          supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle(),
+        // Get user roles from user_roles table and vendor status for redirect
+        const [rolesResult, vendorResult] = await Promise.all([
+          supabase.from('user_roles').select('role').eq('user_id', data.user.id),
           checkVendorStatus(data.user.id)
         ]);
         
-        const userRole = profileResult.data?.role || 'consumer';
+        const userRoles = rolesResult.data?.map(r => r.role) || [];
+        const userRole = userRoles.includes('admin') ? 'admin' : 
+                        userRoles.includes('vendor') ? 'vendor' : 'consumer';
         const redirectPath = getRedirectPathForRole(userRole, vendorResult, true);
         
         toast({

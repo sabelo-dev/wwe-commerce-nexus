@@ -47,12 +47,24 @@ const AdminUsers: React.FC = () => {
 
   const handleUpdateRole = async (userId: string, newRole: 'consumer' | 'vendor' | 'admin') => {
     try {
+      // Delete existing roles for this user
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      // Insert new role
       const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (error) throw error;
+
+      // Also update profiles table for backwards compatibility
+      await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId);
-
-      if (error) throw error;
 
       setUsers(users.map(u => 
         u.id === userId ? { ...u, role: newRole } : u
