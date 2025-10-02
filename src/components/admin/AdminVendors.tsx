@@ -25,6 +25,11 @@ interface Vendor {
   subscription_tier?: string;
   subscription_status?: string;
   trial_end_date?: string;
+  business_email?: string;
+  business_phone?: string;
+  business_address?: string;
+  website?: string;
+  tax_id?: string;
   profiles?: {
     email: string;
     name?: string;
@@ -52,7 +57,12 @@ const AdminVendors: React.FC = () => {
             logo_url,
             subscription_tier,
             subscription_status,
-            trial_end_date
+            trial_end_date,
+            business_email,
+            business_phone,
+            business_address,
+            website,
+            tax_id
           `)
           .order('created_at', { ascending: false });
 
@@ -143,7 +153,11 @@ const AdminVendors: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Business Name</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Account Email</TableHead>
+              <TableHead>Business Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Address</TableHead>
+              <TableHead>Website</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Applied On</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -154,6 +168,23 @@ const AdminVendors: React.FC = () => {
               <TableRow key={vendor.id}>
                 <TableCell className="font-medium">{vendor.business_name}</TableCell>
                 <TableCell>{vendor.profiles?.email || 'N/A'}</TableCell>
+                <TableCell>{vendor.business_email || 'N/A'}</TableCell>
+                <TableCell>{vendor.business_phone || 'N/A'}</TableCell>
+                <TableCell className="max-w-xs truncate" title={vendor.business_address}>
+                  {vendor.business_address || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {vendor.website ? (
+                    <a 
+                      href={vendor.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Visit
+                    </a>
+                  ) : 'N/A'}
+                </TableCell>
                 <TableCell>
                   <Badge
                     variant={
