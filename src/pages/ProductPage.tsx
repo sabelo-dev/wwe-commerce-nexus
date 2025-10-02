@@ -11,10 +11,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import StarRating from "@/components/ui/star-rating";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
-import { Product } from "@/types";
+import { Product, ProductVariation } from "@/types";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/services/products";
 
 const ProductPage: React.FC = () => {
@@ -25,10 +25,8 @@ const ProductPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState<string>("");
-
-  // Available sizes for Air Jordan
-  const availableSizes = ["UK 2.5", "UK 3", "UK 3.5", "UK 4", "UK 4.5", "UK 5", "UK 5.5", "UK 6", "UK 6.5", "UK 7", "UK 7.5", "UK 9"];
+  const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -41,6 +39,14 @@ const ProductPage: React.FC = () => {
         
         if (productData) {
           setProduct(productData);
+          
+          // Auto-select first variation if available
+          if (productData.variations && productData.variations.length > 0) {
+            const firstVariation = productData.variations[0];
+            setSelectedVariation(firstVariation);
+            setSelectedAttributes(firstVariation.attributes);
+          }
+          
           const related = await fetchRelatedProducts(productData.id, productData.category, 4);
           setRelatedProducts(related);
         }
@@ -53,6 +59,49 @@ const ProductPage: React.FC = () => {
 
     loadProduct();
   }, [slug]);
+
+  // Get unique attribute types and values
+  const attributeTypes = React.useMemo(() => {
+    if (!product?.variations || product.variations.length === 0) return [];
+    const types = new Set<string>();
+    product.variations.forEach(v => {
+      Object.keys(v.attributes).forEach(key => types.add(key));
+    });
+    return Array.from(types);
+  }, [product?.variations]);
+
+  const getAttributeValues = (type: string) => {
+    if (!product?.variations) return [];
+    const values = new Set<string>();
+    product.variations.forEach(v => {
+      if (v.attributes[type]) values.add(v.attributes[type]);
+    });
+    return Array.from(values);
+  };
+
+  // Handle attribute selection
+  const handleAttributeSelect = (type: string, value: string) => {
+    const newAttributes = { ...selectedAttributes, [type]: value };
+    setSelectedAttributes(newAttributes);
+
+    // Find matching variation
+    const matchingVariation = product?.variations?.find(v => {
+      return Object.keys(newAttributes).every(
+        key => v.attributes[key] === newAttributes[key]
+      );
+    });
+
+    if (matchingVariation) {
+      setSelectedVariation(matchingVariation);
+      // Update main image if variation has one
+      if (matchingVariation.imageUrl) {
+        const varImageIndex = product?.images.findIndex(img => img === matchingVariation.imageUrl);
+        if (varImageIndex !== -1) {
+          setSelectedImage(varImageIndex);
+        }
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -80,16 +129,13 @@ const ProductPage: React.FC = () => {
   }
 
   const handleAddToCart = () => {
-    if (product.id === "air-jordan-1-low-mom" && !selectedSize) {
-      alert("Please select a size first");
-      return;
-    }
-    
     addToCart({
       productId: product.id,
-      name: product.name + (selectedSize ? ` - ${selectedSize}` : ""),
-      price: product.price,
-      image: product.images[0],
+      name: product.name,
+      price: selectedVariation?.price || product.price,
+      image: selectedVariation?.imageUrl || product.images[0],
+      variationId: selectedVariation?.id,
+      variationAttributes: selectedVariation?.attributes,
     });
   };
 
@@ -98,8 +144,9 @@ const ProductPage: React.FC = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
 
-  const isAirJordan = product.id === "air-jordan-1-low-mom";
-  const discountPercent = product.compareAtPrice ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100) : 0;
+  const currentPrice = selectedVariation?.price || product.price;
+  const discountPercent = product.compareAtPrice ? Math.round(((product.compareAtPrice - currentPrice) / product.compareAtPrice) * 100) : 0;
+  const isInStock = selectedVariation ? selectedVariation.quantity > 0 : product.inStock;
 
   return (
     <div className="bg-white">
@@ -164,9 +211,9 @@ const ProductPage: React.FC = () => {
             <div className="mt-4">
               <div className="flex items-baseline space-x-2">
                 <span className="text-2xl font-bold">
-                  {formatCurrency(product.price)}
+                  {formatCurrency(currentPrice)}
                 </span>
-                {product.compareAtPrice && product.compareAtPrice > product.price && (
+                {product.compareAtPrice && product.compareAtPrice > currentPrice && (
                   <>
                     <span className="text-gray-500 line-through">
                       {formatCurrency(product.compareAtPrice)}
@@ -179,24 +226,16 @@ const ProductPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Limited Time Offer for Air Jordan */}
-            {isAirJordan && (
-              <div className="bg-wwe-gold/10 border border-wwe-gold rounded-lg p-4">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-wwe-gold" />
-                  <span className="font-semibold text-wwe-navy">Limited Time Offer!</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  10% discount expires in 30 days. Don't miss out!
-                </p>
-              </div>
-            )}
-
             {/* Availability */}
             <div>
-              <Badge className={product.inStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                {product.inStock ? "In Stock" : "Out of Stock"}
+              <Badge className={isInStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                {isInStock ? "In Stock" : "Out of Stock"}
               </Badge>
+              {selectedVariation && (
+                <span className="text-sm text-gray-600 ml-2">
+                  {selectedVariation.quantity} available
+                </span>
+              )}
             </div>
 
             {/* Short Description */}
@@ -209,25 +248,41 @@ const ProductPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Size Selection for Air Jordan */}
-            {isAirJordan && (
-              <div className="space-y-3">
-                <span className="font-medium text-gray-900">Size:</span>
-                <div className="grid grid-cols-4 gap-2">
-                  {availableSizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`py-2 px-3 border rounded-md text-sm font-medium transition-colors ${
-                        selectedSize === size
-                          ? "border-wwe-navy bg-wwe-navy text-white"
-                          : "border-gray-300 bg-white text-gray-900 hover:border-gray-400"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
+            {/* Variation Selection */}
+            {attributeTypes.length > 0 && (
+              <div className="space-y-4 border-t pt-4">
+                {attributeTypes.map(attrType => (
+                  <div key={attrType} className="space-y-2">
+                    <div className="font-medium text-gray-900 capitalize flex items-center gap-2">
+                      {attrType}:
+                      {selectedAttributes[attrType] && (
+                        <span className="text-sm font-normal text-gray-600">
+                          {selectedAttributes[attrType]}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {getAttributeValues(attrType).map(value => {
+                        const isSelected = selectedAttributes[attrType] === value;
+                        
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleAttributeSelect(attrType, value)}
+                            className={cn(
+                              "px-4 py-2 border rounded-md text-sm font-medium transition-colors",
+                              isSelected
+                                ? "border-wwe-navy bg-wwe-navy text-white"
+                                : "border-gray-300 bg-white text-gray-900 hover:border-gray-400"
+                            )}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -267,9 +322,9 @@ const ProductPage: React.FC = () => {
                 <Button
                   onClick={handleAddToCart}
                   className="flex-1 bg-wwe-navy hover:bg-wwe-navy/90"
-                  disabled={!product.inStock}
+                  disabled={!isInStock}
                 >
-                  {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  {isInStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
                 <Button variant="outline" size="icon">
                   <Heart className="h-5 w-5" />
@@ -302,26 +357,6 @@ const ProductPage: React.FC = () => {
             <TabsContent value="details" className="py-6">
               <div className="prose max-w-none">
                 <p className="mb-4">{product.description}</p>
-                {isAirJordan && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Benefits</h3>
-                    <ul className="list-disc pl-6 space-y-2 mb-6">
-                      <li>Nike Air in the heel provides lightweight, resilient cushioning.</li>
-                      <li>Solid-rubber outsoles give you ample everyday traction.</li>
-                      <li>Leather in the upper offers durability and structure.</li>
-                    </ul>
-                    
-                    <h3 className="text-lg font-semibold mb-3">Product Details</h3>
-                    <ul className="list-disc pl-6 space-y-1">
-                      <li>Wings logo on heel</li>
-                      <li>Stitched Swoosh logo</li>
-                      <li>Classic laces</li>
-                      <li>Colour Shown: Sail/Sail/Metallic Gold</li>
-                      <li>Style: FN5032-100</li>
-                      <li>Country/Region of Origin: China</li>
-                    </ul>
-                  </div>
-                )}
               </div>
             </TabsContent>
             <TabsContent value="specs" className="py-6">
@@ -333,22 +368,23 @@ const ProductPage: React.FC = () => {
                     <span>{product.vendorName}</span>
                     <span className="text-gray-600">Category</span>
                     <span>{product.subcategory || product.category}</span>
-                    {isAirJordan && (
+                    {selectedVariation?.sku && (
                       <>
-                        <span className="text-gray-600">Style Code</span>
-                        <span>FN5032-100</span>
-                        <span className="text-gray-600">Colorway</span>
-                        <span>Sail/Sail/Metallic Gold</span>
+                        <span className="text-gray-600">SKU</span>
+                        <span>{selectedVariation.sku}</span>
                       </>
                     )}
                   </div>
                 </div>
-                {isAirJordan && (
+                {product.variations && product.variations.length > 0 && (
                   <div className="border rounded-md p-4">
-                    <h3 className="font-semibold mb-2">Available Sizes</h3>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      {availableSizes.map((size) => (
-                        <span key={size} className="text-gray-700">{size}</span>
+                    <h3 className="font-semibold mb-2">Available Options</h3>
+                    <div className="text-sm space-y-1">
+                      {attributeTypes.map(type => (
+                        <div key={type}>
+                          <span className="text-gray-600 capitalize">{type}s: </span>
+                          <span>{getAttributeValues(type).join(', ')}</span>
+                        </div>
                       ))}
                     </div>
                   </div>

@@ -46,8 +46,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addToCart = (item: Omit<CartItem, "quantity">) => {
     setCart(prevCart => {
+      // Check if item with same product AND variation already exists
       const existingItemIndex = prevCart.items.findIndex(
-        cartItem => cartItem.productId === item.productId
+        cartItem => 
+          cartItem.productId === item.productId && 
+          cartItem.variationId === item.variationId
       );
 
       let newItems;
@@ -58,9 +61,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         newItems = [...prevCart.items, { ...item, quantity: 1 }];
       }
 
+      const displayName = item.variationAttributes 
+        ? `${item.name} (${Object.values(item.variationAttributes).join(', ')})`
+        : item.name;
+
       toast({
         title: "Item Added",
-        description: `${item.name} has been added to your cart.`,
+        description: `${displayName} has been added to your cart.`,
       });
 
       return {

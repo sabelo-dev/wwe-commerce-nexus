@@ -16,15 +16,41 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
   const { addToCart } = useCart();
+  const [selectedVariation, setSelectedVariation] = React.useState<string | null>(null);
+
+  // Get unique attribute types (e.g., color, size)
+  const attributeTypes = React.useMemo(() => {
+    if (!product.variations || product.variations.length === 0) return [];
+    const types = new Set<string>();
+    product.variations.forEach(v => {
+      Object.keys(v.attributes).forEach(key => types.add(key));
+    });
+    return Array.from(types);
+  }, [product.variations]);
+
+  // Get unique values for each attribute type
+  const getAttributeValues = (type: string) => {
+    if (!product.variations) return [];
+    const values = new Set<string>();
+    product.variations.forEach(v => {
+      if (v.attributes[type]) values.add(v.attributes[type]);
+    });
+    return Array.from(values);
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    const variation = product.variations?.find(v => v.id === selectedVariation);
+    
     addToCart({
       productId: product.id,
       name: product.name,
-      price: product.price,
-      image: product.images[0],
+      price: variation?.price || product.price,
+      image: variation?.imageUrl || product.images[0],
+      variationId: selectedVariation || undefined,
+      variationAttributes: variation?.attributes,
     });
   };
 
@@ -97,6 +123,45 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
             <StarRating rating={product.rating} />
             <span className="text-xs text-gray-500 ml-1">({product.reviewCount})</span>
           </div>
+
+          {/* Variation Selection */}
+          {product.variations && product.variations.length > 0 && (
+            <div className="mb-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+              {attributeTypes.slice(0, 1).map(attrType => (
+                <div key={attrType} className="space-y-1">
+                  <div className="text-xs text-gray-500 capitalize">{attrType}:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {getAttributeValues(attrType).slice(0, 4).map(value => {
+                      const matchingVariation = product.variations?.find(
+                        v => v.attributes[attrType] === value
+                      );
+                      const isSelected = selectedVariation === matchingVariation?.id;
+                      
+                      return (
+                        <button
+                          key={value}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedVariation(matchingVariation?.id || null);
+                          }}
+                          className={cn(
+                            "px-2 py-1 text-xs border rounded transition-colors",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:border-primary"
+                          )}
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <Button
             onClick={handleAddToCart}
             disabled={!product.inStock}

@@ -17,6 +17,16 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface ProductVariation {
+  id: string;
+  productId: string;
+  sku?: string;
+  price: number;
+  quantity: number;
+  attributes: Record<string, string>; // e.g., { color: "Red", size: "M" }
+  imageUrl?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -34,6 +44,7 @@ export interface Product {
   vendorName: string;
   vendorSlug?: string;
   createdAt: string;
+  variations?: ProductVariation[];
 }
 
 export interface Category {
@@ -50,6 +61,8 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  variationId?: string;
+  variationAttributes?: Record<string, string>;
 }
 
 export interface Cart {

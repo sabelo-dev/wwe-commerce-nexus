@@ -4,9 +4,22 @@ import { Product, Category } from "@/types";
 /**
  * Converts database product to frontend Product type
  */
-const mapDatabaseProduct = (dbProduct: any, images: any[] = []): Product => {
+const mapDatabaseProduct = (dbProduct: any, images: any[] = [], variations: any[] = []): Product => {
   const store = dbProduct.stores || {};
   const vendor = store.vendors || {};
+  
+  const mappedVariations = variations.map(v => ({
+    id: v.id,
+    productId: v.product_id,
+    sku: v.sku,
+    price: Number(v.price),
+    quantity: v.quantity,
+    attributes: v.attributes || {},
+    imageUrl: v.image_url,
+  }));
+  
+  // Calculate total stock including variations
+  const totalStock = dbProduct.quantity + variations.reduce((sum, v) => sum + (v.quantity || 0), 0);
   
   return {
     id: dbProduct.id,
@@ -20,11 +33,12 @@ const mapDatabaseProduct = (dbProduct: any, images: any[] = []): Product => {
     subcategory: dbProduct.subcategory,
     rating: Number(dbProduct.rating) || 0,
     reviewCount: dbProduct.review_count || 0,
-    inStock: dbProduct.quantity > 0,
+    inStock: totalStock > 0,
     vendorId: store.id,
     vendorName: store.name || vendor.business_name || "Store",
     vendorSlug: store.slug,
     createdAt: dbProduct.created_at,
+    variations: mappedVariations.length > 0 ? mappedVariations : undefined,
   };
 };
 
@@ -40,6 +54,15 @@ export const fetchDatabaseProducts = async (): Promise<Product[]> => {
         product_images (
           image_url,
           position
+        ),
+        product_variations (
+          id,
+          product_id,
+          sku,
+          price,
+          quantity,
+          attributes,
+          image_url
         ),
         stores (
           id,
@@ -60,7 +83,11 @@ export const fetchDatabaseProducts = async (): Promise<Product[]> => {
     }
 
     return (products || []).map(product => 
-      mapDatabaseProduct(product, product.product_images || [])
+      mapDatabaseProduct(
+        product, 
+        product.product_images || [],
+        product.product_variations || []
+      )
     );
   } catch (error) {
     console.error('Error fetching database products:', error);
@@ -80,6 +107,15 @@ export const fetchProductsByStore = async (storeSlug: string): Promise<Product[]
         product_images (
           image_url,
           position
+        ),
+        product_variations (
+          id,
+          product_id,
+          sku,
+          price,
+          quantity,
+          attributes,
+          image_url
         ),
         stores!inner (
           id,
@@ -101,7 +137,11 @@ export const fetchProductsByStore = async (storeSlug: string): Promise<Product[]
     }
 
     return (products || []).map(product => 
-      mapDatabaseProduct(product, product.product_images || [])
+      mapDatabaseProduct(
+        product, 
+        product.product_images || [],
+        product.product_variations || []
+      )
     );
   } catch (error) {
     console.error('Error fetching products by store:', error);
