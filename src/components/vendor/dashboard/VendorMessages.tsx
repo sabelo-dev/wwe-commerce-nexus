@@ -170,8 +170,6 @@ const VendorMessages = () => {
 
       setMessages(messagesWithSenders);
 
-      setMessages(formattedMessages);
-
       // Mark messages as read
       await supabase
         .from('messages')
