@@ -37,7 +37,7 @@ const VendorPayouts = () => {
     pendingBalance: 0,
     totalEarnings: 0,
     commissionRate: 10, // 10%
-    minimumPayout: 50.00,
+    minimumPayout: 100.00,
     nextPayoutDate: "2024-01-20"
   });
 
@@ -115,43 +115,51 @@ const VendorPayouts = () => {
   };
 
   const requestPayout = async () => {
-    if (!user?.id || !canRequestPayout) return;
+    if (!canRequestPayout) {
+      toast({
+        variant: "destructive",
+        title: "Cannot request payout",
+        description: "Your available balance is below the minimum payout threshold of R100."
+      });
+      return;
+    }
 
     try {
-      // Get vendor data first
-      const { data: vendor, error: vendorError } = await supabase
+      const { data: vendor } = await supabase
         .from('vendors')
         .select('id')
         .eq('user_id', user.id)
         .single();
 
-      if (vendorError) throw vendorError;
-
       const { error } = await supabase
         .from('payouts')
-        .insert({
-          vendor_id: vendor.id,
-          amount: payoutData.availableBalance,
-          status: 'pending'
-        });
+        .insert([
+          {
+            vendor_id: vendor.id,
+            amount: payoutData.availableBalance,
+            status: 'pending'
+          }
+        ]);
 
       if (error) throw error;
 
       toast({
-        title: "Payout Requested",
-        description: "Your payout request has been submitted successfully.",
+        title: "Payout requested",
+        description: "Your payout request has been submitted successfully."
       });
 
-      fetchPayoutData(); // Refresh data
+      fetchPayoutData();
     } catch (error) {
       console.error('Error requesting payout:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to request payout",
+        description: "Failed to request payout"
       });
     }
   };
+
+  const canRequestPayout = payoutData.availableBalance >= 100;
 
   const payoutHistory = payouts.map(payout => ({
     id: `PAY-${payout.id.slice(-3)}`,
@@ -181,8 +189,6 @@ const VendorPayouts = () => {
     }
   };
 
-  const canRequestPayout = payoutData.availableBalance >= payoutData.minimumPayout;
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -211,7 +217,7 @@ const VendorPayouts = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ${payoutData.availableBalance.toFixed(2)}
+              R{payoutData.availableBalance.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               Ready for payout
@@ -226,7 +232,7 @@ const VendorPayouts = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              ${payoutData.pendingBalance.toFixed(2)}
+              R{payoutData.pendingBalance.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               Processing orders
@@ -241,7 +247,7 @@ const VendorPayouts = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${payoutData.totalEarnings.toFixed(2)}
+              R{payoutData.totalEarnings.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               All time earnings
@@ -277,7 +283,7 @@ const VendorPayouts = () => {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span className="text-sm">Minimum Payout Amount:</span>
-              <span className="font-medium">${payoutData.minimumPayout.toFixed(2)}</span>
+              <span className="font-medium">R{payoutData.minimumPayout.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm">Next Scheduled Payout:</span>
@@ -293,7 +299,7 @@ const VendorPayouts = () => {
             <div className="pt-2">
               {!canRequestPayout && (
                 <p className="text-sm text-orange-600">
-                  Minimum payout amount not reached. Need ${(payoutData.minimumPayout - payoutData.availableBalance).toFixed(2)} more.
+                  Minimum payout amount not reached. Need R{(payoutData.minimumPayout - payoutData.availableBalance).toFixed(2)} more.
                 </p>
               )}
             </div>
@@ -311,18 +317,18 @@ const VendorPayouts = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Gross Sales</span>
-                <span>${(payoutData.availableBalance / (1 - payoutData.commissionRate / 100)).toFixed(2)}</span>
+                <span>R{(payoutData.availableBalance / (1 - payoutData.commissionRate / 100)).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Platform Commission ({payoutData.commissionRate}%)</span>
                 <span className="text-red-600">
-                  -${((payoutData.availableBalance / (1 - payoutData.commissionRate / 100)) * payoutData.commissionRate / 100).toFixed(2)}
+                  -R{((payoutData.availableBalance / (1 - payoutData.commissionRate / 100)) * payoutData.commissionRate / 100).toFixed(2)}
                 </span>
               </div>
               <div className="border-t pt-2">
                 <div className="flex justify-between font-medium">
                   <span>Net Earnings</span>
-                  <span className="text-green-600">${payoutData.availableBalance.toFixed(2)}</span>
+                  <span className="text-green-600">R{payoutData.availableBalance.toFixed(2)}</span>
                 </div>
               </div>
             </div>

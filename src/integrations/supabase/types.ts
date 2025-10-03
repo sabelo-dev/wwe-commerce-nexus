@@ -127,6 +127,60 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          last_message_at: string | null
+          order_id: string | null
+          status: string | null
+          store_id: string
+          subject: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          last_message_at?: string | null
+          order_id?: string | null
+          status?: string | null
+          store_id: string
+          subject: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          last_message_at?: string | null
+          order_id?: string | null
+          status?: string | null
+          store_id?: string
+          subject?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           completed_at: string | null
@@ -171,6 +225,88 @@ export type Database = {
           total_items?: number
         }
         Relationships: []
+      }
+      inventory_settings: {
+        Row: {
+          auto_restock_enabled: boolean | null
+          created_at: string | null
+          id: string
+          notification_threshold: number | null
+          notifications_enabled: boolean | null
+          restock_quantity: number | null
+          restock_threshold: number | null
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          auto_restock_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          notification_threshold?: number | null
+          notifications_enabled?: boolean | null
+          restock_quantity?: number | null
+          restock_threshold?: number | null
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          auto_restock_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          notification_threshold?: number | null
+          notifications_enabled?: boolean | null
+          restock_quantity?: number | null
+          restock_threshold?: number | null
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          read: boolean | null
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -509,6 +645,128 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          code: string
+          created_at: string | null
+          end_date: string
+          id: string
+          min_order_value: number | null
+          name: string
+          products: Json | null
+          start_date: string
+          status: string | null
+          store_id: string
+          type: string
+          updated_at: string | null
+          usage_count: number | null
+          usage_limit: number | null
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          end_date: string
+          id?: string
+          min_order_value?: number | null
+          name: string
+          products?: Json | null
+          start_date: string
+          status?: string | null
+          store_id: string
+          type: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          value: number
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          min_order_value?: number | null
+          name?: string
+          products?: Json | null
+          start_date?: string
+          status?: string | null
+          store_id?: string
+          type?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          flagged: boolean | null
+          id: string
+          order_id: string | null
+          product_id: string
+          rating: number
+          sentiment: string | null
+          updated_at: string | null
+          user_id: string
+          vendor_responded_at: string | null
+          vendor_response: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          flagged?: boolean | null
+          id?: string
+          order_id?: string | null
+          product_id: string
+          rating: number
+          sentiment?: string | null
+          updated_at?: string | null
+          user_id: string
+          vendor_responded_at?: string | null
+          vendor_response?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          flagged?: boolean | null
+          id?: string
+          order_id?: string | null
+          product_id?: string
+          rating?: number
+          sentiment?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vendor_responded_at?: string | null
+          vendor_response?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_categories: {
         Row: {
           category_id: string
@@ -671,6 +929,50 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          id: string
+          priority: string | null
+          status: string | null
+          subject: string
+          updated_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -796,6 +1098,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vendor_notifications_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_payment_methods: {
+        Row: {
+          account_holder_name: string
+          account_number: string
+          account_type: string | null
+          bank_name: string
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          updated_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          account_holder_name: string
+          account_number: string
+          account_type?: string | null
+          bank_name: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          updated_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          account_holder_name?: string
+          account_number?: string
+          account_type?: string | null
+          bank_name?: string
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          updated_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_payment_methods_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendors"

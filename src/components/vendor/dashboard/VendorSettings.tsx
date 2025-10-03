@@ -367,12 +367,12 @@ const VendorSettings = () => {
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bank-account">Bank Account</Label>
-              <Input id="bank-account" defaultValue="****1234" disabled />
+              <Label htmlFor="bank-account">Account Number</Label>
+              <Input id="bank-account" placeholder="****1234" disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="routing-number">Routing Number</Label>
-              <Input id="routing-number" defaultValue="****5678" disabled />
+              <Label htmlFor="bank-name">Bank Name</Label>
+              <Input id="bank-name" placeholder="Standard Bank" disabled />
             </div>
           </div>
           <Button variant="outline">
