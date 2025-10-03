@@ -108,7 +108,7 @@ const VendorAnalytics = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${kpis.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">R{kpis.totalRevenue.toFixed(2)}</div>
             <div className="flex items-center text-xs">
               {getGrowthIcon(kpis.revenueGrowth)}
               <span className={`ml-1 ${getGrowthColor(kpis.revenueGrowth)}`}>

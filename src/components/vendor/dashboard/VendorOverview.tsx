@@ -309,10 +309,10 @@ const VendorOverview: React.FC<VendorOverviewProps> = ({ onNavigate }) => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.todayRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">R{stats.todayRevenue.toFixed(2)}</div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-              <span>7d: ${stats.weeklyRevenue.toFixed(2)}</span>
+              <span>7d: R{stats.weeklyRevenue.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -338,7 +338,7 @@ const VendorOverview: React.FC<VendorOverviewProps> = ({ onNavigate }) => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.conversionRate}%</div>
             <p className="text-xs text-muted-foreground">
-              ${stats.avgOrderValue} avg order
+              R{stats.avgOrderValue} avg order
             </p>
           </CardContent>
         </Card>
@@ -400,7 +400,7 @@ const VendorOverview: React.FC<VendorOverviewProps> = ({ onNavigate }) => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingPayouts}</div>
             <p className="text-xs text-muted-foreground">
-              Next: ${(stats.revenue * 0.85).toFixed(2)} on Jan 30
+              Next: R{(stats.revenue * 0.85).toFixed(2)} on Jan 30
             </p>
           </CardContent>
         </Card>
@@ -427,7 +427,7 @@ const VendorOverview: React.FC<VendorOverviewProps> = ({ onNavigate }) => {
                     <p className="text-sm text-muted-foreground">{order.product}</p>
                   </div>
                   <div className="text-right space-y-1">
-                    <p className="text-sm font-medium">${order.amount}</p>
+                    <p className="text-sm font-medium">R{order.amount}</p>
                     <div className="flex items-center gap-2">
                       <Badge variant={getStatusColor(order.status)}>
                         {order.status === "new" && <Clock className="h-3 w-3 mr-1" />}

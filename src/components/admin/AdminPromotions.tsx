@@ -279,7 +279,7 @@ const AdminPromotions: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {discount.type === "percentage" ? "%" : "$"}
+                          {discount.type === "percentage" ? "%" : "R"}
                         </Badge>
                       </TableCell>
                       <TableCell>

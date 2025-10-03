@@ -276,13 +276,13 @@ const VendorOrders = () => {
                     {order.products.map((product, index) => (
                       <div key={index} className="flex justify-between text-sm">
                         <span>{product.name} × {product.quantity}</span>
-                        <span>${(product.price * product.quantity).toFixed(2)}</span>
+                        <span>R{(product.price * product.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                   <div className="flex justify-between font-medium mt-2 pt-2 border-t">
                     <span>Total</span>
-                    <span>${order.total.toFixed(2)}</span>
+                    <span>R{order.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

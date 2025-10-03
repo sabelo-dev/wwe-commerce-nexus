@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { InventorySettingsDialog } from "./dialogs/InventorySettingsDialog";
 import { 
   Package, 
   Search, 
@@ -33,6 +34,9 @@ const VendorInventory = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -68,6 +72,7 @@ const VendorInventory = () => {
       }
 
       const storeIds = stores.map(store => store.id);
+      setStoreId(stores[0].id); // Save first store ID for dialogs
 
       // Get products from all vendor stores
       const { data, error } = await supabase
@@ -466,7 +471,11 @@ const VendorInventory = () => {
               <p className="text-sm text-muted-foreground">
                 Automatically reorder when stock falls below threshold
               </p>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSettingsDialogOpen(true)}
+              >
                 Configure Auto-Restock
               </Button>
             </div>
@@ -475,13 +484,32 @@ const VendorInventory = () => {
               <p className="text-sm text-muted-foreground">
                 Get notified when products are running low
               </p>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setNotificationDialogOpen(true)}
+              >
                 Notification Settings
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {storeId && (
+        <>
+          <InventorySettingsDialog
+            open={settingsDialogOpen}
+            onOpenChange={setSettingsDialogOpen}
+            storeId={storeId}
+          />
+          <InventorySettingsDialog
+            open={notificationDialogOpen}
+            onOpenChange={setNotificationDialogOpen}
+            storeId={storeId}
+          />
+        </>
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentMethodDialog } from "./dialogs/PaymentMethodDialog";
 import { 
   Store, 
   User, 
@@ -23,6 +24,8 @@ const VendorSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [vendorId, setVendorId] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [storeData, setStoreData] = useState({
     id: '',
     name: '',
@@ -59,6 +62,7 @@ const VendorSettings = () => {
         .single();
 
       if (vendorError) throw vendorError;
+      setVendorId(vendor.id);
 
       // Get store data
       const { data: store, error: storeError } = await supabase
@@ -375,7 +379,7 @@ const VendorSettings = () => {
               <Input id="bank-name" placeholder="Standard Bank" disabled />
             </div>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setPaymentDialogOpen(true)}>
             <CreditCard className="h-4 w-4 mr-2" />
             Update Payment Method
           </Button>
@@ -402,6 +406,14 @@ const VendorSettings = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {vendorId && (
+        <PaymentMethodDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          vendorId={vendorId}
+        />
+      )}
     </div>
   );
 };

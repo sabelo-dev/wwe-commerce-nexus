@@ -93,7 +93,7 @@ const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
               <CardTitle className="text-xl">{plan.name}</CardTitle>
             </div>
             <div className="text-3xl font-bold">
-              ${plan.price}
+              R{plan.price}
               <span className="text-sm font-normal text-muted-foreground">
                 /{plan.billing_period}
               </span>
