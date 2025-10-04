@@ -465,6 +465,45 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string
+          id: string
+          platform_email: string
+          platform_fee: number
+          platform_name: string
+          privacy_policy: string | null
+          support_email: string
+          terms_of_service: string | null
+          updated_at: string
+          vendor_fee: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform_email: string
+          platform_fee?: number
+          platform_name?: string
+          privacy_policy?: string | null
+          support_email: string
+          terms_of_service?: string | null
+          updated_at?: string
+          vendor_fee?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform_email?: string
+          platform_fee?: number
+          platform_name?: string
+          privacy_policy?: string | null
+          support_email?: string
+          terms_of_service?: string | null
+          updated_at?: string
+          vendor_fee?: number
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           created_at: string
