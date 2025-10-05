@@ -409,8 +409,47 @@ export const fetchDealsProducts = async (limit: number = 20): Promise<Product[]>
  */
 export const fetchProductBySlug = async (slug: string): Promise<Product | null> => {
   try {
-    const allProducts = await fetchAllProducts();
-    return allProducts.find(product => product.slug === slug) || null;
+    const { data: product, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        product_images (
+          image_url,
+          position
+        ),
+        product_variations (
+          id,
+          product_id,
+          sku,
+          price,
+          quantity,
+          attributes,
+          image_url
+        ),
+        stores (
+          id,
+          name,
+          slug,
+          vendors (
+            id,
+            business_name
+          )
+        )
+      `)
+      .eq('slug', slug)
+      .eq('status', 'approved')
+      .single();
+
+    if (error || !product) {
+      console.error('Error fetching product by slug:', error);
+      return null;
+    }
+
+    return mapDatabaseProduct(
+      product,
+      product.product_images || [],
+      product.product_variations || []
+    );
   } catch (error) {
     console.error('Error fetching product by slug:', error);
     return null;
