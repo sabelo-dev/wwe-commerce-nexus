@@ -36,17 +36,19 @@ Deno.serve(async (req) => {
 
     console.log('Fetching products from WeFulFill API...');
 
-    // Fetch products from WeFulFill API
+    // Try fetching products from WeFulFill API with X-API-Token header
     const response = await fetch('https://wefullfill.com/api/products', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${wefullfilToken}`,
+        'X-API-Token': wefullfilToken,
         'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`WeFulFill API error: ${response.status} ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error('WeFulFill API error response:', errorBody);
+      throw new Error(`WeFulFill API error: ${response.status} ${response.statusText}. Response: ${errorBody}`);
     }
 
     const wefullfilProducts: WeFulFillProduct[] = await response.json();
