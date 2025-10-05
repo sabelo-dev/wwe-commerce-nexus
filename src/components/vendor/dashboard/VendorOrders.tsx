@@ -90,7 +90,8 @@ const VendorOrders = () => {
             total: 0,
             status: item.vendor_status,
             date: new Date(item.created_at).toLocaleDateString(),
-            shippingAddress: item.orders.shipping_address || {}
+            shippingAddress: item.orders.shipping_address || {},
+            trackingNumber: item.orders.tracking_number
           };
         }
         acc[orderId].products.push({
@@ -115,8 +116,32 @@ const VendorOrders = () => {
     }
   };
 
+  const generateTrackingNumber = () => {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `WWE-TRK-${timestamp}-${random}`;
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      // Generate tracking number if shipping
+      let trackingNumber = null;
+      if (newStatus === 'shipped') {
+        trackingNumber = generateTrackingNumber();
+        
+        // Update the orders table with tracking number
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({ 
+            tracking_number: trackingNumber,
+            status: 'shipped'
+          })
+          .eq('id', orderId);
+
+        if (orderError) throw orderError;
+      }
+
+      // Update order items vendor status
       const { error } = await supabase
         .from('order_items')
         .update({ vendor_status: newStatus })
@@ -124,13 +149,18 @@ const VendorOrders = () => {
 
       if (error) throw error;
 
+      // Update local state
       setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
+        order.id === orderId 
+          ? { ...order, status: newStatus, trackingNumber: trackingNumber || order.trackingNumber } 
+          : order
       ));
 
       toast({
         title: "Order Updated",
-        description: "Order status has been updated successfully.",
+        description: newStatus === 'shipped' 
+          ? `Order marked as shipped. Tracking number: ${trackingNumber}`
+          : "Order status has been updated successfully.",
       });
     } catch (error) {
       console.error('Error updating order:', error);
@@ -235,18 +265,25 @@ const VendorOrders = () => {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'confirmed')}>
-                          Mark as Confirmed
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'shipped')}>
-                          Mark as Shipped
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'delivered')}>
-                          Mark as Delivered
-                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {order.status === 'pending' && (
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'confirmed')}>
+                            Mark as Confirmed
+                          </DropdownMenuItem>
+                        )}
+                        {(order.status === 'pending' || order.status === 'confirmed') && (
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'shipped')}>
+                            Mark as Shipped (Generate Tracking)
+                          </DropdownMenuItem>
+                        )}
+                        {order.status === 'shipped' && (
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'delivered')}>
+                            Mark as Delivered
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>Contact Customer</DropdownMenuItem>
                       </DropdownMenuContent>
@@ -284,6 +321,13 @@ const VendorOrders = () => {
                     <span>Total</span>
                     <span>R{order.total.toFixed(2)}</span>
                   </div>
+                  
+                  {order.trackingNumber && (
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium text-sm mb-1">Tracking Number</h4>
+                      <p className="text-sm font-mono">{order.trackingNumber}</p>
+                    </div>
+                  )}
                 </div>
               </div>
               ))}
