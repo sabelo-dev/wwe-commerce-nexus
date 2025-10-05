@@ -322,8 +322,8 @@ const PrivacyPage: React.FC = () => {
                   If you have questions about this Privacy Policy or our data practices, please contact us:
                 </p>
                 <div className="text-gray-700">
-                  <p><strong>Privacy Officer:</strong> privacy@sim-o.com</p>
-                  <p><strong>General Inquiries:</strong> support@sim-o.com</p>
+                  <p><strong>Privacy Officer:</strong> privacy@synergymall.co.za</p>
+                  <p><strong>General Inquiries:</strong> support@synergymall.co.za</p>
                   <p><strong>Phone:</strong> +27-76-159-7719</p>
                   <p><strong>Address:</strong>eCommerce Street, International</p>
                 </div>

@@ -47,7 +47,7 @@ const ContactPage: React.FC = () => {
                   <Mail className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-900">General Support</p>
-                    <p className="text-blue-700">support@sim-o.com</p>
+                    <p className="text-blue-700">support@synergymall.co.za</p>
                   </div>
                 </div>
                 
@@ -55,7 +55,7 @@ const ContactPage: React.FC = () => {
                   <Mail className="h-5 w-5 text-purple-600" />
                   <div>
                     <p className="font-medium text-purple-900">Sales Inquiries</p>
-                    <p className="text-purple-700">sales@sim-o.co.za</p>
+                    <p className="text-purple-700">sales@synergymall.co.za</p>
                   </div>
                 </div>
                 

@@ -248,7 +248,7 @@ const TermsPage: React.FC = () => {
                   If you have questions about these Terms of Service, please contact us:
                 </p>
                 <div className="text-gray-700">
-                  <p>Email: legal@sim-o.com</p>
+                  <p>Email: legal@synergymall.co.za</p>
                   <p>Phone: +27-76-159-7719</p>
                   <p>Address: eCommerce Street, International</p>
                 </div>
