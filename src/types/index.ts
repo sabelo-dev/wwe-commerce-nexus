@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name?: string;
   avatar_url?: string;
+  phone?: string;
   role: 'consumer' | 'vendor' | 'admin';
 }
 

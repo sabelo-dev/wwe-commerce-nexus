@@ -1,23 +1,122 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { User, Package, MapPin, CreditCard, Settings, Store } from "lucide-react";
+import { User, Package, MapPin, Settings, Store, Loader2 } from "lucide-react";
 import { Navigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const AccountPage: React.FC = () => {
-  const { user, isVendor } = useAuth();
+  const { user, isVendor, refreshUserProfile } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+  const [loading, setLoading] = useState(false);
+  
+  // Profile state
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  
+  // Notification preferences
+  const [orderUpdates, setOrderUpdates] = useState(true);
+  const [promotions, setPromotions] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setPhone(user.phone || "");
+    }
+  }, [user]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  const handleUpdateProfile = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: name.trim(),
+          phone: phone.trim(),
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      await refreshUserProfile();
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Mock order data
   const orders = [
@@ -113,11 +212,32 @@ const AccountPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" defaultValue={user.name || ""} />
+                        <Input 
+                          id="name" 
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Enter your full name"
+                        />
                       </div>
                       <div>
                         <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" type="email" defaultValue={user.email} disabled />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={user.email} 
+                          disabled 
+                          className="bg-muted"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input 
+                          id="phone" 
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Enter your phone number"
+                        />
                       </div>
                     </div>
                     
@@ -138,7 +258,12 @@ const AccountPage: React.FC = () => {
                       </div>
                     )}
                     
-                    <Button className="bg-wwe-navy hover:bg-wwe-navy/90">
+                    <Button 
+                      onClick={handleUpdateProfile}
+                      disabled={loading}
+                      className="bg-wwe-navy hover:bg-wwe-navy/90"
+                    >
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Update Profile
                     </Button>
                   </CardContent>
@@ -240,18 +365,31 @@ const AccountPage: React.FC = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="currentPassword">Current Password</Label>
-                        <Input id="currentPassword" type="password" />
-                      </div>
-                      <div>
                         <Label htmlFor="newPassword">New Password</Label>
-                        <Input id="newPassword" type="password" />
+                        <Input 
+                          id="newPassword" 
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Enter new password"
+                        />
                       </div>
                       <div>
                         <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                        <Input id="confirmPassword" type="password" />
+                        <Input 
+                          id="confirmPassword" 
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm new password"
+                        />
                       </div>
-                      <Button className="bg-wwe-navy hover:bg-wwe-navy/90">
+                      <Button 
+                        onClick={handleUpdatePassword}
+                        disabled={loading || !newPassword || !confirmPassword}
+                        className="bg-wwe-navy hover:bg-wwe-navy/90"
+                      >
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Update Password
                       </Button>
                     </CardContent>
@@ -265,21 +403,41 @@ const AccountPage: React.FC = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">Order Updates</h4>
-                          <p className="text-sm text-gray-600">Get notified about order status changes</p>
+                      <div className="flex items-center justify-between py-2">
+                        <div className="flex-1">
+                          <Label htmlFor="order-updates" className="font-medium cursor-pointer">
+                            Order Updates
+                          </Label>
+                          <p className="text-sm text-muted-foreground">Get notified about order status changes</p>
                         </div>
-                        <input type="checkbox" defaultChecked />
+                        <Switch 
+                          id="order-updates"
+                          checked={orderUpdates}
+                          onCheckedChange={setOrderUpdates}
+                        />
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">Promotions</h4>
-                          <p className="text-sm text-gray-600">Receive promotional emails and offers</p>
+                      <div className="flex items-center justify-between py-2">
+                        <div className="flex-1">
+                          <Label htmlFor="promotions" className="font-medium cursor-pointer">
+                            Promotions
+                          </Label>
+                          <p className="text-sm text-muted-foreground">Receive promotional emails and offers</p>
                         </div>
-                        <input type="checkbox" defaultChecked />
+                        <Switch 
+                          id="promotions"
+                          checked={promotions}
+                          onCheckedChange={setPromotions}
+                        />
                       </div>
-                      <Button className="bg-wwe-navy hover:bg-wwe-navy/90">
+                      <Button 
+                        onClick={() => {
+                          toast({
+                            title: "Success",
+                            description: "Notification preferences saved",
+                          });
+                        }}
+                        className="bg-wwe-navy hover:bg-wwe-navy/90"
+                      >
                         Save Preferences
                       </Button>
                     </CardContent>
