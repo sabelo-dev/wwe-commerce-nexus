@@ -174,6 +174,9 @@ const ProductPage: React.FC = () => {
                 src={product.images[selectedImage]}
                 alt={product.name}
                 className="h-full w-full object-cover object-center"
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
             </div>
             <div className="flex space-x-2 overflow-auto pb-2">
@@ -191,6 +194,9 @@ const ProductPage: React.FC = () => {
                     src={image}
                     alt={`${product.name} preview ${idx + 1}`}
                     className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
                   />
                 </div>
               ))}

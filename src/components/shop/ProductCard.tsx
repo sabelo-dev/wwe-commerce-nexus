@@ -70,6 +70,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
             src={product.images[0]}
             alt={product.name}
             className="w-full h-full object-cover object-center transition-transform group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
           />
           <button
             className={`absolute top-2 right-2 p-1.5 bg-white rounded-full transition-opacity ${
