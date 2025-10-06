@@ -34,6 +34,7 @@ const VendorShopfront = () => {
   const [uploading, setUploading] = useState(false);
   const [storeData, setStoreData] = useState<any>(null);
   const [vendorData, setVendorData] = useState<any>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   
@@ -242,10 +243,7 @@ const VendorShopfront = () => {
     return publicUrl;
   };
 
-  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processBannerFile = async (file: File) => {
     console.log('Banner upload initiated:', { fileName: file.name, fileSize: file.size, fileType: file.type });
 
     // Check authentication first
@@ -298,6 +296,32 @@ const VendorShopfront = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processBannerFile(file);
+  };
+
+  const handleBannerDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    
+    await processBannerFile(file);
+  };
+
+  const handleBannerDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleBannerDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,7 +441,14 @@ const VendorShopfront = () => {
           {/* Banner Image */}
           <div className="space-y-2">
             <Label>Banner Image (1200x400px recommended)</Label>
-            <div className="relative h-48 w-full bg-muted rounded-lg overflow-hidden border-2 border-dashed border-border">
+            <div 
+              className={`relative h-48 w-full bg-muted rounded-lg overflow-hidden border-2 border-dashed transition-colors ${
+                isDragging ? 'border-primary bg-primary/10' : 'border-border'
+              }`}
+              onDrop={isEditing ? handleBannerDrop : undefined}
+              onDragOver={isEditing ? handleBannerDragOver : undefined}
+              onDragLeave={isEditing ? handleBannerDragLeave : undefined}
+            >
               {formData.banner_url ? (
                 <img 
                   src={formData.banner_url} 
@@ -433,16 +464,20 @@ const VendorShopfront = () => {
                 </div>
               )}
               {isEditing && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    onClick={() => bannerInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {uploading ? "Uploading..." : "Change Banner"}
-                  </Button>
+                <div className={`absolute inset-0 ${isDragging ? 'bg-primary/20' : 'bg-black/50'} flex items-center justify-center transition-colors`}>
+                  <div className="text-center">
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={() => bannerInputRef.current?.click()}
+                      disabled={uploading}
+                      className="mb-2"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploading ? "Uploading..." : "Change Banner"}
+                    </Button>
+                    <p className="text-xs text-white">or drag and drop an image here</p>
+                  </div>
                 </div>
               )}
             </div>
