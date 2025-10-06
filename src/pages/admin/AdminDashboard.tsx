@@ -34,7 +34,6 @@ import AdminNotifications from "@/components/admin/AdminNotifications";
 import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import AdminAuditLogs from "@/components/admin/AdminAuditLogs";
 import AdminSettings from "@/components/admin/AdminSettings";
-import { AdminWeFulFill } from "@/components/admin/AdminWeFulFill";
 import { AdminShipping } from "@/components/admin/AdminShipping";
 import { 
   LayoutDashboard,
@@ -80,7 +79,6 @@ const AdminDashboard = () => {
     { id: "cms", title: "CMS / Pages", icon: FileText },
     { id: "notifications", title: "Notifications", icon: Megaphone },
     { id: "audit", title: "Logs / Audit Trail", icon: AuditIcon },
-    { id: "wefullfill", title: "WeFulFill Integration", icon: Package },
     { id: "shipping", title: "Shipping Management", icon: Truck },
   ];
 
@@ -197,9 +195,6 @@ const AdminDashboard = () => {
                 </TabsContent>
                 <TabsContent value="audit" className="mt-0">
                   <AdminAuditLogs />
-                </TabsContent>
-                <TabsContent value="wefullfill" className="mt-0">
-                  <AdminWeFulFill />
                 </TabsContent>
                 <TabsContent value="shipping" className="mt-0">
                   <AdminShipping />

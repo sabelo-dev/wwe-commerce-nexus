@@ -4,11 +4,5 @@ project_id = "hipomusjocacncjsvgfa"
 [functions.create-storage-bucket]
 verify_jwt = false
 
-[functions.wefullfil-proxy]
-verify_jwt = true
-
 [functions.payfast-payment]
-verify_jwt = true
-
-[functions.import-wefullfill-products]
 verify_jwt = true
