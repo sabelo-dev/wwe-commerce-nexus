@@ -109,13 +109,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
           {/* Vendor Info */}
           {product.vendorName && product.vendorSlug && (
             <div className="text-xs text-gray-500 mb-2">
-              <Link 
-                to={`/store/${product.vendorSlug}`}
-                className="hover:text-primary transition-colors"
-                onClick={(e) => e.stopPropagation()}
+              <span 
+                className="hover:text-primary transition-colors cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.location.href = `/store/${product.vendorSlug}`;
+                }}
               >
                 by {product.vendorName}
-              </Link>
+              </span>
             </div>
           )}
           
