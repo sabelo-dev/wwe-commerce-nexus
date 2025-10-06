@@ -806,6 +806,95 @@ export type Database = {
           },
         ]
       }
+      shipping_rates: {
+        Row: {
+          created_at: string
+          free_shipping_threshold: number | null
+          id: string
+          is_active: boolean
+          max_order_value: number | null
+          max_weight: number | null
+          min_order_value: number | null
+          min_weight: number | null
+          name: string
+          price: number
+          rate_type: string
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          free_shipping_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          max_order_value?: number | null
+          max_weight?: number | null
+          min_order_value?: number | null
+          min_weight?: number | null
+          name: string
+          price?: number
+          rate_type: string
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          free_shipping_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          max_order_value?: number | null
+          max_weight?: number | null
+          min_order_value?: number | null
+          min_weight?: number | null
+          name?: string
+          price?: number
+          rate_type?: string
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_rates_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipping_zones: {
+        Row: {
+          countries: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          postal_codes: Json | null
+          provinces: Json | null
+          updated_at: string
+        }
+        Insert: {
+          countries?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          postal_codes?: Json | null
+          provinces?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          countries?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          postal_codes?: Json | null
+          provinces?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store_categories: {
         Row: {
           category_id: string

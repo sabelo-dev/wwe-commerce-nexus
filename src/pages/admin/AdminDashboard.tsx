@@ -35,8 +35,9 @@ import AdminAnalytics from "@/components/admin/AdminAnalytics";
 import AdminAuditLogs from "@/components/admin/AdminAuditLogs";
 import AdminSettings from "@/components/admin/AdminSettings";
 import { AdminWeFulFill } from "@/components/admin/AdminWeFulFill";
+import { AdminShipping } from "@/components/admin/AdminShipping";
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
   Users,
   Store,
   Package, 
@@ -50,7 +51,8 @@ import {
   Settings,
   Shield,
   LogOut,
-  User
+  User,
+  Truck
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -79,6 +81,7 @@ const AdminDashboard = () => {
     { id: "notifications", title: "Notifications", icon: Megaphone },
     { id: "audit", title: "Logs / Audit Trail", icon: AuditIcon },
     { id: "wefullfill", title: "WeFulFill Integration", icon: Package },
+    { id: "shipping", title: "Shipping Management", icon: Truck },
   ];
 
   return (
@@ -197,6 +200,9 @@ const AdminDashboard = () => {
                 </TabsContent>
                 <TabsContent value="wefullfill" className="mt-0">
                   <AdminWeFulFill />
+                </TabsContent>
+                <TabsContent value="shipping" className="mt-0">
+                  <AdminShipping />
                 </TabsContent>
               </Tabs>
             </main>
