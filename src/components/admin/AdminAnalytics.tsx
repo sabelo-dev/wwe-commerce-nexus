@@ -20,6 +20,8 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { DateRange } from "react-day-picker";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -126,36 +128,144 @@ const AdminAnalytics: React.FC = () => {
       return;
     }
 
-    const csvData = {
-      orders: orders.map(order => ({
-        id: order.id,
-        user_id: order.user_id,
-        total: order.total,
-        status: order.status,
-        date: format(new Date(order.created_at), "yyyy-MM-dd HH:mm"),
-      })),
-      summary: {
-        totalRevenue,
-        totalOrders,
-        averageOrderValue,
-        dateRange: dateRange?.from && dateRange?.to 
-          ? `${format(dateRange.from, "yyyy-MM-dd")} to ${format(dateRange.to, "yyyy-MM-dd")}`
-          : "All time",
-      },
-    };
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("Analytics Report", pageWidth / 2, 20, { align: "center" });
+      
+      // Date Range
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const dateRangeText = dateRange?.from && dateRange?.to 
+        ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to, "MMM dd, yyyy")}`
+        : "All time";
+      doc.text(`Period: ${dateRangeText}`, pageWidth / 2, 28, { align: "center" });
+      doc.text(`Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`, pageWidth / 2, 34, { align: "center" });
+      
+      // Summary Section
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Summary", 14, 45);
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      let yPos = 52;
+      doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Total Orders: ${totalOrders}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Average Order Value: ${formatCurrency(averageOrderValue)}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Total Registered Users: ${profilesCount || 0}`, 14, yPos);
+      yPos += 12;
 
-    const blob = new Blob([JSON.stringify(csvData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `analytics-export-${format(new Date(), "yyyy-MM-dd")}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+      // Top Vendors Table
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Top Performing Vendors", 14, yPos);
+      yPos += 7;
 
-    toast({
-      title: "Export successful",
-      description: "Analytics data has been exported.",
-    });
+      const vendorTableData = vendorPerformance.slice(0, 10).map((vendor, index) => [
+        `#${index + 1}`,
+        vendor.name,
+        formatCurrency(vendor.revenue),
+        vendor.orders.toString(),
+        vendor.products.toString()
+      ]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["Rank", "Vendor", "Revenue", "Orders", "Products"]],
+        body: vendorTableData,
+        theme: "striped",
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 9 },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Top Products Table
+      yPos = (doc as any).lastAutoTable.finalY + 12;
+      
+      // Add new page if needed
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Top Performing Products", 14, yPos);
+      yPos += 7;
+
+      const productTableData = productPerformance.slice(0, 10).map((product, index) => [
+        `#${index + 1}`,
+        product.name,
+        product.vendor,
+        product.category,
+        product.sales.toString(),
+        formatCurrency(product.revenue)
+      ]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["Rank", "Product", "Vendor", "Category", "Sales", "Revenue"]],
+        body: productTableData,
+        theme: "striped",
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 8 },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Recent Orders Table
+      yPos = (doc as any).lastAutoTable.finalY + 12;
+      
+      // Add new page if needed
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Recent Orders", 14, yPos);
+      yPos += 7;
+
+      const ordersTableData = orders.slice(0, 15).map(order => [
+        order.id.slice(0, 8),
+        format(new Date(order.created_at), "MMM dd, yyyy"),
+        order.status,
+        formatCurrency(order.total)
+      ]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["Order ID", "Date", "Status", "Total"]],
+        body: ordersTableData,
+        theme: "striped",
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 9 },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Save PDF
+      doc.save(`analytics-report-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+
+      toast({
+        title: "Export successful",
+        description: "Analytics report has been generated as PDF.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "Failed to generate PDF report.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate vendor performance
