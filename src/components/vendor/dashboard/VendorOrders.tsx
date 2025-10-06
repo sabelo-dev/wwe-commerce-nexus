@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,12 @@ import {
   Package, 
   Truck, 
   CheckCircle,
-  Clock
+  Clock,
+  Filter,
+  Download,
+  Edit,
+  Eye,
+  RotateCcw
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +28,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import EditOrderDialog from "./dialogs/EditOrderDialog";
+import OrderDetailsDialog from "./dialogs/OrderDetailsDialog";
+import RefundReturnDialog from "./dialogs/RefundReturnDialog";
+import { generateInvoice } from "@/lib/invoiceGenerator";
 
 const VendorOrders = () => {
   const { user } = useAuth();
@@ -30,6 +46,13 @@ const VendorOrders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [storeName, setStoreName] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -44,7 +67,7 @@ const VendorOrders = () => {
       // Get vendor data first
       const { data: vendor, error: vendorError } = await supabase
         .from('vendors')
-        .select('id')
+        .select('id, business_name')
         .eq('user_id', user.id)
         .single();
 
@@ -53,7 +76,7 @@ const VendorOrders = () => {
       // Get stores for this vendor
       const { data: stores, error: storesError } = await supabase
         .from('stores')
-        .select('id')
+        .select('id, name')
         .eq('vendor_id', vendor.id);
 
       if (storesError) throw storesError;
@@ -63,6 +86,7 @@ const VendorOrders = () => {
         return;
       }
 
+      setStoreName(stores[0]?.name || vendor.business_name);
       const storeIds = stores.map(store => store.id);
 
       // Get order items from vendor's stores with order details
@@ -78,20 +102,38 @@ const VendorOrders = () => {
 
       if (error) throw error;
 
+      // Get customer profiles
+      const userIds = [...new Set(data?.map(item => item.orders.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .in('id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
       // Group order items by order
       const groupedOrders = data?.reduce((acc: any, item: any) => {
         const orderId = item.order_id;
         if (!acc[orderId]) {
+          const profile = profileMap.get(item.orders.user_id);
           acc[orderId] = {
             id: item.orders.id,
-            customer: 'Customer', // Would need profile lookup
-            email: 'customer@example.com', // Would need profile lookup
+            customer: profile?.name || 'Customer',
+            email: profile?.email || 'customer@example.com',
             products: [],
-            total: 0,
+            total: parseFloat(item.orders.total?.toString() || '0'),
             status: item.vendor_status,
             date: new Date(item.created_at).toLocaleDateString(),
+            fullDate: new Date(item.created_at),
             shippingAddress: item.orders.shipping_address || {},
-            trackingNumber: item.orders.tracking_number
+            trackingNumber: item.orders.tracking_number,
+            courierName: item.orders.courier_name,
+            courierPhone: item.orders.courier_phone,
+            courierCompany: item.orders.courier_company,
+            estimatedDelivery: item.orders.estimated_delivery,
+            notes: item.orders.notes,
+            refundStatus: item.orders.refund_status,
+            returnStatus: item.orders.return_status
           };
         }
         acc[orderId].products.push({
@@ -99,7 +141,6 @@ const VendorOrders = () => {
           quantity: item.quantity,
           price: parseFloat(item.price?.toString() || '0')
         });
-        acc[orderId].total += parseFloat(item.price?.toString() || '0') * item.quantity;
         return acc;
       }, {}) || {};
 
@@ -172,10 +213,55 @@ const VendorOrders = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order =>
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleGenerateInvoice = (order: any) => {
+    generateInvoice({
+      orderId: order.id,
+      orderDate: order.date,
+      customerName: order.customer,
+      customerEmail: order.email,
+      shippingAddress: order.shippingAddress,
+      products: order.products,
+      total: order.total,
+      trackingNumber: order.trackingNumber,
+      storeName: storeName,
+    });
+    toast({
+      title: "Invoice Generated",
+      description: "Invoice PDF has been downloaded.",
+    });
+  };
+
+  // Enhanced filtering
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = 
+      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = 
+      statusFilter === "all" || order.status === statusFilter;
+    
+    const matchesDate = (() => {
+      if (dateFilter === "all") return true;
+      const now = new Date();
+      const orderDate = order.fullDate;
+      
+      switch (dateFilter) {
+        case "today":
+          return orderDate.toDateString() === now.toDateString();
+        case "week":
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return orderDate >= weekAgo;
+        case "month":
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return orderDate >= monthAgo;
+        default:
+          return true;
+      }
+    })();
+    
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -216,17 +302,50 @@ const VendorOrders = () => {
         </p>
       </div>
 
-      {/* Search */}
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search orders by ID or customer..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search orders by ID, customer, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger>
+                    <Clock className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">Last 7 Days</SelectItem>
+                    <SelectItem value="month">Last 30 Days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -267,7 +386,24 @@ const VendorOrders = () => {
                       </DropdownMenuTrigger>
                        <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedOrder(order);
+                          setDetailsDialogOpen(true);
+                        }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Timeline
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedOrder(order);
+                          setEditDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleGenerateInvoice(order)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Generate Invoice
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {order.status === 'pending' && (
                           <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'confirmed')}>
@@ -276,7 +412,7 @@ const VendorOrders = () => {
                         )}
                         {(order.status === 'pending' || order.status === 'confirmed') && (
                           <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'shipped')}>
-                            Mark as Shipped (Generate Tracking)
+                            Mark as Shipped
                           </DropdownMenuItem>
                         )}
                         {order.status === 'shipped' && (
@@ -285,7 +421,13 @@ const VendorOrders = () => {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Contact Customer</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedOrder(order);
+                          setRefundDialogOpen(true);
+                        }}>
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Refund/Return
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -335,6 +477,29 @@ const VendorOrders = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      {selectedOrder && (
+        <>
+          <EditOrderDialog
+            order={selectedOrder}
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            onOrderUpdated={fetchOrders}
+          />
+          <OrderDetailsDialog
+            orderId={selectedOrder.id}
+            open={detailsDialogOpen}
+            onOpenChange={setDetailsDialogOpen}
+          />
+          <RefundReturnDialog
+            order={selectedOrder}
+            open={refundDialogOpen}
+            onOpenChange={setRefundDialogOpen}
+            onOrderUpdated={fetchOrders}
+          />
+        </>
+      )}
     </div>
   );
 };

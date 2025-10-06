@@ -308,6 +308,41 @@ export type Database = {
           },
         ]
       }
+      order_history: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          order_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          order_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          order_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -381,11 +416,20 @@ export type Database = {
       }
       orders: {
         Row: {
+          courier_company: string | null
+          courier_name: string | null
+          courier_phone: string | null
           created_at: string
+          estimated_delivery: string | null
           id: string
           notes: string | null
           payment_method: string | null
           payment_status: string
+          refund_amount: number | null
+          refund_reason: string | null
+          refund_status: string | null
+          return_reason: string | null
+          return_status: string | null
           shipping_address: Json
           shipping_method: string | null
           status: string
@@ -396,11 +440,20 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          courier_company?: string | null
+          courier_name?: string | null
+          courier_phone?: string | null
           created_at?: string
+          estimated_delivery?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
           payment_status?: string
+          refund_amount?: number | null
+          refund_reason?: string | null
+          refund_status?: string | null
+          return_reason?: string | null
+          return_status?: string | null
           shipping_address: Json
           shipping_method?: string | null
           status?: string
@@ -411,11 +464,20 @@ export type Database = {
           user_id: string
         }
         Update: {
+          courier_company?: string | null
+          courier_name?: string | null
+          courier_phone?: string | null
           created_at?: string
+          estimated_delivery?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
           payment_status?: string
+          refund_amount?: number | null
+          refund_reason?: string | null
+          refund_status?: string | null
+          return_reason?: string | null
+          return_status?: string | null
           shipping_address?: Json
           shipping_method?: string | null
           status?: string
