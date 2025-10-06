@@ -28,10 +28,13 @@ const AdminCategories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
   const [subcategoryDialogOpen, setSubcategoryDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   
   const [categoryForm, setCategoryForm] = useState({
     name: "",
@@ -116,27 +119,68 @@ const AdminCategories: React.FC = () => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPG, PNG, or WEBP image",
+        variant: "destructive"
+      });
+      return;
     }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Image must be less than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const uploadCategoryImage = async (categoryId: string): Promise<string | null> => {
+  const uploadCategoryImage = async (categoryId: string, oldImageUrl?: string): Promise<string | null> => {
     if (!imageFile) return null;
 
     try {
+      setUploading(true);
+
+      // Delete old image if exists
+      if (oldImageUrl) {
+        try {
+          const oldPath = oldImageUrl.split('/category-images/')[1];
+          if (oldPath) {
+            await supabase.storage
+              .from('category-images')
+              .remove([oldPath]);
+          }
+        } catch (error) {
+          console.error('Error deleting old image:', error);
+        }
+      }
+
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${categoryId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('category-images')
-        .upload(filePath, imageFile);
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
@@ -153,6 +197,8 @@ const AdminCategories: React.FC = () => {
         variant: "destructive"
       });
       return null;
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -166,15 +212,25 @@ const AdminCategories: React.FC = () => {
       return;
     }
 
+    if (categoryForm.name.length > 100) {
+      toast({
+        title: "Validation Error",
+        description: "Category name must be less than 100 characters",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const slug = categoryForm.name.toLowerCase().replace(/\s+/g, '-');
+      setUploading(true);
+      const slug = categoryForm.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       
       const { data: newCategory, error } = await supabase
         .from('categories')
         .insert({
-          name: categoryForm.name,
+          name: categoryForm.name.trim(),
           slug,
-          description: categoryForm.description || null,
+          description: categoryForm.description?.trim() || null,
           image_url: null
         })
         .select()
@@ -203,13 +259,83 @@ const AdminCategories: React.FC = () => {
       setImagePreview(null);
       setCategoryDialogOpen(false);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding category:', error);
       toast({
         title: "Error",
-        description: "Failed to add category",
+        description: error.message || "Failed to add category",
         variant: "destructive"
       });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEditCategory = async () => {
+    if (!editingCategory || !categoryForm.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Category name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (categoryForm.name.length > 100) {
+      toast({
+        title: "Validation Error",
+        description: "Category name must be less than 100 characters",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const slug = categoryForm.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
+      let imageUrl = editingCategory.image_url;
+
+      // Upload new image if provided
+      if (imageFile) {
+        const newImageUrl = await uploadCategoryImage(editingCategory.id, editingCategory.image_url);
+        if (newImageUrl) {
+          imageUrl = newImageUrl;
+        }
+      }
+
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: categoryForm.name.trim(),
+          slug,
+          description: categoryForm.description?.trim() || null,
+          image_url: imageUrl
+        })
+        .eq('id', editingCategory.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Category "${categoryForm.name}" has been updated successfully.`
+      });
+
+      setCategoryForm({ name: "", description: "" });
+      setImageFile(null);
+      setImagePreview(null);
+      setEditingCategory(null);
+      setEditCategoryDialogOpen(false);
+      fetchCategories();
+    } catch (error: any) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update category",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -352,16 +478,19 @@ const AdminCategories: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category-image">Category Image</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Optional: Upload an image (max 5MB, JPG/PNG/WEBP)
+                </p>
                 <div className="flex items-center gap-4">
                   <Input
                     id="category-image"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleImageChange}
                     className="flex-1"
                   />
                   {imagePreview && (
-                    <div className="w-16 h-16 rounded border overflow-hidden">
+                    <div className="w-20 h-20 rounded border overflow-hidden bg-muted">
                       <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                   )}
@@ -377,7 +506,9 @@ const AdminCategories: React.FC = () => {
               }}>
                 Cancel
               </Button>
-              <Button onClick={handleAddCategory}>Create Category</Button>
+              <Button onClick={handleAddCategory} disabled={uploading}>
+                {uploading ? "Creating..." : "Create Category"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -405,6 +536,22 @@ const AdminCategories: React.FC = () => {
                   )}
                 </div>
                 <div className="flex gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setEditingCategory(category);
+                      setCategoryForm({
+                        name: category.name,
+                        description: category.description || ""
+                      });
+                      setImagePreview(category.image_url || null);
+                      setImageFile(null);
+                      setEditCategoryDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                   <Button 
                     variant="ghost" 
                     size="sm"
@@ -459,6 +606,73 @@ const AdminCategories: React.FC = () => {
         ))}
       </div>
 
+      {/* Edit Category Dialog */}
+      <Dialog open={editCategoryDialogOpen} onOpenChange={setEditCategoryDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+            <DialogDescription>
+              Update category details and image
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-category-name">Category Name *</Label>
+              <Input
+                id="edit-category-name"
+                placeholder="e.g., Electronics"
+                value={categoryForm.name}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category-description">Description</Label>
+              <Textarea
+                id="edit-category-description"
+                placeholder="Brief description of the category"
+                value={categoryForm.description}
+                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category-image">Category Image</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Upload a new image to replace the current one (max 5MB, JPG/PNG/WEBP)
+              </p>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="edit-category-image"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  className="flex-1"
+                />
+                {imagePreview && (
+                  <div className="w-20 h-20 rounded border overflow-hidden bg-muted">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              setEditCategoryDialogOpen(false);
+              setCategoryForm({ name: "", description: "" });
+              setImageFile(null);
+              setImagePreview(null);
+              setEditingCategory(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditCategory} disabled={uploading}>
+              {uploading ? "Updating..." : "Update Category"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Subcategory Dialog */}
       <Dialog open={subcategoryDialogOpen} onOpenChange={setSubcategoryDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
