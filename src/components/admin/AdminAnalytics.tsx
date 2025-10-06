@@ -1,9 +1,12 @@
-
-import React from "react";
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Table,
   TableBody,
@@ -13,7 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { DateRange } from "react-day-picker";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -22,125 +28,210 @@ import {
   Calendar,
   Users,
   ShoppingCart,
-  Eye
+  Loader2
 } from "lucide-react";
 
-interface SalesData {
-  period: string;
-  revenue: number;
-  orders: number;
-  averageOrderValue: number;
-  growth: number;
-}
-
-interface VendorPerformance {
-  id: string;
-  name: string;
-  revenue: number;
-  orders: number;
-  products: number;
-  rating: number;
-  growth: number;
-}
-
-interface ProductPerformance {
-  id: string;
-  name: string;
-  vendor: string;
-  category: string;
-  sales: number;
-  revenue: number;
-  views: number;
-  conversionRate: number;
-}
-
-// Mock data
-const salesData: SalesData[] = [
-  { period: "This Week", revenue: 12450, orders: 89, averageOrderValue: 139.89, growth: 12.5 },
-  { period: "Last Week", revenue: 11060, orders: 78, averageOrderValue: 141.79, growth: 8.2 },
-  { period: "This Month", revenue: 45230, orders: 324, averageOrderValue: 139.60, growth: 15.3 },
-  { period: "Last Month", revenue: 39200, orders: 289, averageOrderValue: 135.64, growth: 11.8 },
-];
-
-const vendorPerformance: VendorPerformance[] = [
-  {
-    id: "v1",
-    name: "Tech Shop",
-    revenue: 15400,
-    orders: 112,
-    products: 45,
-    rating: 4.8,
-    growth: 18.5,
-  },
-  {
-    id: "v2",
-    name: "Fashion Boutique",
-    revenue: 12800,
-    orders: 89,
-    products: 78,
-    rating: 4.6,
-    growth: 12.3,
-  },
-  {
-    id: "v3",
-    name: "Home & Garden",
-    revenue: 9600,
-    orders: 67,
-    products: 34,
-    rating: 4.4,
-    growth: -2.1,
-  },
-];
-
-const productPerformance: ProductPerformance[] = [
-  {
-    id: "p1",
-    name: "Wireless Headphones Pro",
-    vendor: "Tech Shop",
-    category: "Electronics",
-    sales: 156,
-    revenue: 20280,
-    views: 5420,
-    conversionRate: 2.9,
-  },
-  {
-    id: "p2",
-    name: "Summer Dress Collection",
-    vendor: "Fashion Boutique",
-    category: "Clothing",
-    sales: 89,
-    revenue: 5340,
-    views: 3210,
-    conversionRate: 2.8,
-  },
-  {
-    id: "p3",
-    name: "Garden Tool Set",
-    vendor: "Home & Garden",
-    category: "Tools",
-    sales: 67,
-    revenue: 6030,
-    views: 2890,
-    conversionRate: 2.3,
-  },
-];
-
 const AdminAnalytics: React.FC = () => {
-  const totalRevenue = salesData.reduce((sum, item) => sum + item.revenue, 0);
-  const totalOrders = salesData.reduce((sum, item) => sum + item.orders, 0);
-  const averageGrowth = salesData.reduce((sum, item) => sum + item.growth, 0) / salesData.length;
+  const { toast } = useToast();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+
+  // Fetch orders data
+  const { data: orders, isLoading: ordersLoading } = useQuery({
+    queryKey: ["admin-orders", dateRange],
+    queryFn: async () => {
+      let query = supabase
+        .from("orders")
+        .select("*, order_items(quantity, price)");
+
+      if (dateRange?.from) {
+        query = query.gte("created_at", startOfDay(dateRange.from).toISOString());
+      }
+      if (dateRange?.to) {
+        query = query.lte("created_at", endOfDay(dateRange.to).toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch vendors data
+  const { data: vendors, isLoading: vendorsLoading } = useQuery({
+    queryKey: ["admin-vendors-analytics"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendors")
+        .select(`
+          *,
+          stores(
+            id,
+            products(id),
+            orders:order_items(order_id, price, quantity)
+          )
+        `)
+        .eq("status", "approved");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch products data
+  const { data: products, isLoading: productsLoading } = useQuery({
+    queryKey: ["admin-products-analytics"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(`
+          *,
+          stores(name, vendors(business_name)),
+          order_items(quantity, price)
+        `)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch profiles count
+  const { data: profilesCount } = useQuery({
+    queryKey: ["admin-profiles-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const isLoading = ordersLoading || vendorsLoading || productsLoading;
+
+  // Calculate metrics
+  const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+  const totalOrders = orders?.length || 0;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+  const handleExport = () => {
+    if (!orders || !vendors || !products) {
+      toast({
+        title: "Export failed",
+        description: "Data is still loading. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const csvData = {
+      orders: orders.map(order => ({
+        id: order.id,
+        user_id: order.user_id,
+        total: order.total,
+        status: order.status,
+        date: format(new Date(order.created_at), "yyyy-MM-dd HH:mm"),
+      })),
+      summary: {
+        totalRevenue,
+        totalOrders,
+        averageOrderValue,
+        dateRange: dateRange?.from && dateRange?.to 
+          ? `${format(dateRange.from, "yyyy-MM-dd")} to ${format(dateRange.to, "yyyy-MM-dd")}`
+          : "All time",
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(csvData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `analytics-export-${format(new Date(), "yyyy-MM-dd")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export successful",
+      description: "Analytics data has been exported.",
+    });
+  };
+
+  // Calculate vendor performance
+  const vendorPerformance = vendors?.map(vendor => {
+    const storeOrders = vendor.stores?.flatMap(store => store.orders || []) || [];
+    const revenue = storeOrders.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+    const orderIds = new Set(storeOrders.map(item => item.order_id));
+    const productsCount = vendor.stores?.reduce((sum, store) => sum + (store.products?.length || 0), 0) || 0;
+
+    return {
+      id: vendor.id,
+      name: vendor.business_name,
+      revenue,
+      orders: orderIds.size,
+      products: productsCount,
+    };
+  }).sort((a, b) => b.revenue - a.revenue).slice(0, 10) || [];
+
+  // Calculate product performance
+  const productPerformance = products?.map(product => {
+    const sales = product.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    const revenue = product.order_items?.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0) || 0;
+    const storeName = product.stores?.name || "Unknown";
+    const vendorName = product.stores?.vendors?.business_name || "Unknown";
+
+    return {
+      id: product.id,
+      name: product.name,
+      vendor: vendorName,
+      store: storeName,
+      category: product.category,
+      sales,
+      revenue,
+    };
+  }).sort((a, b) => b.revenue - a.revenue).slice(0, 10) || [];
 
   return (
     <div>
       <div className="flex justify-between mb-6">
         <h2 className="text-2xl font-bold">Analytics & Reports</h2>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
-            Date Range
-          </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                <Calendar className="h-4 w-4 mr-2" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "LLL dd, y")} -{" "}
+                      {format(dateRange.to, "LLL dd, y")}
+                    </>
+                  ) : (
+                    format(dateRange.from, "LLL dd, y")
+                  )
+                ) : (
+                  "Pick a date range"
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <CalendarComponent
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+          <Button variant="outline" onClick={handleExport} disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
             Export Data
           </Button>
         </div>
@@ -156,7 +247,9 @@ const AdminAnalytics: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">
-              +{averageGrowth.toFixed(1)}% from last period
+              {dateRange?.from && dateRange?.to 
+                ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`
+                : "All time"}
             </p>
           </CardContent>
         </Card>
@@ -169,7 +262,7 @@ const AdminAnalytics: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{totalOrders}</div>
             <p className="text-xs text-muted-foreground">
-              +12.5% from last period
+              Total orders in period
             </p>
           </CardContent>
         </Card>
@@ -180,9 +273,9 @@ const AdminAnalytics: React.FC = () => {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.7%</div>
+            <div className="text-2xl font-bold">{formatCurrency(averageOrderValue)}</div>
             <p className="text-xs text-muted-foreground">
-              +0.3% from last period
+              Average order value
             </p>
           </CardContent>
         </Card>
@@ -193,9 +286,9 @@ const AdminAnalytics: React.FC = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,847</div>
+            <div className="text-2xl font-bold">{profilesCount}</div>
             <p className="text-xs text-muted-foreground">
-              +8.2% from last period
+              Total registered users
             </p>
           </CardContent>
         </Card>
@@ -210,249 +303,191 @@ const AdminAnalytics: React.FC = () => {
         </TabsList>
 
         <TabsContent value="sales">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Performance</CardTitle>
-                <CardDescription>Revenue and order trends over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableCaption>Sales data by period</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Revenue</TableHead>
-                      <TableHead>Orders</TableHead>
-                      <TableHead>AOV</TableHead>
-                      <TableHead>Growth</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {salesData.map((data, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{data.period}</TableCell>
-                        <TableCell>{formatCurrency(data.revenue)}</TableCell>
-                        <TableCell>{data.orders}</TableCell>
-                        <TableCell>{formatCurrency(data.averageOrderValue)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {data.growth > 0 ? (
-                              <TrendingUp className="h-4 w-4 text-green-500" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4 text-red-500" />
-                            )}
-                            <span className={data.growth > 0 ? "text-green-500" : "text-red-500"}>
-                              {data.growth > 0 ? "+" : ""}{data.growth}%
-                            </span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Insights</CardTitle>
-                <CardDescription>Performance highlights and trends</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-green-900">Revenue Growth</h4>
-                    <p className="text-sm text-green-700">Strong upward trend this month</p>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800">+15.3%</Badge>
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Summary</CardTitle>
+              <CardDescription>
+                {dateRange?.from && dateRange?.to 
+                  ? `${format(dateRange.from, "MMM d, yyyy")} - ${format(dateRange.to, "MMM d, yyyy")}`
+                  : "All time"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-blue-900">Order Volume</h4>
-                    <p className="text-sm text-blue-700">Consistent increase in orders</p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Total Revenue</span>
+                      <span className="text-2xl font-bold">{formatCurrency(totalRevenue)}</span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Total Orders</span>
+                      <span className="text-2xl font-bold">{totalOrders}</span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Average Order Value</span>
+                      <span className="text-2xl font-bold">{formatCurrency(averageOrderValue)}</span>
+                    </div>
                   </div>
-                  <Badge className="bg-blue-100 text-blue-800">+12.5%</Badge>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-yellow-900">Cart Abandonment</h4>
-                    <p className="text-sm text-yellow-700">Needs attention</p>
+                  
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Order ID</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orders?.slice(0, 10).map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-mono text-sm">{order.id.slice(0, 8)}</TableCell>
+                            <TableCell>{format(new Date(order.created_at), "MMM d, yyyy")}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{order.status}</Badge>
+                            </TableCell>
+                            <TableCell>{formatCurrency(order.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                  <Badge className="bg-yellow-100 text-yellow-800">68.2%</Badge>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="vendors">
           <Card>
-            <CardHeader>
-              <CardTitle>Vendor Performance Ranking</CardTitle>
-              <CardDescription>Top performing vendors by revenue and growth</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableCaption>Vendor performance metrics</TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Revenue</TableHead>
-                    <TableHead>Orders</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Growth</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {vendorPerformance.map((vendor, index) => (
-                    <TableRow key={vendor.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">#{index + 1}</Badge>
-                          <span className="font-medium">{vendor.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatCurrency(vendor.revenue)}</TableCell>
-                      <TableCell>{vendor.orders}</TableCell>
-                      <TableCell>{vendor.products}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span>{vendor.rating}</span>
-                          <span className="text-yellow-500">★</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {vendor.growth > 0 ? (
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-500" />
-                          )}
-                          <span className={vendor.growth > 0 ? "text-green-500" : "text-red-500"}>
-                            {vendor.growth > 0 ? "+" : ""}{vendor.growth}%
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
+              <CardHeader>
+                <CardTitle>Vendor Performance Ranking</CardTitle>
+                <CardDescription>Top performing vendors by revenue</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableCaption>Vendor performance metrics</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Rank</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Revenue</TableHead>
+                        <TableHead>Orders</TableHead>
+                        <TableHead>Products</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vendorPerformance.map((vendor, index) => (
+                        <TableRow key={vendor.id}>
+                          <TableCell>
+                            <Badge variant="outline">#{index + 1}</Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">{vendor.name}</TableCell>
+                          <TableCell>{formatCurrency(vendor.revenue)}</TableCell>
+                          <TableCell>{vendor.orders}</TableCell>
+                          <TableCell>{vendor.products}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="products">
           <Card>
-            <CardHeader>
-              <CardTitle>Product Performance</CardTitle>
-              <CardDescription>Best selling products and conversion rates</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableCaption>Top performing products</TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Sales</TableHead>
-                    <TableHead>Revenue</TableHead>
-                    <TableHead>Views</TableHead>
-                    <TableHead>Conv. Rate</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {productPerformance.map((product, index) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">#{index + 1}</Badge>
-                          <span className="font-medium">{product.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{product.vendor}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{product.category}</Badge>
-                      </TableCell>
-                      <TableCell>{product.sales}</TableCell>
-                      <TableCell>{formatCurrency(product.revenue)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                          {product.views.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>{product.conversionRate}%</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
+              <CardHeader>
+                <CardTitle>Product Performance</CardTitle>
+                <CardDescription>Best selling products</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableCaption>Top performing products</TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Rank</TableHead>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Sales</TableHead>
+                        <TableHead>Revenue</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {productPerformance.map((product, index) => (
+                        <TableRow key={product.id}>
+                          <TableCell>
+                            <Badge variant="outline">#{index + 1}</Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell>{product.vendor}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{product.category}</Badge>
+                          </TableCell>
+                          <TableCell>{product.sales}</TableCell>
+                          <TableCell>{formatCurrency(product.revenue)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="customer">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Behavior</CardTitle>
-                <CardDescription>User engagement and conversion metrics</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Average Session Duration</span>
-                  <span className="font-medium">4m 32s</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Insights</CardTitle>
+              <CardDescription>User statistics and metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Pages per Session</span>
-                  <span className="font-medium">3.8</span>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Total Registered Users</span>
+                      <span className="text-2xl font-bold">{profilesCount}</span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Total Orders</span>
+                      <span className="text-2xl font-bold">{totalOrders}</span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Average Order Value</span>
+                      <span className="text-2xl font-bold">{formatCurrency(averageOrderValue)}</span>
+                    </div>
+                    <div className="flex flex-col p-4 border rounded-lg">
+                      <span className="text-sm text-muted-foreground">Total Revenue</span>
+                      <span className="text-2xl font-bold">{formatCurrency(totalRevenue)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Bounce Rate</span>
-                  <span className="font-medium">42.3%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Return Customer Rate</span>
-                  <span className="font-medium">34.5%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Average Customer Lifetime Value</span>
-                  <span className="font-medium">{formatCurrency(485.30)}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Traffic Sources</CardTitle>
-                <CardDescription>Where your customers are coming from</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Direct</span>
-                  <span className="font-medium">45.2%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Search Engines</span>
-                  <span className="font-medium">28.7%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Social Media</span>
-                  <span className="font-medium">15.8%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Email Marketing</span>
-                  <span className="font-medium">7.3%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Referrals</span>
-                  <span className="font-medium">3.0%</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
