@@ -166,7 +166,7 @@ export const fetchStoreBySlug = async (storeSlug: string) => {
         )
       `)
       .eq('slug', storeSlug)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching store:', error);
@@ -438,10 +438,14 @@ export const fetchProductBySlug = async (slug: string): Promise<Product | null> 
       `)
       .eq('slug', slug)
       .eq('status', 'approved')
-      .single();
+      .maybeSingle();
 
-    if (error || !product) {
+    if (error) {
       console.error('Error fetching product by slug:', error);
+      return null;
+    }
+
+    if (!product) {
       return null;
     }
 

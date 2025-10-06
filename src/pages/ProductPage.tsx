@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { Star, Truck, ShieldCheck, Heart, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { fetchProductBySlug, fetchRelatedProducts } from "@/services/products";
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -326,8 +328,15 @@ const ProductPage: React.FC = () => {
                 >
                   {isInStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
-                <Button variant="outline" size="icon">
-                  <Heart className="h-5 w-5" />
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => toggleWishlist(product.id)}
+                  className={isInWishlist(product.id) ? "text-red-500" : ""}
+                >
+                  <Heart 
+                    className={`h-5 w-5 ${isInWishlist(product.id) ? "fill-current" : ""}`} 
+                  />
                 </Button>
               </div>
             </div>

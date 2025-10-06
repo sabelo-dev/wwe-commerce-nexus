@@ -1,9 +1,9 @@
-
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 import { Toaster } from "@/components/ui/toaster";
 import StorefrontPage from "@/pages/StorefrontPage";
 import Layout from "@/components/layout/Layout";
@@ -63,8 +63,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CartProvider>
-          <Router>
+        <WishlistProvider>
+          <CartProvider>
+            <Router>
             <Routes>
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
@@ -145,8 +146,9 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
-          </Router>
-        </CartProvider>
+            </Router>
+          </CartProvider>
+        </WishlistProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

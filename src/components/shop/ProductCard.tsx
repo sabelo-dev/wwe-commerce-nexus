@@ -1,7 +1,7 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { Heart } from "lucide-react";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [selectedVariation, setSelectedVariation] = React.useState<string | null>(null);
 
   // Get unique attribute types (e.g., color, size)
@@ -71,14 +72,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
             className="w-full h-full object-cover object-center transition-transform group-hover:scale-105"
           />
           <button
-            className="absolute top-2 right-2 p-1.5 bg-white rounded-full opacity-70 hover:opacity-100 transition-opacity"
+            className={`absolute top-2 right-2 p-1.5 bg-white rounded-full transition-opacity ${
+              isInWishlist(product.id) 
+                ? "opacity-100 text-red-500" 
+                : "opacity-70 hover:opacity-100 text-gray-600"
+            }`}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              // Handle wishlist toggle (to be implemented)
+              toggleWishlist(product.id);
             }}
           >
-            <Heart size={18} className="text-gray-600" />
+            <Heart 
+              size={18} 
+              className={isInWishlist(product.id) ? "fill-current" : ""} 
+            />
           </button>
 
           {/* Badges */}
