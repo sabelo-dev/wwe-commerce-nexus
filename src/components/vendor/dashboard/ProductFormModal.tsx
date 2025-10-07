@@ -856,32 +856,57 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           {/* Product Variations */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-lg font-semibold">Product Variations</Label>
-              <Button type="button" onClick={addVariation} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Variation
-              </Button>
+          <div className="space-y-4 border-t pt-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-lg font-semibold">Product Variations</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add variations like sizes, colors, or styles. Each variation can have its own price, quantity, and images.
+                  </p>
+                </div>
+                <Button type="button" onClick={addVariation} variant="default" size="sm" className="shrink-0">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Variation
+                </Button>
+              </div>
+              {variations.length === 0 && (
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No variations yet. Click "Add Variation" to create options like Size: Small/Medium/Large or Color: Red/Blue/Green
+                  </p>
+                </div>
+              )}
             </div>
             
             {variations.map((variation, variationIndex) => (
-              <div key={variation.id} className="border rounded-lg p-4 space-y-4">
+              <div key={variation.id} className="border-2 rounded-lg p-6 space-y-4 bg-muted/30">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Variation {variationIndex + 1}</h4>
+                  <div className="space-y-1">
+                    <h4 className="font-semibold text-base">Variation {variationIndex + 1}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Define attributes like "Color: Red" or "Size: Large"
+                    </p>
+                  </div>
                   <Button
                     type="button"
                     variant="destructive"
                     size="sm"
                     onClick={() => removeVariation(variationIndex)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Remove
                   </Button>
                 </div>
 
                 {/* Variation Attributes */}
-                <div className="space-y-2">
-                  <Label>Attributes (e.g., Color: Red, Size: Large)</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Attributes</Label>
+                    <span className="text-xs text-muted-foreground">
+                      Example: Color → Red, Size → Large
+                    </span>
+                  </div>
                   <div className="space-y-3">
                     {variation.attributes.map((attr, attrIndex) => (
                       <div key={attrIndex} className="border rounded p-3 space-y-2">

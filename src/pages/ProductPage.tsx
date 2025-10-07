@@ -261,39 +261,63 @@ const ProductPage: React.FC = () => {
 
             {/* Variation Selection */}
             {attributeTypes.length > 0 && (
-              <div className="space-y-4 border-t pt-4">
-                {attributeTypes.map(attrType => (
-                  <div key={attrType} className="space-y-2">
-                    <div className="font-medium text-gray-900 capitalize flex items-center gap-2">
-                      {attrType}:
-                      {selectedAttributes[attrType] && (
-                        <span className="text-sm font-normal text-gray-600">
-                          {selectedAttributes[attrType]}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {getAttributeValues(attrType).map(value => {
-                        const isSelected = selectedAttributes[attrType] === value;
-                        
-                        return (
-                          <button
-                            key={value}
-                            onClick={() => handleAttributeSelect(attrType, value)}
-                            className={cn(
-                              "px-4 py-2 border rounded-md text-sm font-medium transition-colors",
-                              isSelected
-                                ? "border-wwe-navy bg-wwe-navy text-white"
-                                : "border-gray-300 bg-white text-gray-900 hover:border-gray-400"
-                            )}
-                          >
-                            {value}
-                          </button>
-                        );
-                      })}
-                    </div>
+              <div className="space-y-5 border-t pt-6 mt-6">
+                <div className="bg-muted/50 rounded-lg p-4 border">
+                  <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+                    Select Options
+                  </h3>
+                  <div className="space-y-5">
+                    {attributeTypes.map(attrType => (
+                      <div key={attrType} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm capitalize">
+                            {attrType}
+                          </span>
+                          {selectedAttributes[attrType] && (
+                            <Badge variant="secondary" className="font-normal">
+                              Selected: {selectedAttributes[attrType]}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {getAttributeValues(attrType).map(value => {
+                            const isSelected = selectedAttributes[attrType] === value;
+                            
+                            return (
+                              <button
+                                key={value}
+                                onClick={() => handleAttributeSelect(attrType, value)}
+                                className={cn(
+                                  "px-5 py-2.5 border-2 rounded-lg text-sm font-medium transition-all",
+                                  "hover:scale-105 active:scale-95",
+                                  isSelected
+                                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                                    : "border-border bg-background hover:border-primary/50 hover:bg-muted"
+                                )}
+                              >
+                                {value}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                  {selectedVariation && (
+                    <div className="mt-4 pt-4 border-t text-sm space-y-1">
+                      <p className="text-muted-foreground">Selected Variation:</p>
+                      <p className="font-medium">
+                        {Object.entries(selectedAttributes).map(([key, value]) => (
+                          <span key={key} className="mr-2">
+                            {key}: {value}
+                          </span>
+                        ))}
+                      </p>
+                      <p className="font-semibold text-lg">{formatCurrency(selectedVariation.price)}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
