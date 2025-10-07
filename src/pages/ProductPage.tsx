@@ -96,8 +96,8 @@ const ProductPage: React.FC = () => {
     if (matchingVariation) {
       setSelectedVariation(matchingVariation);
       // Update main image if variation has one
-      if (matchingVariation.imageUrl) {
-        const varImageIndex = product?.images.findIndex(img => img === matchingVariation.imageUrl);
+      if (matchingVariation.imageUrl && product?.images) {
+        const varImageIndex = product.images.findIndex(img => img === matchingVariation.imageUrl);
         if (varImageIndex !== -1) {
           setSelectedImage(varImageIndex);
         }
@@ -131,11 +131,12 @@ const ProductPage: React.FC = () => {
   }
 
   const handleAddToCart = () => {
+    const fallbackImage = product.images && product.images.length > 0 ? product.images[0] : '/placeholder.svg';
     addToCart({
       productId: product.id,
       name: product.name,
       price: selectedVariation?.price || product.price,
-      image: selectedVariation?.imageUrl || product.images[0],
+      image: selectedVariation?.imageUrl || fallbackImage,
       variationId: selectedVariation?.id,
       variationAttributes: selectedVariation?.attributes,
     });
@@ -171,7 +172,7 @@ const ProductPage: React.FC = () => {
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg border bg-gray-100">
               <img
-                src={product.images[selectedImage]}
+                src={product.images && product.images.length > 0 ? product.images[selectedImage] : '/placeholder.svg'}
                 alt={product.name}
                 className="h-full w-full object-cover object-center"
                 onError={(e) => {
@@ -179,8 +180,9 @@ const ProductPage: React.FC = () => {
                 }}
               />
             </div>
-            <div className="flex space-x-2 overflow-auto pb-2">
-              {product.images.map((image, idx) => (
+            {product.images && product.images.length > 0 && (
+              <div className="flex space-x-2 overflow-auto pb-2">
+                {product.images.map((image, idx) => (
                 <div
                   key={idx}
                   className={`relative w-20 h-20 cursor-pointer rounded border ${
@@ -200,7 +202,8 @@ const ProductPage: React.FC = () => {
                   />
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Product Details */}
