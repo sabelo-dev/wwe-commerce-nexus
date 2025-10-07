@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { User, Store, Shield } from "lucide-react";
 
 const Hero: React.FC = () => {
   const { user, isAdmin, isVendor } = useAuth();
-  
+
   return (
     <div className="relative overflow-hidden bg-gray-800">
       <div className="absolute inset-0">
@@ -21,11 +20,10 @@ const Hero: React.FC = () => {
 
       <div className="wwe-container relative z-10">
         <div className="flex flex-col items-start py-16 md:py-24 max-w-xl">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Welcome to SYNERGY MALL
-          </h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">Welcome to SYNERGE MALL</h1>
           <p className="text-lg md:text-xl text-gray-200 mb-8">
-            Discover millions of products from thousands of trusted sellers around the world. Quality products, competitive prices, fast delivery.
+            Discover millions of products from thousands of trusted sellers around the world. Quality products,
+            competitive prices, fast delivery.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             {user ? (

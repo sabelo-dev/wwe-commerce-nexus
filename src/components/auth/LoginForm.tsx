@@ -6,21 +6,11 @@ import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -54,7 +44,7 @@ const LoginForm: React.FC = () => {
     <div className="w-full max-w-md space-y-6 p-6 bg-white rounded-lg shadow-md">
       <div className="text-center">
         <h1 className="text-2xl font-bold">Welcome Back</h1>
-        <p className="text-gray-600 mt-2">Sign in to your SYNERGY MALL account</p>
+        <p className="text-gray-600 mt-2">Sign in to your SYNERGE MALL account</p>
       </div>
 
       <Form {...form}>
@@ -66,12 +56,7 @@ const LoginForm: React.FC = () => {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="name@example.com"
-                    autoComplete="email"
-                    {...field}
-                  />
+                  <Input type="email" placeholder="name@example.com" autoComplete="email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -85,31 +70,19 @@ const LoginForm: React.FC = () => {
               <FormItem>
                 <div className="flex justify-between items-center">
                   <FormLabel>Password</FormLabel>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm font-medium text-wwe-navy hover:underline"
-                  >
+                  <Link to="/forgot-password" className="text-sm font-medium text-wwe-navy hover:underline">
                     Forgot Password?
                   </Link>
                 </div>
                 <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    {...field}
-                  />
+                  <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <Button
-            type="submit"
-            className="w-full bg-wwe-navy hover:bg-wwe-navy/90"
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full bg-wwe-navy hover:bg-wwe-navy/90" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -124,17 +97,11 @@ const LoginForm: React.FC = () => {
 
       <div className="relative flex justify-center items-center mt-6">
         <span className="absolute inset-x-0 h-px bg-gray-300"></span>
-        <span className="relative bg-white px-4 text-sm text-gray-500">
-          or continue with
-        </span>
+        <span className="relative bg-white px-4 text-sm text-gray-500">or continue with</span>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-        >
+        <Button type="button" variant="outline" className="w-full">
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -154,11 +121,7 @@ const LoginForm: React.FC = () => {
             />
           </svg>
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-        >
+        <Button type="button" variant="outline" className="w-full">
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -167,11 +130,7 @@ const LoginForm: React.FC = () => {
             />
           </svg>
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-        >
+        <Button type="button" variant="outline" className="w-full">
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"

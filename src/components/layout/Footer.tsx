@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from "lucide-react";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
-  
+
   return (
     <footer className="bg-wwe-navy text-white pt-12 pb-6">
       <div className="wwe-container">
@@ -13,9 +12,10 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Column */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">About SYNERGY MALL</h3>
+            <h3 className="text-lg font-semibold mb-4">About SYNERGE MALL</h3>
             <p className="text-sm text-gray-300 mb-4">
-              SYNERGY MALL connecting buyers and sellers since 2025. Our mission is to provide the best shopping experience with quality products and exceptional service.
+              SYNERGE MALL connecting buyers and sellers since 2025. Our mission is to provide the best shopping
+              experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
               <a href="https://facebook.com/" className="text-gray-300 hover:text-white">
@@ -37,11 +37,31 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li><Link to="/shop" className="hover:text-white">Shop</Link></li>
-              <li><Link to="/categories" className="hover:text-white">Categories</Link></li>
-              <li><Link to="/deals" className="hover:text-white">Deals & Promotions</Link></li>
-              <li><Link to="/new-arrivals" className="hover:text-white">New Arrivals</Link></li>
-              <li><Link to="/best-sellers" className="hover:text-white">Best Sellers</Link></li>
+              <li>
+                <Link to="/shop" className="hover:text-white">
+                  Shop
+                </Link>
+              </li>
+              <li>
+                <Link to="/categories" className="hover:text-white">
+                  Categories
+                </Link>
+              </li>
+              <li>
+                <Link to="/deals" className="hover:text-white">
+                  Deals & Promotions
+                </Link>
+              </li>
+              <li>
+                <Link to="/new-arrivals" className="hover:text-white">
+                  New Arrivals
+                </Link>
+              </li>
+              <li>
+                <Link to="/best-sellers" className="hover:text-white">
+                  Best Sellers
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -49,12 +69,36 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Customer Service</h3>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li><Link to="/contact" className="hover:text-white">Contact Us</Link></li>
-              <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
-              <li><Link to="/shipping" className="hover:text-white">Shipping & Delivery</Link></li>
-              <li><Link to="/returns" className="hover:text-white">Returns & Refunds</Link></li>
-              <li><Link to="/terms" className="hover:text-white">Terms & Conditions</Link></li>
-              <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
+              <li>
+                <Link to="/contact" className="hover:text-white">
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="hover:text-white">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/shipping" className="hover:text-white">
+                  Shipping & Delivery
+                </Link>
+              </li>
+              <li>
+                <Link to="/returns" className="hover:text-white">
+                  Returns & Refunds
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="hover:text-white">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="hover:text-white">
+                  Privacy Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -72,7 +116,7 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 flex-shrink-0" />
-                <span>support@synergymall.co.za</span>
+                <span>support@synergemall.co.za</span>
               </li>
             </ul>
           </div>
@@ -83,7 +127,9 @@ const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="mb-4 md:mb-0">
               <h4 className="text-lg font-semibold mb-2">Subscribe to our Newsletter</h4>
-              <p className="text-sm text-gray-300">Get the latest news, updates and special offers delivered directly to your inbox.</p>
+              <p className="text-sm text-gray-300">
+                Get the latest news, updates and special offers delivered directly to your inbox.
+              </p>
             </div>
             <div className="flex w-full md:w-auto">
               <input
@@ -100,7 +146,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>&copy; {currentYear} SYNERGY MALL. All rights reserved.</p>
+          <p>&copy; {currentYear} SYNERGE MALL. All rights reserved.</p>
         </div>
       </div>
     </footer>

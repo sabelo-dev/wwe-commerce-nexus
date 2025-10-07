@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -47,7 +46,7 @@ const RegisterForm: React.FC = () => {
     <div className="w-full max-w-md space-y-6 p-6 bg-white rounded-lg shadow-md">
       <div className="text-center">
         <h1 className="text-2xl font-bold">Create an Account</h1>
-        <p className="text-gray-600 mt-2">Join SYNERGY MALL for the best shopping experience</p>
+        <p className="text-gray-600 mt-2">Join SYNERGE MALL for the best shopping experience</p>
       </div>
 
       <Form {...form}>
@@ -56,11 +55,7 @@ const RegisterForm: React.FC = () => {
           <AccountTypeSelection control={form.control} />
           <TermsAndConditions control={form.control} />
 
-          <Button
-            type="submit"
-            className="w-full bg-wwe-navy hover:bg-wwe-navy/90"
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full bg-wwe-navy hover:bg-wwe-navy/90" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -29,7 +29,7 @@ const TermsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  Welcome to SIM Online. These Terms of Service ("Terms") govern your use of our website and services. 
+                  Welcome to SIM Online. These Terms of Service ("Terms") govern your use of our website and services.
                   By using our platform, you agree to be bound by these terms.
                 </p>
                 <p className="text-gray-700">
@@ -53,7 +53,7 @@ const TermsPage: React.FC = () => {
                   <li>• You are responsible for maintaining account security</li>
                   <li>• One account per person or business entity</li>
                 </ul>
-                
+
                 <h4 className="font-semibold mt-6">Account Responsibilities</h4>
                 <ul className="space-y-2 text-gray-700">
                   <li>• Keep your login credentials secure</li>
@@ -80,7 +80,7 @@ const TermsPage: React.FC = () => {
                   <li>• Contact customer support</li>
                   <li>• Leave reviews and feedback</li>
                 </ul>
-                
+
                 <h4 className="font-semibold mt-6">Prohibited Activities</h4>
                 <p className="text-gray-700">You may not:</p>
                 <ul className="space-y-2 text-gray-700">
@@ -112,7 +112,7 @@ const TermsPage: React.FC = () => {
                   <li>• Prices are subject to change without notice</li>
                   <li>• Product availability is not guaranteed</li>
                 </ul>
-                
+
                 <h4 className="font-semibold mt-6">Payment Terms</h4>
                 <ul className="space-y-2 text-gray-700">
                   <li>• Payment is required at time of order</li>
@@ -139,7 +139,7 @@ const TermsPage: React.FC = () => {
                   <li>• Comply with applicable laws and regulations</li>
                   <li>• Respond to customer inquiries promptly</li>
                 </ul>
-                
+
                 <h4 className="font-semibold mt-6">Platform Commission</h4>
                 <p className="text-gray-700">
                   Vendor commission rates and payment terms are outlined in separate vendor agreements.
@@ -160,14 +160,14 @@ const TermsPage: React.FC = () => {
               <div className="space-y-4">
                 <h4 className="font-semibold">Our Rights</h4>
                 <p className="text-gray-700">
-                  All content on our platform, including text, graphics, logos, and software, 
-                  is owned by SIM Online or our licensors and is protected by copyright and trademark laws.
+                  All content on our platform, including text, graphics, logos, and software, is owned by SIM Online or
+                  our licensors and is protected by copyright and trademark laws.
                 </p>
-                
+
                 <h4 className="font-semibold mt-6">User Content</h4>
                 <p className="text-gray-700">
-                  By submitting content (reviews, comments, etc.), you grant us a non-exclusive, 
-                  royalty-free license to use, modify, and display that content.
+                  By submitting content (reviews, comments, etc.), you grant us a non-exclusive, royalty-free license to
+                  use, modify, and display that content.
                 </p>
               </div>
             </CardContent>
@@ -182,20 +182,20 @@ const TermsPage: React.FC = () => {
               <div className="space-y-4">
                 <h4 className="font-semibold">Service Availability</h4>
                 <p className="text-gray-700">
-                  We strive to maintain platform availability but cannot guarantee uninterrupted service. 
-                  We reserve the right to modify or discontinue services at any time.
+                  We strive to maintain platform availability but cannot guarantee uninterrupted service. We reserve the
+                  right to modify or discontinue services at any time.
                 </p>
-                
+
                 <h4 className="font-semibold mt-6">Limitation of Liability</h4>
                 <p className="text-gray-700">
-                  Our liability is limited to the amount you paid for the specific product or service. 
-                  We are not liable for indirect, incidental, or consequential damages.
+                  Our liability is limited to the amount you paid for the specific product or service. We are not liable
+                  for indirect, incidental, or consequential damages.
                 </p>
-                
+
                 <h4 className="font-semibold mt-6">Product Accuracy</h4>
                 <p className="text-gray-700">
-                  While we strive for accuracy, product descriptions, images, and pricing may contain errors. 
-                  We reserve the right to correct any errors.
+                  While we strive for accuracy, product descriptions, images, and pricing may contain errors. We reserve
+                  the right to correct any errors.
                 </p>
               </div>
             </CardContent>
@@ -209,15 +209,11 @@ const TermsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  We may terminate or suspend your account at any time for violations of these terms 
-                  or for any other reason at our discretion.
+                  We may terminate or suspend your account at any time for violations of these terms or for any other
+                  reason at our discretion.
                 </p>
-                <p className="text-gray-700">
-                  You may close your account at any time by contacting customer support.
-                </p>
-                <p className="text-gray-700">
-                  Upon termination, your right to use the platform ceases immediately.
-                </p>
+                <p className="text-gray-700">You may close your account at any time by contacting customer support.</p>
+                <p className="text-gray-700">Upon termination, your right to use the platform ceases immediately.</p>
               </div>
             </CardContent>
           </Card>
@@ -230,8 +226,8 @@ const TermsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  These terms are governed by the laws of South Africa. Any disputes will be resolved 
-                  in the courts of South Africa.
+                  These terms are governed by the laws of South Africa. Any disputes will be resolved in the courts of
+                  South Africa.
                 </p>
               </div>
             </CardContent>
@@ -244,11 +240,9 @@ const TermsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <p className="text-gray-700">
-                  If you have questions about these Terms of Service, please contact us:
-                </p>
+                <p className="text-gray-700">If you have questions about these Terms of Service, please contact us:</p>
                 <div className="text-gray-700">
-                  <p>Email: legal@synergymall.co.za</p>
+                  <p>Email: legal@synergemall.co.za</p>
                   <p>Phone: +27-76-159-7719</p>
                   <p>Address: eCommerce Street, International</p>
                 </div>
