@@ -159,6 +159,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
+  // Bulk variation generation
+  const [attributeTypes, setAttributeTypes] = useState<Array<{ name: string; values: string[] }>>([]);
+  const [showBulkGenerator, setShowBulkGenerator] = useState(false);
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -474,6 +478,82 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
       images: currentImages.filter((_, index) => index !== imageIndex)
     };
     setVariations(updatedVariations);
+  };
+
+  // Bulk variation generation functions
+  const addAttributeType = () => {
+    setAttributeTypes(prev => [...prev, { name: '', values: [] }]);
+  };
+
+  const removeAttributeType = (index: number) => {
+    setAttributeTypes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateAttributeTypeName = (index: number, name: string) => {
+    setAttributeTypes(prev => 
+      prev.map((type, i) => i === index ? { ...type, name } : type)
+    );
+  };
+
+  const updateAttributeTypeValues = (index: number, valuesString: string) => {
+    const values = valuesString.split(',').map(v => v.trim()).filter(Boolean);
+    setAttributeTypes(prev => 
+      prev.map((type, i) => i === index ? { ...type, values } : type)
+    );
+  };
+
+  const generateVariations = () => {
+    // Filter out empty attribute types
+    const validAttributes = attributeTypes.filter(
+      type => type.name && type.values.length > 0
+    );
+
+    if (validAttributes.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please add at least one attribute type with values.",
+      });
+      return;
+    }
+
+    // Generate all combinations
+    const generateCombinations = (attrs: typeof validAttributes): Array<Record<string, string>> => {
+      if (attrs.length === 0) return [{}];
+      
+      const [first, ...rest] = attrs;
+      const restCombinations = generateCombinations(rest);
+      
+      const combinations: Array<Record<string, string>> = [];
+      for (const value of first.values) {
+        for (const combo of restCombinations) {
+          combinations.push({ [first.name]: value, ...combo });
+        }
+      }
+      
+      return combinations;
+    };
+
+    const combinations = generateCombinations(validAttributes);
+    
+    // Create variations from combinations
+    const newVariations: ProductVariation[] = combinations.map((combo, index) => ({
+      id: `generated-${Date.now()}-${index}`,
+      attributes: Object.entries(combo).map(([name, value]) => ({ name, value })),
+      price: formData.price,
+      quantity: 0,
+      sku: "",
+      images: [],
+    }));
+
+    setVariations(newVariations);
+    setShowBulkGenerator(false);
+    setAttributeTypes([]);
+    
+    toast({
+      title: "Variations Generated",
+      description: `Created ${newVariations.length} variations from your attribute combinations.`,
+    });
   };
 
   const uploadImages = async (productId: string) => {
@@ -865,15 +945,111 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     Add variations like sizes, colors, or styles. Each variation can have its own price, quantity, and images.
                   </p>
                 </div>
-                <Button type="button" onClick={addVariation} variant="default" size="sm" className="shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Variation
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={() => setShowBulkGenerator(!showBulkGenerator)} 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    {showBulkGenerator ? "Manual Mode" : "Bulk Generate"}
+                  </Button>
+                  <Button type="button" onClick={addVariation} variant="default" size="sm" className="shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Single
+                  </Button>
+                </div>
               </div>
-              {variations.length === 0 && (
+
+              {/* Bulk Variation Generator */}
+              {showBulkGenerator && (
+                <div className="border-2 border-primary/20 rounded-lg p-6 space-y-4 bg-primary/5">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">Bulk Variation Generator</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Define attribute types and their values. We'll automatically create all combinations for you.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {attributeTypes.map((type, index) => (
+                      <div key={index} className="border rounded-lg p-4 space-y-3 bg-background">
+                        <div className="flex gap-2 items-start">
+                          <div className="flex-1 space-y-2">
+                            <Label className="text-sm">Attribute Name</Label>
+                            <Input
+                              placeholder="e.g., Color, Size, Material"
+                              value={type.name}
+                              onChange={(e) => updateAttributeTypeName(index, e.target.value)}
+                            />
+                          </div>
+                          <div className="flex-[2] space-y-2">
+                            <Label className="text-sm">Values (comma-separated)</Label>
+                            <Input
+                              placeholder="e.g., Red, Blue, Green"
+                              value={type.values.join(', ')}
+                              onChange={(e) => updateAttributeTypeValues(index, e.target.value)}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeAttributeType(index)}
+                            className="mt-7"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {type.values.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {type.values.map((value, vIndex) => (
+                              <span key={vIndex} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">
+                                {value}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    <Button
+                      type="button"
+                      onClick={addAttributeType}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Attribute Type
+                    </Button>
+                  </div>
+
+                  {attributeTypes.length > 0 && (
+                    <div className="pt-4 border-t space-y-2">
+                      <div className="text-sm text-muted-foreground">
+                        This will create{' '}
+                        <span className="font-semibold text-foreground">
+                          {attributeTypes.reduce((acc, type) => acc * (type.values.length || 1), 1)}
+                        </span>{' '}
+                        variation(s)
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={generateVariations}
+                        className="w-full"
+                      >
+                        Generate All Variations
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {variations.length === 0 && !showBulkGenerator && (
                 <div className="border-2 border-dashed rounded-lg p-6 text-center">
                   <p className="text-sm text-muted-foreground">
-                    No variations yet. Click "Add Variation" to create options like Size: Small/Medium/Large or Color: Red/Blue/Green
+                    No variations yet. Use "Bulk Generate" for multiple combinations or "Add Single" for individual variations.
                   </p>
                 </div>
               )}
