@@ -21,6 +21,9 @@ const mapDatabaseProduct = (dbProduct: any, images: any[] = [], variations: any[
   // Calculate total stock including variations
   const totalStock = dbProduct.quantity + variations.reduce((sum, v) => sum + (v.quantity || 0), 0);
   
+  // Sort images by position
+  const sortedImages = [...images].sort((a, b) => a.position - b.position);
+  
   return {
     id: dbProduct.id,
     name: dbProduct.name,
@@ -28,7 +31,7 @@ const mapDatabaseProduct = (dbProduct: any, images: any[] = [], variations: any[
     description: dbProduct.description || "",
     price: Number(dbProduct.price),
     compareAtPrice: dbProduct.compare_at_price ? Number(dbProduct.compare_at_price) : undefined,
-    images: images.map(img => img.image_url),
+    images: sortedImages.map(img => img.image_url),
     category: dbProduct.category,
     subcategory: dbProduct.subcategory,
     rating: Number(dbProduct.rating) || 0,
@@ -409,6 +412,8 @@ export const fetchDealsProducts = async (limit: number = 20): Promise<Product[]>
  */
 export const fetchProductBySlug = async (slug: string): Promise<Product | null> => {
   try {
+    console.log('Fetching product with slug:', slug);
+    
     const { data: product, error } = await supabase
       .from('products')
       .select(`
@@ -446,16 +451,18 @@ export const fetchProductBySlug = async (slug: string): Promise<Product | null> 
     }
 
     if (!product) {
+      console.warn('No product found with slug:', slug);
       return null;
     }
 
+    console.log('Product found:', product.name);
     return mapDatabaseProduct(
       product,
       product.product_images || [],
       product.product_variations || []
     );
   } catch (error) {
-    console.error('Error fetching product by slug:', error);
+    console.error('Exception fetching product by slug:', error);
     return null;
   }
 };
