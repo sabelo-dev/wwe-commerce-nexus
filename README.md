@@ -1,4 +1,3 @@
-
 Synerge Square is a next-generation multivendor online marketplace launched in 2025, designed to empower businesses of all sizes to sell online with ease. Built for scalability, security, and performance, wweapp enables vendors to manage their storefronts independently while providing customers with a seamless and engaging shopping experience.
 
 Overview
