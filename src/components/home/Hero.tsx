@@ -53,7 +53,7 @@ const Hero: React.FC = () => {
                   </Link>
                 )}
                 <Link to="/shop">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                  <Button size="lg" variant="outline" className="border-white text-red hover:bg-white/10">
                     Shop Now
                   </Button>
                 </Link>
