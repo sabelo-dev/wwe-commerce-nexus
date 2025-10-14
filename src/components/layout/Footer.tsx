@@ -18,13 +18,13 @@ const Footer: React.FC = () => {
               experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
-              <a href="https://facebook.com/" className="text-gray-300 hover:text-white">
+              <a href="https://facebook.com/synergesquare/" className="text-gray-300 hover:text-white">
                 <Facebook size={20} />
               </a>
-              <a href="https://twitter.com" className="text-gray-300 hover:text-white">
+              <a href="https://x.com/synergesquare/" className="text-gray-300 hover:text-white">
                 <Twitter size={20} />
               </a>
-              <a href="https://instagram.com" className="text-gray-300 hover:text-white">
+              <a href="https://www.instagram.com/synergesquare/" className="text-gray-300 hover:text-white">
                 <Instagram size={20} />
               </a>
               <a href="https://youtube.com" className="text-gray-300 hover:text-white">
