@@ -12,9 +12,9 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Column */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">About SYNERGE MALL</h3>
+            <h3 className="text-lg font-semibold mb-4">About SYNERGEM</h3>
             <p className="text-sm text-gray-300 mb-4">
-              SYNERGE MALL connecting buyers and sellers since 2025. Our mission is to provide the best shopping
+              SYNERGEM connecting buyers and sellers since 2025. Our mission is to provide the best shopping
               experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
@@ -116,7 +116,7 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 flex-shrink-0" />
-                <span>support@synergemall.co.za</span>
+                <span>support@synergem.co.za</span>
               </li>
             </ul>
           </div>
@@ -146,7 +146,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>&copy; {currentYear} SYNERGE MALL. All rights reserved.</p>
+          <p>&copy; {currentYear} SYNERGEM. All rights reserved.</p>
         </div>
       </div>
     </footer>

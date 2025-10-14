@@ -1,8 +1,8 @@
 
-world wide ecommerce (weapp) is a next-generation multivendor online marketplace launched in 2025, designed to empower businesses of all sizes to sell online with ease. Built for scalability, security, and performance, wweapp enables vendors to manage their storefronts independently while providing customers with a seamless and engaging shopping experience.
+SynergeM is a next-generation multivendor online marketplace launched in 2025, designed to empower businesses of all sizes to sell online with ease. Built for scalability, security, and performance, wweapp enables vendors to manage their storefronts independently while providing customers with a seamless and engaging shopping experience.
 
 Overview
-Platform Name: wwecommerce (weapp)
+Platform Name: SynergeM
 
 Launched: 2025
 
@@ -13,7 +13,7 @@ Parent Company: Lifestyle Synerge International [LSI] (established in 2016)
 Mission: To bridge businesses and customers through a robust digital commerce ecosystem.
 
 About LSI
-Founded in 2016, LSI (Logistics & Solutions Innovations) has grown into a trusted name in technology and logistics. With nearly a decade of experience, LSI’s mission is to simplify commerce by building smart, scalable solutions that power digital transformation. wwecommerce (weapp) is the latest product in LSI’s portfolio, designed to redefine how vendors and buyers interact online.
+Founded in 2016, LSI has grown into a trusted name in technology and logistics. With nearly a decade of experience, LSI’s mission is to simplify commerce by building smart, scalable solutions that power digital transformation. wwecommerce (weapp) is the latest product in LSI’s portfolio, designed to redefine how vendors and buyers interact online.
 
 Key Features
 ✅ Multivendor Architecture – Multiple sellers, one powerful platform
