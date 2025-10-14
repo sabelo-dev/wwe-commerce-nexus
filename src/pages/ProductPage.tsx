@@ -276,7 +276,7 @@ const ProductPage: React.FC = () => {
                           </span>
                           {selectedAttributes[attrType] && (
                             <Badge variant="secondary" className="font-normal">
-                              Selected: {selectedAttributes[attrType]}
+                              Selected: {String(selectedAttributes[attrType])}
                             </Badge>
                           )}
                         </div>
@@ -296,7 +296,7 @@ const ProductPage: React.FC = () => {
                                     : "border-border bg-background hover:border-primary/50 hover:bg-muted"
                                 )}
                               >
-                                {value}
+                                {String(value)}
                               </button>
                             );
                           })}
@@ -310,7 +310,7 @@ const ProductPage: React.FC = () => {
                       <p className="font-medium">
                         {Object.entries(selectedAttributes).map(([key, value]) => (
                           <span key={key} className="mr-2">
-                            {key}: {value}
+                            {key}: {String(value)}
                           </span>
                         ))}
                       </p>
