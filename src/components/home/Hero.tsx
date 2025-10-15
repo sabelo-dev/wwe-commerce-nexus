@@ -66,7 +66,7 @@ const Hero: React.FC = () => {
                   </Button>
                 </Link>
                 <Link to="/categories">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                  <Button size="lg" variant="outline" className="border-black text-white hover:bg-white/10">
                     Browse Categories
                   </Button>
                 </Link>
