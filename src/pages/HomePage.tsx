@@ -4,6 +4,7 @@ import Hero from "@/components/home/Hero";
 import CategorySection from "@/components/home/CategorySection";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import PromoSection from "@/components/home/PromoSection";
+import SEO from "@/components/SEO";
 import { Product, Category } from "@/types";
 import { 
   fetchCategories, 
@@ -11,6 +12,7 @@ import {
   fetchNewArrivals, 
   fetchPopularProducts 
 } from "@/services/products";
+import { getOrganizationSchema, getWebsiteSchema } from "@/utils/structuredData";
 
 const HomePage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -60,8 +62,19 @@ const HomePage: React.FC = () => {
     loadData();
   }, []);
 
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [getOrganizationSchema(), getWebsiteSchema()],
+  };
+
   return (
     <div>
+      <SEO
+        title="Synerge Square - Your Premier Online Marketplace"
+        description="Discover quality products from trusted vendors. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout."
+        keywords="online marketplace, ecommerce, shop online, vendors, products, best deals"
+        structuredData={structuredData}
+      />
       <Hero />
       {loading ? (
         <div className="py-12 text-center">

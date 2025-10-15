@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import ProductGrid from "@/components/shop/ProductGrid";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -125,6 +126,11 @@ const ShopPage: React.FC = () => {
 
   return (
     <div className="bg-gray-50">
+      <SEO
+        title="Shop All Products"
+        description="Browse our complete collection of quality products. Filter by category, price, and brand to find exactly what you need. Fast shipping and secure checkout."
+        keywords="shop online, products, all categories, best prices, quality products, online shopping"
+      />
       <div className="wwe-container py-8">
         <header className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Shop All Products</h1>

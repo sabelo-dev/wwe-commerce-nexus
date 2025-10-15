@@ -15,8 +15,10 @@ import {
 import { formatCurrency, cn } from "@/lib/utils";
 import StarRating from "@/components/ui/star-rating";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
+import SEO from "@/components/SEO";
 import { Product, ProductVariation } from "@/types";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/services/products";
+import { getProductSchema, getBreadcrumbSchema } from "@/utils/structuredData";
 
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -151,11 +153,29 @@ const ProductPage: React.FC = () => {
   const discountPercent = product.compareAtPrice ? Math.round(((product.compareAtPrice - currentPrice) / product.compareAtPrice) * 100) : 0;
   const isInStock = selectedVariation ? selectedVariation.quantity > 0 : product.inStock;
 
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    { name: 'Shop', url: '/shop' },
+    { name: product.category, url: `/category/${product.category.toLowerCase()}` },
+    { name: product.name, url: `/product/${product.slug}` },
+  ];
+
   return (
     <div className="bg-white">
+      <SEO
+        title={`${product.name} - ${product.category}`}
+        description={product.description?.substring(0, 160) || `Buy ${product.name} from ${product.vendorName}. High quality products at great prices.`}
+        keywords={`${product.name}, ${product.category}, ${product.vendorName}, buy online, shop`}
+        image={product.images?.[0]}
+        type="product"
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@graph': [getProductSchema(product), getBreadcrumbSchema(breadcrumbItems)],
+        }}
+      />
       <div className="wwe-container py-8">
         {/* Breadcrumbs */}
-        <div className="mb-6 text-sm">
+        <nav className="mb-6 text-sm" aria-label="Breadcrumb">
           <Link to="/" className="text-gray-500 hover:text-wwe-navy">Home</Link>
           {" "} / {" "}
           <Link to="/shop" className="text-gray-500 hover:text-wwe-navy">Shop</Link>
@@ -164,7 +184,7 @@ const ProductPage: React.FC = () => {
             {product.category}
           </Link>
           {" "} / <span className="text-gray-900">{product.name}</span>
-        </div>
+        </nav>
 
         {/* Product Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">

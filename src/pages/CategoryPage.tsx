@@ -3,8 +3,10 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { fetchProductsByCategory, fetchCategories } from "@/services/products";
 import ProductGrid from "@/components/shop/ProductGrid";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Product, Category } from "@/types";
+import { getBreadcrumbSchema } from "@/utils/structuredData";
 
 const CategoryPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -48,11 +50,24 @@ const CategoryPage: React.FC = () => {
     );
   }
 
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    { name: 'Categories', url: '/categories' },
+    { name: category.name, url: `/category/${category.slug}` },
+  ];
+
   return (
     <div className="bg-gray-50">
+      <SEO
+        title={`${category.name} Products`}
+        description={`Explore our collection of ${category.name.toLowerCase()} products. High-quality items from trusted brands at competitive prices. Shop ${category.name} now.`}
+        keywords={`${category.name}, shop ${category.name.toLowerCase()}, buy ${category.name.toLowerCase()}, best ${category.name.toLowerCase()}`}
+        image={category.image}
+        structuredData={getBreadcrumbSchema(breadcrumbItems)}
+      />
       <div className="wwe-container py-8">
         {/* Breadcrumbs */}
-        <div className="mb-6 text-sm">
+        <nav className="mb-6 text-sm" aria-label="Breadcrumb">
           <Link to="/" className="text-gray-500 hover:text-wwe-navy">
             Home
           </Link>{" "}
@@ -61,7 +76,7 @@ const CategoryPage: React.FC = () => {
             Categories
           </Link>{" "}
           / <span className="text-gray-900">{category.name}</span>
-        </div>
+        </nav>
 
         {/* Category Header */}
         <div className="mb-8 relative rounded-lg overflow-hidden bg-gradient-to-r from-wwe-navy to-blue-700">
