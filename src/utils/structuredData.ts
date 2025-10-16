@@ -5,7 +5,7 @@ export const getOrganizationSchema = () => ({
   '@type': 'Organization',
   name: 'Synerge Square',
   url: typeof window !== 'undefined' ? window.location.origin : '',
-  logo: typeof window !== 'undefined' ? `${window.location.origin}/lovable-uploads/logo.png` : '',
+  logo: typeof window !== 'undefined' ? `${window.location.origin}/uploads/logo.png` : '',
   description: 'Your Premier Online Marketplace for quality products from trusted vendors',
   contactPoint: {
     '@type': 'ContactPoint',
