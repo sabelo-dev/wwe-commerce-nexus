@@ -294,6 +294,47 @@ export type Database = {
           },
         ]
       }
+      downloadable_files: {
+        Row: {
+          created_at: string
+          download_limit: number | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          download_limit?: number | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          download_limit?: number | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "downloadable_files_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           completed_at: string | null
@@ -766,6 +807,7 @@ export type Database = {
           id: string
           name: string
           price: number
+          product_type: string
           quantity: number
           rating: number | null
           review_count: number | null
@@ -786,6 +828,7 @@ export type Database = {
           id?: string
           name: string
           price: number
+          product_type?: string
           quantity?: number
           rating?: number | null
           review_count?: number | null
@@ -806,6 +849,7 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+          product_type?: string
           quantity?: number
           rating?: number | null
           review_count?: number | null

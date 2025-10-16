@@ -41,6 +41,7 @@ const productSchema = z.object({
   quantity: z.number().min(0, "Quantity cannot be negative"),
   category: z.string().min(1, "Category is required"),
   subcategories: z.array(z.string()).optional(),
+  productType: z.enum(['simple', 'variable', 'downloadable']),
 });
 
 const variationSchema = z.object({
@@ -81,6 +82,15 @@ interface ImageWithPreview {
   url: string;
   id?: string;
   position: number;
+}
+
+interface DownloadableFile {
+  id?: string;
+  file?: File;
+  fileName: string;
+  fileUrl?: string;
+  fileSize?: number;
+  downloadLimit?: number;
 }
 
 // Sortable Image Component
@@ -149,10 +159,12 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     quantity: 0,
     category: "",
     subcategories: [],
+    productType: 'simple',
   });
   
   const [variations, setVariations] = useState<ProductVariation[]>([]);
   const [images, setImages] = useState<ImageWithPreview[]>([]);
+  const [downloadableFiles, setDownloadableFiles] = useState<DownloadableFile[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -262,6 +274,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         quantity: product.quantity || 0,
         category: product.category || "",
         subcategories: subcategoriesArray,
+        productType: product.product_type || 'simple',
       });
       
       // Load existing images
@@ -287,9 +300,11 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         quantity: 0,
         category: "",
         subcategories: [],
+        productType: 'simple',
       });
       setImages([]);
       setVariations([]);
+      setDownloadableFiles([]);
     }
     setErrors({});
   }, [product, mode, isOpen]);
@@ -393,6 +408,41 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         i === index ? { ...variation, [field]: value } : variation
       )
     );
+  };
+
+  // Downloadable file management
+  const addDownloadableFile = () => {
+    setDownloadableFiles(prev => [...prev, { fileName: '', downloadLimit: undefined }]);
+  };
+
+  const removeDownloadableFile = (index: number) => {
+    setDownloadableFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateDownloadableFile = (index: number, field: keyof DownloadableFile, value: any) => {
+    setDownloadableFiles(prev =>
+      prev.map((file, i) =>
+        i === index ? { ...file, [field]: value } : file
+      )
+    );
+  };
+
+  const handleDownloadableFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setDownloadableFiles(prev =>
+        prev.map((downloadFile, i) =>
+          i === index
+            ? {
+                ...downloadFile,
+                file,
+                fileName: file.name,
+                fileSize: file.size,
+              }
+            : downloadFile
+        )
+      );
+    }
   };
 
   const addVariationAttribute = (variationIndex: number) => {
@@ -686,6 +736,43 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
   };
 
+  const uploadDownloadableFiles = async (productId: string) => {
+    for (const downloadFile of downloadableFiles) {
+      if (downloadFile.file) {
+        const fileExt = downloadFile.file.name.split('.').pop();
+        const fileName = `downloadable-files/${Date.now()}-${Math.random()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, downloadFile.file);
+
+        if (uploadError) {
+          console.error('Error uploading downloadable file:', uploadError);
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+
+        // Save downloadable file record
+        const { error: fileError } = await supabase
+          .from('downloadable_files')
+          .insert({
+            product_id: productId,
+            file_name: downloadFile.fileName,
+            file_url: urlData.publicUrl,
+            file_size: downloadFile.fileSize,
+            download_limit: downloadFile.downloadLimit,
+          });
+
+        if (fileError) {
+          console.error('Error saving downloadable file:', fileError);
+        }
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -723,6 +810,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             quantity: validatedData.quantity,
             category: validatedData.category,
             subcategory: validatedData.subcategories?.join(', ') || null,
+            product_type: validatedData.productType,
             status: 'pending'
           })
           .select()
@@ -730,11 +818,18 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         if (productError) throw productError;
 
-        // Upload images and save variations
-        await Promise.all([
-          uploadImages(newProduct.id),
-          saveVariations(newProduct.id),
-        ]);
+        // Upload images, save variations, and handle downloadable files
+        const tasks = [uploadImages(newProduct.id)];
+        
+        if (validatedData.productType === 'variable') {
+          tasks.push(saveVariations(newProduct.id));
+        }
+        
+        if (validatedData.productType === 'downloadable') {
+          tasks.push(uploadDownloadableFiles(newProduct.id));
+        }
+        
+        await Promise.all(tasks);
 
         toast({
           title: "Product Created",
@@ -754,16 +849,24 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
             quantity: validatedData.quantity,
             category: validatedData.category,
             subcategory: validatedData.subcategories?.join(', ') || null,
+            product_type: validatedData.productType,
           })
           .eq('id', product.id);
 
         if (updateError) throw updateError;
 
-        // Upload new images and save variations
-        await Promise.all([
-          uploadImages(product.id),
-          saveVariations(product.id),
-        ]);
+        // Upload new images, save variations, and handle downloadable files
+        const tasks = [uploadImages(product.id)];
+        
+        if (validatedData.productType === 'variable') {
+          tasks.push(saveVariations(product.id));
+        }
+        
+        if (validatedData.productType === 'downloadable') {
+          tasks.push(uploadDownloadableFiles(product.id));
+        }
+        
+        await Promise.all(tasks);
 
         toast({
           title: "Product Updated",
@@ -806,6 +909,40 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Product Type Selection */}
+          <div className="space-y-2 border-b pb-4">
+            <Label htmlFor="productType" className="text-base font-semibold">Product Type *</Label>
+            <Select 
+              value={formData.productType} 
+              onValueChange={(value: 'simple' | 'variable' | 'downloadable') => handleInputChange("productType", value)}
+            >
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Select product type" />
+              </SelectTrigger>
+              <SelectContent className="bg-background dark:bg-popover border border-border shadow-lg z-[9999]">
+                <SelectItem value="simple" className="bg-background dark:bg-popover hover:bg-accent">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold">Simple Product</div>
+                    <div className="text-xs text-muted-foreground">Single SKU, fixed price, no variations</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="variable" className="bg-background dark:bg-popover hover:bg-accent">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold">Variable Product</div>
+                    <div className="text-xs text-muted-foreground">Multiple variations (sizes, colors, etc.)</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="downloadable" className="bg-background dark:bg-popover hover:bg-accent">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold">Downloadable Product</div>
+                    <div className="text-xs text-muted-foreground">Digital product with file downloads</div>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.productType && <p className="text-sm text-destructive">{errors.productType}</p>}
+          </div>
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -922,21 +1059,24 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity *</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="0"
-                value={formData.quantity}
-                onChange={(e) => handleInputChange("quantity", parseInt(e.target.value) || 0)}
-              />
-              {errors.quantity && <p className="text-sm text-destructive">{errors.quantity}</p>}
-            </div>
+            {formData.productType !== 'downloadable' && (
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity *</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  value={formData.quantity}
+                  onChange={(e) => handleInputChange("quantity", parseInt(e.target.value) || 0)}
+                />
+                {errors.quantity && <p className="text-sm text-destructive">{errors.quantity}</p>}
+              </div>
+            )}
           </div>
 
-          {/* Product Variations */}
-          <div className="space-y-4 border-t pt-6">
+          {/* Product Variations - Only for Variable Products */}
+          {formData.productType === 'variable' && (
+            <div className="space-y-4 border-t pt-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -1223,7 +1363,87 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
+
+          {/* Downloadable Files - Only for Downloadable Products */}
+          {formData.productType === 'downloadable' && (
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-lg font-semibold">Downloadable Files</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add files that customers can download after purchase
+                  </p>
+                </div>
+                <Button type="button" onClick={addDownloadableFile} variant="default" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add File
+                </Button>
+              </div>
+
+              {downloadableFiles.length === 0 && (
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No downloadable files yet. Click "Add File" to add files for download.
+                  </p>
+                </div>
+              )}
+
+              {downloadableFiles.map((file, index) => (
+                <div key={index} className="border-2 rounded-lg p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">File {index + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeDownloadableFile(index)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>File Name *</Label>
+                      <Input
+                        placeholder="e.g., eBook.pdf"
+                        value={file.fileName}
+                        onChange={(e) => updateDownloadableFile(index, 'fileName', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Download Limit (optional)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Leave empty for unlimited"
+                        value={file.downloadLimit || ''}
+                        onChange={(e) => updateDownloadableFile(index, 'downloadLimit', parseInt(e.target.value) || undefined)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Upload File *</Label>
+                    <Input
+                      type="file"
+                      onChange={(e) => handleDownloadableFileChange(index, e)}
+                      accept="*/*"
+                    />
+                    {file.file && (
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {file.fileName} ({(file.fileSize! / 1024 / 1024).toFixed(2)} MB)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Image Gallery */}
           <div className="space-y-4">
