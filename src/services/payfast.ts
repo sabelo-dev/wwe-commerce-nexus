@@ -48,7 +48,7 @@ export const createPayFastPayment = async (data: PayFastPaymentData): Promise<Pa
     // Create form and redirect to PayFast
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = 'https://sandbox.payfast.co.za/eng/process'; // Use sandbox for testing
+    form.action = 'https://payfast.co.za/eng/process'; // Use sandbox for testing
     form.style.display = 'none';
 
     // Add all payment data as hidden inputs
@@ -65,7 +65,7 @@ export const createPayFastPayment = async (data: PayFastPaymentData): Promise<Pa
 
     return {
       success: true,
-      redirectUrl: 'https://sandbox.payfast.co.za/eng/process',
+      redirectUrl: 'https://payfast.co.za/eng/process',
     };
   } catch (error) {
     console.error('PayFast payment creation failed:', error);
