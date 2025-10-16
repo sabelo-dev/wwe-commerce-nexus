@@ -37,12 +37,7 @@ import VendorOnboardingPage from "@/pages/VendorOnboardingPage";
 import VendorDashboardPage from "@/pages/VendorDashboardPage";
 
 // Subcategory pages
-import MenClothingPage from "@/pages/subcategories/MenClothingPage";
-import WomenClothingPage from "@/pages/subcategories/WomenClothingPage";
-import KidsClothingPage from "@/pages/subcategories/KidsClothingPage";
-import FurniturePage from "@/pages/subcategories/FurniturePage";
-import AppliancesPage from "@/pages/subcategories/AppliancesPage";
-import KitchenPage from "@/pages/subcategories/KitchenPage";
+import SubcategoryPage from "@/pages/SubcategoryPage";
 
 // Special pages
 import BestSellersPage from "@/pages/BestSellersPage";
@@ -73,6 +68,7 @@ function App() {
                 <Route path="store/:storeSlug" element={<StorefrontPage />} />
                 <Route path="product/:slug" element={<ProductPage />} />
                 <Route path="categories" element={<CategoriesPage />} />
+                <Route path="category/:categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
                 <Route path="category/:slug" element={<CategoryPage />} />
                 <Route path="checkout" element={<CheckoutPage />} />
                 <Route path="checkout/success" element={<CheckoutSuccessPage />} />
@@ -92,21 +88,6 @@ function App() {
                 <Route path="deals" element={<DealsPage />} />
                 <Route path="popular" element={<PopularPage />} />
                 
-                {/* Subcategory pages */}
-                <Route path="men-clothing" element={<MenClothingPage />} />
-                <Route path="women-clothing" element={<WomenClothingPage />} />
-                <Route path="kids-clothing" element={<KidsClothingPage />} />
-                <Route path="furniture" element={<FurniturePage />} />
-                <Route path="appliances" element={<AppliancesPage />} />
-                <Route path="kitchen" element={<KitchenPage />} />
-                
-                {/* Nested category routes */}
-                <Route path="category/home-kitchen/appliances" element={<AppliancesPage />} />
-                <Route path="category/home-kitchen/kitchen" element={<KitchenPage />} />
-                <Route path="category/home-kitchen/furniture" element={<FurniturePage />} />
-                <Route path="category/clothing/women" element={<WomenClothingPage />} />
-                <Route path="category/clothing/men" element={<MenClothingPage />} />
-                <Route path="category/clothing/kids" element={<KidsClothingPage />} />
                 
                 {/* Policy pages */}
                 <Route path="shipping" element={<ShippingPage />} />
