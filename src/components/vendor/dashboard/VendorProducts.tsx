@@ -13,7 +13,9 @@ import {
   MoreHorizontal, 
   Edit, 
   Trash2, 
-  Eye 
+  Eye,
+  Upload,
+  Download
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,6 +48,7 @@ const VendorProducts = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [formMode, setFormMode] = useState<"add" | "edit">("add");
   const [productToDelete, setProductToDelete] = useState<any>(null);
+  const [importing, setImporting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -180,6 +183,117 @@ const VendorProducts = () => {
     fetchProducts();
   };
 
+  const handleBulkExport = () => {
+    const csvData = [
+      ['Name', 'SKU', 'Category', 'Subcategory', 'Price', 'Compare At Price', 'Quantity', 'Description', 'Status'],
+      ...products.map(product => [
+        product.name,
+        product.sku || '',
+        product.category,
+        product.subcategory || '',
+        product.price,
+        product.compare_at_price || '',
+        product.quantity,
+        product.description?.replace(/,/g, ';') || '',
+        product.status
+      ])
+    ];
+    
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `products-export-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Export Successful",
+      description: `${products.length} products exported to CSV.`
+    });
+  };
+
+  const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+
+    try {
+      const text = await file.text();
+      const rows = text.split('\n').map(row => row.split(','));
+      const headers = rows[0];
+      const data = rows.slice(1);
+
+      // Get vendor's store
+      const { data: vendor } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: store } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('vendor_id', vendor.id)
+        .single();
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const row of data) {
+        if (row.length < 5 || !row[0]) continue; // Skip empty rows
+
+        try {
+          const productData = {
+            store_id: store.id,
+            name: row[0].trim(),
+            sku: row[1]?.trim() || null,
+            category: row[2]?.trim() || 'Uncategorized',
+            subcategory: row[3]?.trim() || null,
+            price: parseFloat(row[4]) || 0,
+            compare_at_price: row[5] ? parseFloat(row[5]) : null,
+            quantity: parseInt(row[6]) || 0,
+            description: row[7]?.replace(/;/g, ',') || '',
+            status: 'pending',
+            slug: row[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+          };
+
+          const { error } = await supabase
+            .from('products')
+            .insert(productData);
+
+          if (error) throw error;
+          successCount++;
+        } catch (err) {
+          console.error('Error importing row:', err);
+          errorCount++;
+        }
+      }
+
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${successCount} products. ${errorCount} failed.`
+      });
+
+      fetchProducts();
+    } catch (error) {
+      console.error('Error importing products:', error);
+      toast({
+        variant: "destructive",
+        title: "Import Failed",
+        description: "Failed to import products. Please check your CSV format."
+      });
+    } finally {
+      setImporting(false);
+      event.target.value = '';
+    }
+  };
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -194,10 +308,27 @@ const VendorProducts = () => {
             Manage your product inventory and listings.
           </p>
         </div>
-        <Button onClick={handleAddProduct}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleBulkExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button variant="outline" onClick={() => document.getElementById('bulk-import-input')?.click()} disabled={importing}>
+            <Upload className="h-4 w-4 mr-2" />
+            {importing ? 'Importing...' : 'Import'}
+          </Button>
+          <input
+            id="bulk-import-input"
+            type="file"
+            accept=".csv"
+            onChange={handleBulkImport}
+            className="hidden"
+          />
+          <Button onClick={handleAddProduct}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}

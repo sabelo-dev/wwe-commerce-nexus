@@ -176,6 +176,39 @@ const VendorPayouts = () => {
     payout.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const exportPayoutHistory = () => {
+    const csvData = [
+      ['Payout ID', 'Gross Amount', 'Commission', 'Net Amount', 'Status', 'Request Date', 'Paid Date', 'Method'],
+      ...filteredPayouts.map(payout => [
+        payout.id,
+        payout.amount.toFixed(2),
+        payout.commission.toFixed(2),
+        payout.netAmount.toFixed(2),
+        payout.status,
+        payout.requestDate,
+        payout.paidDate || 'N/A',
+        payout.method
+      ])
+    ];
+    
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `payout-history-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Export Successful",
+      description: "Payout history has been exported to CSV."
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -349,7 +382,7 @@ const VendorPayouts = () => {
                 className="pl-8"
               />
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={exportPayoutHistory}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>

@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      attribute_types: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      attribute_values: {
+        Row: {
+          attribute_type_id: string
+          color_hex: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          image_url: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          attribute_type_id: string
+          color_hex?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          attribute_type_id?: string
+          color_hex?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attribute_values_attribute_type_id_fkey"
+            columns: ["attribute_type_id"]
+            isOneToOne: false
+            referencedRelation: "attribute_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -177,6 +245,51 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_attribute_values: {
+        Row: {
+          attribute_type_id: string
+          color_hex: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          value: string
+          vendor_id: string
+        }
+        Insert: {
+          attribute_type_id: string
+          color_hex?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          value: string
+          vendor_id: string
+        }
+        Update: {
+          attribute_type_id?: string
+          color_hex?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          value?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_attribute_values_attribute_type_id_fkey"
+            columns: ["attribute_type_id"]
+            isOneToOne: false
+            referencedRelation: "attribute_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_attribute_values_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
