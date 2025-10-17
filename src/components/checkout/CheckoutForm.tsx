@@ -92,8 +92,11 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         });
 
         if (error) {
+          console.error("PayFast error:", error);
           throw new Error(error.message || "Failed to create payment");
         }
+
+        console.log("PayFast response:", paymentData);
 
         if (paymentData?.success && paymentData?.formData) {
           // Create and submit form to PayFast
@@ -112,8 +115,10 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
           });
 
           document.body.appendChild(form);
+          console.log("Submitting form to:", paymentData.action);
           form.submit();
         } else {
+          console.error("Invalid payment data:", paymentData);
           throw new Error("No payment data received");
         }
       } else {
