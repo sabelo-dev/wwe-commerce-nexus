@@ -92,11 +92,15 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         });
 
         if (error) {
-          console.error("PayFast error:", error);
+          console.error("PayFast edge function error:", error);
           throw new Error(error.message || "Failed to create payment");
         }
 
-        console.log("PayFast response:", paymentData);
+        console.log("PayFast response received:", paymentData);
+
+        if (!paymentData) {
+          throw new Error("No response from payment gateway");
+        }
 
         if (paymentData?.success && paymentData?.formData) {
           // Create and submit form to PayFast
