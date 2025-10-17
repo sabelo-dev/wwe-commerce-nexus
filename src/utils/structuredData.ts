@@ -3,7 +3,7 @@ import { Product } from '@/types';
 export const getOrganizationSchema = () => ({
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Synerge Square',
+  name: 'The Hermetist',
   url: typeof window !== 'undefined' ? window.location.origin : '',
   logo: typeof window !== 'undefined' ? `${window.location.origin}/uploads/logo.png` : '',
   description: 'Your Premier Online Marketplace for quality products from trusted vendors',
@@ -17,7 +17,7 @@ export const getOrganizationSchema = () => ({
 export const getWebsiteSchema = () => ({
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'Synerge Square',
+  name: 'The Hermetist',
   url: typeof window !== 'undefined' ? window.location.origin : '',
   potentialAction: {
     '@type': 'SearchAction',
@@ -37,7 +37,7 @@ export const getProductSchema = (product: Product) => ({
   image: product.images?.[0] || '',
   brand: {
     '@type': 'Brand',
-    name: product.vendorName || 'Synerge Square',
+    name: product.vendorName || 'The Hermetist',
   },
   offers: {
     '@type': 'Offer',
@@ -49,7 +49,7 @@ export const getProductSchema = (product: Product) => ({
       : 'https://schema.org/OutOfStock',
     seller: {
       '@type': 'Organization',
-      name: product.vendorName || 'Synerge Square',
+      name: product.vendorName || 'The Hermetist',
     },
   },
   aggregateRating: product.rating && product.reviewCount ? {
