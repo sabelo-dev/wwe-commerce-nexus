@@ -107,9 +107,9 @@ serve(async (req) => {
     const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "10000100";
     const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY") || "46f0cd694581a";
     const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "jt7NOE43FZPn";
-    
+
     // Use sandbox for testing
-    const payfastUrl = Deno.env.get("PAYFAST_URL") || "https://sandbox.payfast.co.za/eng/process";
+    const payfastUrl = Deno.env.get("PAYFAST_URL");
 
     // Create payment form data
     const formData = {
