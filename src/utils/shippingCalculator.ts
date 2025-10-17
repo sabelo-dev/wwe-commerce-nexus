@@ -50,7 +50,18 @@ export const calculateShipping = async (subtotal: number): Promise<number> => {
       return 0;
     }
 
-    // Return the shipping price
+    // Calculate shipping based on rate type
+    const rateType = applicableRate.rate_type.toLowerCase();
+    
+    if (rateType === 'flat_rate' || rateType === 'flat') {
+      // Fixed price shipping
+      return Number(applicableRate.price);
+    } else if (rateType === 'order_value' || rateType === 'percentage') {
+      // Percentage-based shipping (price field represents percentage)
+      return Number((subtotal * applicableRate.price) / 100);
+    }
+
+    // Default to flat rate if type is unknown
     return Number(applicableRate.price);
   } catch (error) {
     console.error("Error calculating shipping:", error);
