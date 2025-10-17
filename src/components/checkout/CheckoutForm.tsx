@@ -68,10 +68,19 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
     setIsProcessing(true);
 
     try {
+      // Calculate order totals
+      const subtotal = cart.subtotal || 0;
+      const shipping = 0; // Free shipping for now
+      const tax = subtotal * 0.15; // 15% VAT
+      const total = subtotal + shipping + tax;
+
       const orderData = {
         ...values,
         items: cart.items,
-        total: cart.subtotal || 0,
+        subtotal,
+        shipping,
+        tax,
+        total,
         userId: user?.id,
       };
 
@@ -79,7 +88,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         // Use the PayFast edge function for both card and EFT payments
         const { data: paymentData, error } = await supabase.functions.invoke('payfast-payment', {
           body: {
-            amount: cart.subtotal || 0,
+            amount: total,
             itemName: `Order for ${cart.items.length} items`,
             returnUrl: `${window.location.origin}/checkout/success`,
             cancelUrl: `${window.location.origin}/checkout/cancel`,
@@ -168,7 +177,13 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
               Processing...
             </>
           ) : (
-            `Complete Order - R${(cart?.subtotal || 0).toFixed(2)}`
+            `Complete Order - R${(() => {
+              const subtotal = cart?.subtotal || 0;
+              const shipping = 0;
+              const tax = subtotal * 0.15;
+              const total = subtotal + shipping + tax;
+              return total.toFixed(2);
+            })()}`
           )}
         </Button>
       </form>
