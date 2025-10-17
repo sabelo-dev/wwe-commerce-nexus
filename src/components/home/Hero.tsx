@@ -20,7 +20,7 @@ const Hero: React.FC = () => {
 
       <div className="wwe-container relative z-10">
         <div className="flex flex-col items-start py-16 md:py-24 max-w-xl">
-          <h1 className="text-2xl md:text-4xl font-bold text-white mb-4">Welcome to Synerge Square</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-white mb-4">Welcome to The Hermetist</h1>
           <p className="text-lg md:text-xl text-gray-200 mb-8">
             Discover millions of products from thousands of trusted sellers around the world. Quality products,
             competitive prices, fast delivery.

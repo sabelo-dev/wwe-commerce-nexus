@@ -12,22 +12,22 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Column */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">About Synerge Square</h3>
+            <h3 className="text-lg font-semibold mb-4">About The Hermetist</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Synerge Square connecting buyers and sellers since 2025. Our mission is to provide the best shopping
+              The Hermetist connecting buyers and sellers since 2025. Our mission is to provide the best shopping
               experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
-              <a href="https://facebook.com/synergesquare/" className="text-gray-300 hover:text-white">
+              <a href="https://facebook.com/thehermetist/" className="text-gray-300 hover:text-white">
                 <Facebook size={20} />
               </a>
-              <a href="https://x.com/synergesquare/" className="text-gray-300 hover:text-white">
+              <a href="https://x.com/thehermetist/" className="text-gray-300 hover:text-white">
                 <Twitter size={20} />
               </a>
-              <a href="https://www.instagram.com/synergesquare/" className="text-gray-300 hover:text-white">
+              <a href="https://www.instagram.com/thehermetist/" className="text-gray-300 hover:text-white">
                 <Instagram size={20} />
               </a>
-              <a href="https://youtube.com//@synergesquare" className="text-gray-300 hover:text-white">
+              <a href="https://youtube.com//@thehermetist" className="text-gray-300 hover:text-white">
                 <Youtube size={20} />
               </a>
             </div>
@@ -116,7 +116,7 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 flex-shrink-0" />
-                <span>support@Synergesquare.co.za</span>
+                <span>support@thehermetist.co.za</span>
               </li>
             </ul>
           </div>
@@ -146,7 +146,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>&copy; {currentYear} Synerge Square. All rights reserved.</p>
+          <p>&copy; {currentYear} The Hermetist. All rights reserved.</p>
         </div>
       </div>
     </footer>
