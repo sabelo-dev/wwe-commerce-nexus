@@ -104,9 +104,9 @@ serve(async (req) => {
     const paymentData: PayFastPaymentData = await req.json();
 
     // Get PayFast credentials from secrets (fallback to test credentials)
-    const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "10000100";
-    const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY") || "46f0cd694581a";
-    const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "jt7NOE43FZPn";
+    const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID");
+    const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY";
+    const passphrase = Deno.env.get("PAYFAST_PASSPHRASE");
 
     // Use sandbox for testing
     const payfastUrl = Deno.env.get("PAYFAST_URL");
