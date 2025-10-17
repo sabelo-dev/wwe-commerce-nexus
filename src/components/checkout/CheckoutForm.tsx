@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import ShippingForm from "./ShippingForm";
 import PaymentMethodSelector from "./PaymentMethodSelector";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateShipping } from "@/utils/shippingCalculator";
 
 const checkoutSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -40,6 +41,8 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
   const { cart, clearCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [shippingCost, setShippingCost] = useState<number>(0);
+  const [loadingShipping, setLoadingShipping] = useState(true);
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -54,6 +57,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       paymentMethod: "card",
     },
   });
+
+  // Calculate shipping cost when cart changes
+  useEffect(() => {
+    const fetchShippingCost = async () => {
+      if (cart?.subtotal) {
+        setLoadingShipping(true);
+        const cost = await calculateShipping(cart.subtotal);
+        setShippingCost(cost);
+        setLoadingShipping(false);
+      }
+    };
+    
+    fetchShippingCost();
+  }, [cart?.subtotal]);
 
   const onSubmit = async (values: CheckoutFormValues) => {
     if (!cart?.items?.length) {
@@ -70,7 +87,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
     try {
       // Calculate order totals
       const subtotal = cart.subtotal || 0;
-      const shipping = 0; // Free shipping for now
+      const shipping = shippingCost;
       const tax = subtotal * 0.15; // 15% VAT
       const total = subtotal + shipping + tax;
 
@@ -169,17 +186,22 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
         <Button
           type="submit"
           className="w-full bg-wwe-navy hover:bg-wwe-navy/90"
-          disabled={isProcessing}
+          disabled={isProcessing || loadingShipping}
         >
           {isProcessing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processing...
             </>
+          ) : loadingShipping ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Calculating shipping...
+            </>
           ) : (
             `Complete Order - R${(() => {
               const subtotal = cart?.subtotal || 0;
-              const shipping = 0;
+              const shipping = shippingCost;
               const tax = subtotal * 0.15;
               const total = subtotal + shipping + tax;
               return total.toFixed(2);

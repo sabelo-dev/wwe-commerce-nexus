@@ -1,11 +1,27 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
+import { calculateShipping } from "@/utils/shippingCalculator";
 
 const OrderSummary: React.FC = () => {
   const { cart } = useCart();
+  const [shipping, setShipping] = useState<number>(0);
+  const [loadingShipping, setLoadingShipping] = useState(true);
+
+  useEffect(() => {
+    const fetchShipping = async () => {
+      if (cart?.subtotal) {
+        setLoadingShipping(true);
+        const cost = await calculateShipping(cart.subtotal);
+        setShipping(cost);
+        setLoadingShipping(false);
+      }
+    };
+    
+    fetchShipping();
+  }, [cart?.subtotal]);
 
   if (!cart?.items?.length) {
     return (
@@ -15,7 +31,6 @@ const OrderSummary: React.FC = () => {
     );
   }
 
-  const shipping = 0; // Free shipping for now
   const tax = cart.subtotal * 0.15; // 15% VAT
   const total = cart.subtotal + shipping + tax;
 
@@ -53,7 +68,13 @@ const OrderSummary: React.FC = () => {
         </div>
         <div className="flex justify-between text-sm">
           <span>Shipping</span>
-          <span>{shipping === 0 ? "Free" : formatCurrency(shipping)}</span>
+          <span>
+            {loadingShipping 
+              ? "Calculating..." 
+              : shipping === 0 
+                ? "Free" 
+                : formatCurrency(shipping)}
+          </span>
         </div>
         <div className="flex justify-between text-sm">
           <span>VAT (15%)</span>
