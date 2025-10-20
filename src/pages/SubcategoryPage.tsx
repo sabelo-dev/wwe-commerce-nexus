@@ -64,7 +64,7 @@ const SubcategoryPage: React.FC = () => {
   return (
     <div className="bg-background">
       <SEO
-        title={`${subcategory.name} - ${category.name} | The Hermetist`}
+        title={`${subcategory.name} - ${category.name} | Synergy Mall`}
         description={`Shop ${subcategory.name.toLowerCase()} in our ${category.name.toLowerCase()} category. Quality products from trusted vendors at competitive prices.`}
         keywords={`${subcategory.name}, ${category.name}, shop ${subcategory.name.toLowerCase()}, buy ${subcategory.name.toLowerCase()}`}
         structuredData={getBreadcrumbSchema(breadcrumbItems)}

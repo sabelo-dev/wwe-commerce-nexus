@@ -48,7 +48,7 @@ export const createPayFastPayment = async (data: PayFastPaymentData): Promise<Pa
     // Create form and redirect to PayFast
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = 'https://payfast.co.za/eng/process'; // Use sandbox for testing
+    form.action = 'https://payfast.co.za/eng/process'; 
     form.style.display = 'none';
 
     // Add all payment data as hidden inputs

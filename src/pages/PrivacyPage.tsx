@@ -351,10 +351,10 @@ const PrivacyPage: React.FC = () => {
                 </p>
                 <div className="text-gray-700">
                   <p>
-                    <strong>Privacy Officer:</strong> privacy@thehermetist.co.za
+                    <strong>Privacy Officer:</strong> privacy@synergymall.co.za
                   </p>
                   <p>
-                    <strong>General Inquiries:</strong> support@thehermetist.co.za
+                    <strong>General Inquiries:</strong> support@synergymall.co.za
                   </p>
                   <p>
                     <strong>Phone:</strong> +27-76-159-7719

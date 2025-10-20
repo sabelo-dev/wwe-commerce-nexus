@@ -70,7 +70,7 @@ const HomePage: React.FC = () => {
   return (
     <div>
       <SEO
-        title="The Hermetist - Your Premier Online Marketplace"
+        title="Synergy Mall - Your Premier Online Marketplace"
         description="Discover quality products from trusted vendors. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout."
         keywords="online marketplace, ecommerce, shop online, vendors, products, best deals"
         structuredData={structuredData}

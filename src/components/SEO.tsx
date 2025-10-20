@@ -12,8 +12,8 @@ interface SEOProps {
 }
 
 const SEO = ({
-  title = 'The Hermetist - Your Premier Online Marketplace',
-  description = 'Discover quality products from trusted vendors at The Hermetist. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.',
+  title = 'Synergy Mall - Your Premier Online Marketplace',
+  description = 'Discover quality products from trusted vendors at Synergy Mall. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.',
   keywords = 'online marketplace, ecommerce, shopping, vendors, products, electronics, fashion, home goods',
   image = 'https://lovable.dev/opengraph-image-p98pqg.png',
   url,
@@ -21,7 +21,7 @@ const SEO = ({
   structuredData,
   noindex = false,
 }: SEOProps) => {
-  const fullTitle = title.includes('The Hermetist') ? title : `${title} | The Hermetist`;
+  const fullTitle = title.includes('Synergy Mall') ? title : `${title} | Synergy Mall`;
   const canonicalUrl = url || typeof window !== 'undefined' ? window.location.href : '';
 
   return (
@@ -40,7 +40,7 @@ const SEO = ({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
-      <meta property="og:site_name" content="The Hermetist" />
+      <meta property="og:site_name" content="Synergy Mall" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
