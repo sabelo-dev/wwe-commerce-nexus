@@ -7,7 +7,7 @@ Launched: 2025
 
 Type: Multivendor Online Store
 
-Parent Company: Lifestyle Synerge International [LSI] (established in 2016)
+Parent Company: Lifestyle Synergy International [LSI] (established in 2016)
 
 Mission: To bridge businesses and customers through a robust digital commerce ecosystem.
 
