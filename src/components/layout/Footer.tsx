@@ -12,22 +12,22 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Column */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">About Synergy Mall</h3>
+            <h3 className="text-lg font-semibold mb-4">About LSI Mall</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Synergy Mall connecting buyers and sellers since 2025. Our mission is to provide the best shopping
+              LSI Mall connecting buyers and sellers since 2025. Our mission is to provide the best shopping
               experience with quality products and exceptional service.
             </p>
             <div className="flex space-x-4 mt-4">
-              <a href="https://facebook.com/synergymall/" className="text-gray-300 hover:text-white">
+              <a href="https://facebook.com/lsimall/" className="text-gray-300 hover:text-white">
                 <Facebook size={20} />
               </a>
-              <a href="https://x.com/synergymall/" className="text-gray-300 hover:text-white">
+              <a href="https://x.com/lsimall/" className="text-gray-300 hover:text-white">
                 <Twitter size={20} />
               </a>
-              <a href="https://www.instagram.com/synergymall/" className="text-gray-300 hover:text-white">
+              <a href="https://www.instagram.com/lsimall/" className="text-gray-300 hover:text-white">
                 <Instagram size={20} />
               </a>
-              <a href="https://youtube.com//@synergymall" className="text-gray-300 hover:text-white">
+              <a href="https://youtube.com//@lsimall" className="text-gray-300 hover:text-white">
                 <Youtube size={20} />
               </a>
             </div>
@@ -116,7 +116,7 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 flex-shrink-0" />
-                <span>support@synergymall.co.za</span>
+                <span>support@lsimall.co.za</span>
               </li>
             </ul>
           </div>
@@ -146,7 +146,7 @@ const Footer: React.FC = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400 mt-8">
-          <p>&copy; {currentYear} Synergy Mall. All rights reserved.</p>
+          <p>&copy; {currentYear} LSI Mall. All rights reserved.</p>
         </div>
       </div>
     </footer>

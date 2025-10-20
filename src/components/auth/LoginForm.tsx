@@ -44,7 +44,7 @@ const LoginForm: React.FC = () => {
     <div className="w-full max-w-md space-y-6 p-6 bg-white rounded-lg shadow-md">
       <div className="text-center">
         <h1 className="text-2xl font-bold">Welcome Back</h1>
-        <p className="text-gray-600 mt-2">Sign in to your Synergy Mall account</p>
+        <p className="text-gray-600 mt-2">Sign in to your LSI Mall account</p>
       </div>
 
       <Form {...form}>
