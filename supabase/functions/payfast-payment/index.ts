@@ -103,10 +103,27 @@ serve(async (req) => {
 
     const paymentData: PayFastPaymentData = await req.json();
 
-    // Get PayFast credentials from secrets (fallback to test credentials)
+    // Get PayFast credentials from secrets
     const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "10000100";
     const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY") || "46f0cd694581a";
     const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "jt7NOE43FZPn";
+
+    // Use sandbox for testing, production URL should be set in env
+    const payfastUrl = Deno.env.get("PAYFAST_URL") || "https://sandbox.payfast.co.za/eng/process";
+
+    if (!merchantId || !merchantKey || !passphrase) {
+      console.error("PayFast credentials not configured");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Payment gateway not configured properly" 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Create payment form data
     const formData = {
@@ -131,9 +148,10 @@ serve(async (req) => {
 
     // Log payment attempt for audit
     console.log(`Payment initiated by user ${user.id} for amount ${paymentData.amount}`);
+    console.log(`Payment ID: ${formData.m_payment_id}`);
 
     // Store payment record in database
-    await supabaseClient.from("orders").insert({
+    const { error: orderError } = await supabaseClient.from("orders").insert({
       user_id: user.id,
       total: paymentData.amount,
       status: "pending",
@@ -142,11 +160,16 @@ serve(async (req) => {
       shipping_address: {}, // This should be provided by the client
     });
 
+    if (orderError) {
+      console.error("Failed to create order:", orderError);
+      // Continue anyway as the payment might still succeed
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         formData: { ...formData, signature },
-        action: "https://payfast.co.za/eng/process", // Use production URL in production
+        action: payfastUrl,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from "react-helmet-async";
 
 interface SEOProps {
   title?: string;
@@ -6,23 +6,35 @@ interface SEOProps {
   keywords?: string;
   image?: string;
   url?: string;
-  type?: 'website' | 'product' | 'article';
+  type?: "website" | "product" | "article";
   structuredData?: object;
   noindex?: boolean;
 }
 
 const SEO = ({
+<<<<<<< HEAD
   title = 'LSI Mall - Your Premier Online Marketplace',
   description = 'Discover quality products from trusted vendors at LSI Mall. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.',
   keywords = 'online marketplace, ecommerce, shopping, vendors, products, electronics, fashion, home goods',
   image = 'https://lovable.dev/opengraph-image-p98pqg.png',
+=======
+  title = "LSI Mall - Your Premier Online Marketplace",
+  description = "Discover quality products from trusted vendors at The Hermetist. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.",
+  keywords = "online marketplace, ecommerce, shopping, vendors, products, electronics, fashion, home goods",
+  image = "https://lovable.dev/opengraph-image-p98pqg.png",
+>>>>>>> 3f14b6ca9c8d3592cda398bd53da38071a02d1cf
   url,
-  type = 'website',
+  type = "website",
   structuredData,
   noindex = false,
 }: SEOProps) => {
+<<<<<<< HEAD
   const fullTitle = title.includes('LSI Mall') ? title : `${title} | LSI Mall`;
   const canonicalUrl = url || typeof window !== 'undefined' ? window.location.href : '';
+=======
+  const fullTitle = title.includes("LSI Mall") ? title : `${title} | The Hermetist`;
+  const canonicalUrl = url || typeof window !== "undefined" ? window.location.href : "";
+>>>>>>> 3f14b6ca9c8d3592cda398bd53da38071a02d1cf
 
   return (
     <Helmet>
@@ -50,11 +62,7 @@ const SEO = ({
       <meta name="twitter:image" content={image} />
 
       {/* Structured Data */}
-      {structuredData && (
-        <script type="application/ld+json">
-          {JSON.stringify(structuredData)}
-        </script>
-      )}
+      {structuredData && <script type="application/ld+json">{JSON.stringify(structuredData)}</script>}
     </Helmet>
   );
 };
