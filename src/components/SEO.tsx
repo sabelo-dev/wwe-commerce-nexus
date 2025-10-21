@@ -12,29 +12,17 @@ interface SEOProps {
 }
 
 const SEO = ({
-<<<<<<< HEAD
-  title = 'LSI Mall - Your Premier Online Marketplace',
-  description = 'Discover quality products from trusted vendors at LSI Mall. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.',
-  keywords = 'online marketplace, ecommerce, shopping, vendors, products, electronics, fashion, home goods',
-  image = 'https://lovable.dev/opengraph-image-p98pqg.png',
-=======
   title = "LSI Mall - Your Premier Online Marketplace",
   description = "Discover quality products from trusted vendors at LSI Mall. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.",
   keywords = "online marketplace, ecommerce, shopping, vendors, products, electronics, fashion, home goods",
   image = "https://lovable.dev/opengraph-image-p98pqg.png",
->>>>>>> 3f14b6ca9c8d3592cda398bd53da38071a02d1cf
   url,
   type = "website",
   structuredData,
   noindex = false,
 }: SEOProps) => {
-<<<<<<< HEAD
-  const fullTitle = title.includes('LSI Mall') ? title : `${title} | LSI Mall`;
-  const canonicalUrl = url || typeof window !== 'undefined' ? window.location.href : '';
-=======
   const fullTitle = title.includes("LSI Mall") ? title : `${title} | LSI Mall`;
   const canonicalUrl = url || typeof window !== "undefined" ? window.location.href : "";
->>>>>>> 3f14b6ca9c8d3592cda398bd53da38071a02d1cf
 
   return (
     <Helmet>
