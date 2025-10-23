@@ -1,10 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, Eye, RotateCcw, X } from "lucide-react";
+import OrderDetailsDialog from "./OrderDetailsDialog";
 
 const ConsumerOrders: React.FC = () => {
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   // Mock data - replace with actual API calls
   const orders = [
     {
@@ -68,6 +72,11 @@ const ConsumerOrders: React.FC = () => {
   const canReturn = (status: string) => status === 'delivered';
   const canReorder = (status: string) => ['delivered', 'cancelled'].includes(status);
 
+  const handleViewDetails = (order: any) => {
+    setSelectedOrder(order);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -125,7 +134,7 @@ const ConsumerOrders: React.FC = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-2 border-t">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleViewDetails(order)}>
                     <Eye className="h-4 w-4 mr-1" />
                     View Details
                   </Button>
@@ -156,6 +165,12 @@ const ConsumerOrders: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      <OrderDetailsDialog
+        order={selectedOrder}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
