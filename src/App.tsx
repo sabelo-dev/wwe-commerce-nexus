@@ -10,6 +10,7 @@ import Layout from "@/components/layout/Layout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Page imports
+import Index from "@/pages/Index";
 import HomePage from "@/pages/HomePage";
 import ShopPage from "@/pages/ShopPage";
 import ProductPage from "@/pages/ProductPage";
@@ -62,8 +63,11 @@ function App() {
           <CartProvider>
             <Router>
             <Routes>
+              {/* Landing page without layout */}
+              <Route index element={<Index />} />
+              
               <Route path="/" element={<Layout />}>
-                <Route index element={<HomePage />} />
+                <Route path="home" element={<HomePage />} />
                 <Route path="shop" element={<ShopPage />} />
                 <Route path="store/:storeSlug" element={<StorefrontPage />} />
                 <Route path="product/:slug" element={<ProductPage />} />
