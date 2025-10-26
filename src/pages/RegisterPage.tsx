@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Navigate } from "react-router-dom";
 import RegisterForm from "@/components/auth/RegisterForm";
@@ -15,11 +14,9 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
-          Create an Account
-        </h2>
+        <h2 className="text-center text-3xl font-extrabold text-gray-900">Create an Account</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Join SIM Online to start shopping and tracking your orders
+          Join 1145 Lifestyle to start shopping and tracking your orders
         </p>
       </div>
 

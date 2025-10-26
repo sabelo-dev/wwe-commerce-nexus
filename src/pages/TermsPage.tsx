@@ -29,8 +29,8 @@ const TermsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  Welcome to SIM Online. These Terms of Service ("Terms") govern your use of our website and services.
-                  By using our platform, you agree to be bound by these terms.
+                  Welcome to 1145 Lifestyle. These Terms of Service ("Terms") govern your use of our website and
+                  services. By using our platform, you agree to be bound by these terms.
                 </p>
                 <p className="text-gray-700">
                   If you do not agree with any of these terms, you may not use our services.

@@ -30,8 +30,8 @@ const PrivacyPage: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <p className="text-gray-700">
-                  At SIM Online, we are committed to protecting your privacy and ensuring the security of your personal
-                  information. This Privacy Policy explains how we collect, use, and safeguard your data.
+                  At 1145 Lifestyle, we are committed to protecting your privacy and ensuring the security of your
+                  personal information. This Privacy Policy explains how we collect, use, and safeguard your data.
                 </p>
                 <Alert>
                   <Shield className="h-4 w-4" />
