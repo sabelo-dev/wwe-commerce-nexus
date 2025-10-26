@@ -12,8 +12,8 @@ interface SEOProps {
 }
 
 const SEO = ({
-  title = "LSI Mall - Your Premier Online Marketplace",
-  description = "Discover quality products from trusted vendors at LSI Mall. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.",
+  title = "1145 Lifestyle - Your Premier Online Marketplace",
+  description = "Discover quality products from trusted vendors at 1145 Lifestyle. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout.",
   keywords = "online marketplace, ecommerce, shopping, vendors, products, electronics, fashion, home goods",
   image = "https://lovable.dev/opengraph-image-p98pqg.png",
   url,
@@ -21,7 +21,7 @@ const SEO = ({
   structuredData,
   noindex = false,
 }: SEOProps) => {
-  const fullTitle = title.includes("LSI Mall") ? title : `${title} | LSI Mall`;
+  const fullTitle = title.includes("1145 Lifestyle") ? title : `${title} | 1145 Lifestyle`;
   const canonicalUrl = url || typeof window !== "undefined" ? window.location.href : "";
 
   return (

@@ -1,13 +1,13 @@
-LSI Mall is a next-generation multivendor online marketplace launched in 2025, designed to empower businesses of all sizes to sell online with ease. Built for scalability, security, and performance, wweapp enables vendors to manage their storefronts independently while providing customers with a seamless and engaging shopping experience.
+1145 Lifestyle is a next-generation multivendor online marketplace launched in 2025, designed to empower businesses of all sizes to sell online with ease. Built for scalability, security, and performance, wweapp enables vendors to manage their storefronts independently while providing customers with a seamless and engaging shopping experience.
 
 Overview
-Platform Name: LSI Mall
+Platform Name: 1145 Lifestyle
 
 Launched: 2025
 
 Type: Multivendor Online Store
 
-Parent Company: Lifestyle Synergy International [LSI] (established in 2016)
+Parent Company: Lifestyle Solutions & Innovations [LSI] (established in 2016)
 
 Mission: To bridge businesses and customers through a robust digital commerce ecosystem.
 

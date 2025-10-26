@@ -20,12 +20,12 @@ const SubcategoryPage: React.FC = () => {
         setLoading(true);
         const categories = await fetchCategories(true);
         const foundCategory = categories.find((c) => c.slug === categorySlug);
-        
+
         if (foundCategory) {
           setCategory(foundCategory);
           const subcategories = await fetchSubcategoriesByCategory(foundCategory.id);
           const foundSubcategory = subcategories.find((s) => s.slug === subcategorySlug);
-          
+
           if (foundSubcategory) {
             setSubcategory(foundSubcategory);
             const subcategoryProducts = await fetchProductsBySubcategory(foundCategory.name, foundSubcategory.name);
@@ -55,8 +55,8 @@ const SubcategoryPage: React.FC = () => {
   }
 
   const breadcrumbItems = [
-    { name: 'Home', url: '/' },
-    { name: 'Categories', url: '/categories' },
+    { name: "Home", url: "/" },
+    { name: "Categories", url: "/categories" },
     { name: category.name, url: `/category/${category.slug}` },
     { name: subcategory.name, url: `/category/${category.slug}/${subcategory.slug}` },
   ];
@@ -64,7 +64,7 @@ const SubcategoryPage: React.FC = () => {
   return (
     <div className="bg-background">
       <SEO
-        title={`${subcategory.name} - ${category.name} | LSI Mall`}
+        title={`${subcategory.name} - ${category.name} | 1145 Lifestyle`}
         description={`Shop ${subcategory.name.toLowerCase()} in our ${category.name.toLowerCase()} category. Quality products from trusted vendors at competitive prices.`}
         keywords={`${subcategory.name}, ${category.name}, shop ${subcategory.name.toLowerCase()}, buy ${subcategory.name.toLowerCase()}`}
         structuredData={getBreadcrumbSchema(breadcrumbItems)}
@@ -89,11 +89,10 @@ const SubcategoryPage: React.FC = () => {
         {/* Subcategory Header */}
         <div className="mb-8 relative rounded-lg overflow-hidden bg-gradient-to-r from-primary to-primary/80">
           <div className="relative z-10 p-6 md:p-10">
-            <h1 className="text-2xl md:text-4xl font-bold text-primary-foreground mb-2">
-              {subcategory.name}
-            </h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-primary-foreground mb-2">{subcategory.name}</h1>
             <p className="text-primary-foreground/80 max-w-xl">
-              {subcategory.description || `Explore our collection of ${subcategory.name.toLowerCase()} products. Quality items from trusted vendors at competitive prices.`}
+              {subcategory.description ||
+                `Explore our collection of ${subcategory.name.toLowerCase()} products. Quality items from trusted vendors at competitive prices.`}
             </p>
           </div>
         </div>
@@ -102,8 +101,7 @@ const SubcategoryPage: React.FC = () => {
         <div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <h2 className="text-xl font-semibold">
-              Products in {subcategory.name}{" "}
-              <span className="text-muted-foreground">({products.length})</span>
+              Products in {subcategory.name} <span className="text-muted-foreground">({products.length})</span>
             </h2>
           </div>
 
@@ -117,9 +115,7 @@ const SubcategoryPage: React.FC = () => {
           ) : (
             <div className="text-center py-12 bg-card rounded-lg shadow-sm border">
               <h3 className="text-lg font-medium mb-2">No products found</h3>
-              <p className="text-muted-foreground mb-4">
-                There are currently no products in this subcategory.
-              </p>
+              <p className="text-muted-foreground mb-4">There are currently no products in this subcategory.</p>
               <Link to="/shop">
                 <Button>Continue Shopping</Button>
               </Link>

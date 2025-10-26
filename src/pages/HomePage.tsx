@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Hero from "@/components/home/Hero";
 import CategorySection from "@/components/home/CategorySection";
@@ -6,12 +5,7 @@ import FeaturedProducts from "@/components/home/FeaturedProducts";
 import PromoSection from "@/components/home/PromoSection";
 import SEO from "@/components/SEO";
 import { Product, Category } from "@/types";
-import { 
-  fetchCategories, 
-  fetchFeaturedProducts, 
-  fetchNewArrivals, 
-  fetchPopularProducts 
-} from "@/services/products";
+import { fetchCategories, fetchFeaturedProducts, fetchNewArrivals, fetchPopularProducts } from "@/services/products";
 import { getOrganizationSchema, getWebsiteSchema } from "@/utils/structuredData";
 
 const HomePage: React.FC = () => {
@@ -25,30 +19,30 @@ const HomePage: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        
+
         // Set timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Loading timeout')), 10000)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Loading timeout")), 10000),
         );
-        
+
         const dataPromise = Promise.all([
           fetchCategories(true), // Only show categories with products
           fetchFeaturedProducts(4),
           fetchNewArrivals(4),
-          fetchPopularProducts(4)
+          fetchPopularProducts(4),
         ]);
 
-        const [categoriesData, featuredData, newArrivalsData, popularData] = await Promise.race([
+        const [categoriesData, featuredData, newArrivalsData, popularData] = (await Promise.race([
           dataPromise,
-          timeoutPromise
-        ]) as [any, any, any, any];
+          timeoutPromise,
+        ])) as [any, any, any, any];
 
         setCategories(categoriesData || []);
         setFeaturedProducts(featuredData || []);
         setNewArrivals(newArrivalsData || []);
         setPopularProducts(popularData || []);
       } catch (error) {
-        console.error('Error loading homepage data:', error);
+        console.error("Error loading homepage data:", error);
         // Set empty arrays as fallback
         setCategories([]);
         setFeaturedProducts([]);
@@ -63,14 +57,14 @@ const HomePage: React.FC = () => {
   }, []);
 
   const structuredData = {
-    '@context': 'https://schema.org',
-    '@graph': [getOrganizationSchema(), getWebsiteSchema()],
+    "@context": "https://schema.org",
+    "@graph": [getOrganizationSchema(), getWebsiteSchema()],
   };
 
   return (
     <div>
       <SEO
-        title="LSI Mall - Your Premier Online Marketplace"
+        title="1145 Lifestyle - Your Premier Online Marketplace"
         description="Discover quality products from trusted vendors. Shop electronics, fashion, home goods, and more with fast shipping and secure checkout."
         keywords="online marketplace, ecommerce, shop online, vendors, products, best deals"
         structuredData={structuredData}

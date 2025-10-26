@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +19,7 @@ const Header: React.FC = () => {
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
-  
+
   // Get items and subtotal from cart
   const items = cart?.items || [];
 
@@ -30,7 +29,7 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 flex items-center">
-            <img src="/uploads/logo.png" alt="LSI MALL" className="h-10" />
+            <img src="/uploads/logo.png" alt="1145 Lifestyle" className="h-10" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -42,17 +41,12 @@ const Header: React.FC = () => {
             <Button variant="ghost" size="icon">
               <Search className="h-5 w-5" />
             </Button>
-            
+
             {/* User Menu */}
             <UserMenu user={user} isAdmin={isAdmin} isVendor={isVendor} logout={logout} />
 
             {/* Cart Button */}
-            <Button
-              onClick={toggleCart}
-              variant="ghost"
-              size="icon"
-              className="relative"
-            >
+            <Button onClick={toggleCart} variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               {items.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
@@ -64,11 +58,7 @@ const Header: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden">
-            <button
-              onClick={toggleCart}
-              className="relative p-2 mr-2"
-              aria-label="Cart"
-            >
+            <button onClick={toggleCart} className="relative p-2 mr-2" aria-label="Cart">
               <ShoppingCart className="h-6 w-6" />
               {items.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
