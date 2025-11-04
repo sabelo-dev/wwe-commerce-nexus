@@ -66,8 +66,10 @@ function App() {
               {/* Landing page without layout */}
               <Route index element={<Index />} />
               
+              {/* Home page with integrated header */}
+              <Route path="home" element={<HomePage />} />
+              
               <Route path="/" element={<Layout />}>
-                <Route path="home" element={<HomePage />} />
                 <Route path="shop" element={<ShopPage />} />
                 <Route path="store/:storeSlug" element={<StorefrontPage />} />
                 <Route path="product/:slug" element={<ProductPage />} />
