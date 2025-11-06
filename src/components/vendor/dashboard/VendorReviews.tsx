@@ -63,9 +63,9 @@ const VendorReviews = () => {
 
     try {
       setLoading(true);
-      
-      // Get vendor data first
-      const { data: vendor, error: vendorError } = await supabase
+
+      // First get the vendor record
+      const { data: vendorData, error: vendorError } = await supabase
         .from('vendors')
         .select('id')
         .eq('user_id', user.id)
@@ -73,68 +73,94 @@ const VendorReviews = () => {
 
       if (vendorError) throw vendorError;
 
-      // Get stores for this vendor
-      const { data: stores, error: storesError } = await supabase
+      // Then get the store
+      const { data: storeData } = await supabase
         .from('stores')
-        .select('id')
-        .eq('vendor_id', vendor.id);
+        .select('id, name')
+        .eq('vendor_id', vendorData.id)
+        .single();
 
-      if (storesError) throw storesError;
-
-      if (stores.length === 0) {
+      if (!storeData) {
         setReviews([]);
+        setLoading(false);
         return;
       }
 
-      const storeIds = stores.map(store => store.id);
+      // Get reviews for products in this store
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          products!inner (
+            name,
+            store_id
+          )
+        `)
+        .eq('products.store_id', storeData.id)
+        .order('created_at', { ascending: false });
 
-      // Get products with their reviews (simulated for now)
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .in('store_id', storeIds);
+      if (reviewsError) throw reviewsError;
 
-      if (productsError) throw productsError;
+      if (!reviewsData || reviewsData.length === 0) {
+        setReviews([]);
+        setStats({
+          averageRating: 0,
+          totalReviews: 0,
+          responseRate: 0,
+          positiveReviews: 0
+        });
+        setLoading(false);
+        return;
+      }
 
-      // For now, create simulated reviews based on products
-      // In a real app, you'd have a reviews table
-      const mockReviews = products?.slice(0, 3).map((product, index) => ({
-        id: `REV-${product.id.slice(-3)}`,
-        customer: `Customer ${index + 1}`,
-        customerAvatar: "",
-        product: product.name,
-        rating: 4 + Math.random(),
-        title: "Great product!",
-        comment: `Really happy with this ${product.name}. Good quality and fast delivery.`,
-        date: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        verified: true,
-        helpful: Math.floor(Math.random() * 20),
-        responded: Math.random() > 0.5,
-        response: Math.random() > 0.5 ? "Thank you for your feedback!" : null,
-        sentiment: Math.random() > 0.7 ? "positive" : Math.random() > 0.3 ? "neutral" : "negative",
-        tags: ["quality", "delivery", "value"]
-      })) || [];
+      // Get user profiles separately
+      const userIds = reviewsData.map(r => r.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name, avatar_url')
+        .in('id', userIds);
 
-      setReviews(mockReviews);
+      const profileMap = new Map(profiles?.map(p => [p.id, p]));
 
-      // Calculate stats
-      const avgRating = mockReviews.reduce((sum, r) => sum + r.rating, 0) / mockReviews.length || 0;
-      const responded = mockReviews.filter(r => r.responded).length;
-      const positive = mockReviews.filter(r => r.sentiment === "positive").length;
+      const formattedReviews = reviewsData.map(review => {
+        const profile = profileMap.get(review.user_id);
+        return {
+          id: review.id,
+          customer: profile?.name || 'Anonymous',
+          customerAvatar: profile?.avatar_url || '/placeholder.svg',
+          product: review.products?.name || 'Unknown Product',
+          rating: review.rating,
+          title: review.comment?.split('.')[0] || '',
+          comment: review.comment || '',
+          date: review.created_at,
+          verified: true,
+          helpful: 0,
+          responded: !!review.vendor_response,
+          response: review.vendor_response,
+          sentiment: review.sentiment || 'neutral' as const,
+          tags: []
+        };
+      });
+
+      setReviews(formattedReviews);
+
+      // Calculate statistics
+      const avgRating = formattedReviews.reduce((acc, r) => acc + r.rating, 0) / formattedReviews.length;
+      const responseRate = (formattedReviews.filter(r => r.responded).length / formattedReviews.length) * 100;
+      const positiveCount = formattedReviews.filter(r => r.sentiment === 'positive').length;
 
       setStats({
         averageRating: avgRating,
-        totalReviews: mockReviews.length,
-        responseRate: mockReviews.length > 0 ? (responded / mockReviews.length) * 100 : 0,
-        positiveReviews: positive
+        totalReviews: formattedReviews.length,
+        responseRate,
+        positiveReviews: positiveCount
       });
-
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch reviews",
+        description: "Failed to load reviews",
       });
     } finally {
       setLoading(false);
@@ -200,6 +226,10 @@ const VendorReviews = () => {
 
   if (loading) {
     return <div className="text-center py-8">Loading reviews...</div>;
+  }
+
+  if (reviews.length === 0) {
+    return null;
   }
 
   return (

@@ -1,53 +1,82 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Star, Edit, Trash2, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const ConsumerReviews: React.FC = () => {
   const [editingReview, setEditingReview] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Mock data - replace with actual API calls
-  const reviews = [
-    {
-      id: "1",
-      productName: "Wireless Headphones",
-      productImage: "/public/lovable-uploads/0173f645-3b83-43a6-8daa-2e2f763357b2.png",
-      rating: 5,
-      title: "Excellent sound quality!",
-      comment: "These headphones exceeded my expectations. The sound quality is crystal clear and the battery life is amazing. Highly recommended!",
-      date: "2024-01-15",
-      vendor: "TechStore",
-      status: "published",
-      helpful: 12
-    },
-    {
-      id: "2",
-      productName: "Cotton T-Shirt",
-      productImage: "/public/lovable-uploads/036486dd-58ef-4820-affc-ada0d6e33abf.png",
-      rating: 4,
-      title: "Good quality, comfortable fit",
-      comment: "Nice material and comfortable to wear. The size runs a bit large, so consider ordering one size smaller.",
-      date: "2024-01-12",
-      vendor: "FashionHub",
-      status: "published",
-      helpful: 5
-    },
-    {
-      id: "3",
-      productName: "Kitchen Blender",
-      productImage: "/public/lovable-uploads/0f583fc2-9bf5-430d-aac3-50000174d44c.png",
-      rating: 3,
-      title: "Average performance",
-      comment: "It does the job but not as powerful as I expected. Good for basic blending tasks.",
-      date: "2024-01-08",
-      vendor: "HomeGoods",
-      status: "pending",
-      helpful: 2
+  useEffect(() => {
+    if (user?.id) {
+      fetchReviews();
     }
-  ];
+  }, [user?.id]);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          products (
+            name,
+            slug,
+            stores (
+              name
+            )
+          )
+        `)
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get product images separately
+      const productIds = data?.map(r => r.product_id) || [];
+      const { data: images } = await supabase
+        .from('product_images')
+        .select('product_id, image_url')
+        .in('product_id', productIds)
+        .eq('position', 0);
+
+      const imageMap = new Map(images?.map(img => [img.product_id, img.image_url]));
+
+      const formattedReviews = data?.map(review => ({
+        id: review.id,
+        productName: review.products?.name || 'Unknown Product',
+        productImage: imageMap.get(review.product_id) || '/placeholder.svg',
+        rating: review.rating,
+        title: review.comment?.split('.')[0] || '',
+        comment: review.comment || '',
+        date: new Date(review.created_at).toLocaleDateString(),
+        vendor: review.products?.stores?.name || 'Unknown Store',
+        status: 'published',
+        helpful: 0
+      })) || [];
+
+      setReviews(formattedReviews);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load reviews",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderStars = (rating: number, interactive = false) => {
     return (
@@ -114,6 +143,14 @@ const ConsumerReviews: React.FC = () => {
       </div>
     </DialogContent>
   );
+
+  if (loading) {
+    return <div className="text-center py-8">Loading reviews...</div>;
+  }
+
+  if (reviews.length === 0) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -221,18 +258,6 @@ const ConsumerReviews: React.FC = () => {
         ))}
       </div>
 
-      {reviews.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Star className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No reviews yet</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Share your experience by writing reviews for products you've purchased
-            </p>
-            <Button>Browse Products</Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

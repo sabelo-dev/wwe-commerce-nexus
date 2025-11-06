@@ -40,48 +40,45 @@ const AdminReviews: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch orders data
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(10);
+        setLoading(true);
 
-        // Get user profiles for customer names
-        const userIds = orders?.map(order => order.user_id) || [];
+        // Fetch reviews from database
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('reviews')
+          .select(`
+            *,
+            products (name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (reviewsError) throw reviewsError;
+
+        // Get user profiles separately
+        const userIds = reviewsData?.map(r => r.user_id) || [];
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, name')
           .in('id', userIds);
 
-        const profileMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
+        const profileMap = new Map(profiles?.map(p => [p.id, p.name]));
 
-        // Generate sample reviews from orders (in real app, you'd have a reviews table)
-        const reviewsData: Review[] = orders?.slice(0, 5).map((order, index) => ({
-          id: `r-${order.id}`,
-          productName: `Order ${order.id.slice(0, 8)}`,
-          customerName: profileMap.get(order.user_id) || 'Unknown Customer',
-          rating: Math.floor(Math.random() * 5) + 1,
-          comment: 'This is a sample review generated from order data.',
-          date: new Date(order.created_at).toISOString().split('T')[0],
-          status: index % 3 === 0 ? 'pending' : 'approved',
-          flagged: index % 4 === 0
+        const formattedReviews: Review[] = reviewsData?.map(review => ({
+          id: review.id,
+          productName: review.products?.name || 'Unknown Product',
+          customerName: profileMap.get(review.user_id) || 'Anonymous',
+          rating: review.rating,
+          comment: review.comment || '',
+          date: new Date(review.created_at).toLocaleDateString(),
+          status: review.vendor_response ? 'approved' : 'pending',
+          flagged: review.flagged || false
         })) || [];
 
-        // Generate sample complaints from orders
-        const complaintsData: Complaint[] = orders?.slice(0, 3).map((order, index) => ({
-          id: `c-${order.id}`,
-          type: ['product', 'vendor', 'shipping', 'other'][index % 4] as any,
-          subject: `Issue with order ${order.id.slice(0, 8)}`,
-          description: 'This is a sample complaint generated from order data.',
-          customerName: profileMap.get(order.user_id) || 'Unknown Customer',
-          date: new Date(order.created_at).toISOString().split('T')[0],
-          status: ['open', 'investigating', 'resolved'][index % 3] as any,
-          priority: ['low', 'medium', 'high'][index % 3] as any
-        })) || [];
+        setReviews(formattedReviews);
+        setComplaints([]);
 
-        setReviews(reviewsData);
-        setComplaints(complaintsData);
+        if (formattedReviews.length === 0) {
+          setReviews([]);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -134,6 +131,10 @@ const AdminReviews: React.FC = () => {
         <div className="text-center">Loading reviews and complaints...</div>
       </div>
     );
+  }
+
+  if (reviews.length === 0 && complaints.length === 0) {
+    return null;
   }
 
   return (
