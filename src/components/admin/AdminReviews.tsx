@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StarIcon, Flag, MessageCircle, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StarIcon, Flag, MessageCircle, User, SlidersHorizontal } from "lucide-react";
 
 interface Review {
   id: string;
@@ -36,6 +37,11 @@ const AdminReviews: React.FC = () => {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Filter and sort states
+  const [filterRating, setFilterRating] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date-desc");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,6 +122,41 @@ const AdminReviews: React.FC = () => {
     });
   };
 
+  // Filter and sort reviews
+  const filteredAndSortedReviews = useMemo(() => {
+    let filtered = [...reviews];
+    
+    // Filter by rating
+    if (filterRating !== "all") {
+      filtered = filtered.filter(r => r.rating === parseInt(filterRating));
+    }
+    
+    // Filter by status
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(r => r.status === filterStatus);
+    }
+    
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "date-desc":
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "date-asc":
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "rating-high":
+          return b.rating - a.rating;
+        case "rating-low":
+          return a.rating - b.rating;
+        case "product":
+          return a.productName.localeCompare(b.productName);
+        default:
+          return 0;
+      }
+    });
+    
+    return filtered;
+  }, [reviews, filterRating, filterStatus, sortBy]);
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <StarIcon
@@ -153,7 +194,74 @@ const AdminReviews: React.FC = () => {
               <CardDescription>Manage and moderate customer product reviews</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {reviews.map((review) => (
+              {/* Filters and Sorting */}
+              <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Filters:</span>
+                </div>
+                
+                <Select value={filterRating} onValueChange={setFilterRating}>
+                  <SelectTrigger className="w-[140px] bg-background">
+                    <SelectValue placeholder="All Ratings" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all">All Ratings</SelectItem>
+                    <SelectItem value="5">5 Stars</SelectItem>
+                    <SelectItem value="4">4 Stars</SelectItem>
+                    <SelectItem value="3">3 Stars</SelectItem>
+                    <SelectItem value="2">2 Stars</SelectItem>
+                    <SelectItem value="1">1 Star</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[140px] bg-background">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[160px] bg-background">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="date-desc">Newest First</SelectItem>
+                    <SelectItem value="date-asc">Oldest First</SelectItem>
+                    <SelectItem value="rating-high">Highest Rating</SelectItem>
+                    <SelectItem value="rating-low">Lowest Rating</SelectItem>
+                    <SelectItem value="product">Product A-Z</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {(filterRating !== "all" || filterStatus !== "all" || sortBy !== "date-desc") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setFilterRating("all");
+                      setFilterStatus("all");
+                      setSortBy("date-desc");
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+
+              {/* Reviews List */}
+              {filteredAndSortedReviews.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No reviews match your filters
+                </div>
+              ) : (
+                filteredAndSortedReviews.map((review) => (
                 <div key={review.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex justify-between items-start">
                     <div className="space-y-2">
@@ -201,7 +309,8 @@ const AdminReviews: React.FC = () => {
                     </div>
                   )}
                 </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
