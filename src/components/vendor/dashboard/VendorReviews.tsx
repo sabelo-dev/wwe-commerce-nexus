@@ -420,36 +420,73 @@ const VendorReviews = () => {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Rating Distribution - Removed, now shown above */}
-        
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Bulk Response Templates
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Flag className="h-4 w-4 mr-2" />
-                Review Flagged Content
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Sentiment Report
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Set Auto-Alerts
-              </Button>
+      {/* Action Items */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Action Items</CardTitle>
+          <CardDescription>Reviews that need your attention</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+              setFilterRating("all");
+              const unansweredReviews = reviews.filter(r => !r.responded);
+              if (unansweredReviews.length > 0) {
+                toast({
+                  title: "Unanswered Reviews",
+                  description: `You have ${unansweredReviews.length} reviews awaiting response.`,
+                });
+              }
+            }}>
+              <div className="flex items-center justify-between mb-2">
+                <MessageSquare className="h-5 w-5 text-orange-600" />
+                <Badge variant="outline">{analytics.totalReviews - analytics.respondedCount}</Badge>
+              </div>
+              <div className="text-sm font-medium">Unanswered Reviews</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {analytics.totalReviews - analytics.respondedCount === 0 
+                  ? 'All caught up!' 
+                  : 'Respond to build trust'}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+              setFilterRating("1");
+            }}>
+              <div className="flex items-center justify-between mb-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <Badge variant="destructive">{analytics.ratingDistribution[1] + analytics.ratingDistribution[2]}</Badge>
+              </div>
+              <div className="text-sm font-medium">Low Ratings</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {analytics.ratingDistribution[1] + analytics.ratingDistribution[2] === 0 
+                  ? 'Great job!' 
+                  : '1-2 star reviews'}
+              </p>
+            </div>
+
+            <div className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+              const negativeReviews = reviews.filter(r => r.sentiment === 'negative' && !r.responded);
+              toast({
+                title: "Negative Feedback",
+                description: negativeReviews.length === 0 
+                  ? 'No negative reviews without response!' 
+                  : `${negativeReviews.length} negative reviews need attention.`,
+                variant: negativeReviews.length === 0 ? "default" : "destructive"
+              });
+            }}>
+              <div className="flex items-center justify-between mb-2">
+                <TrendingDown className="h-5 w-5 text-red-600" />
+                <Badge variant="secondary">{reviews.filter(r => r.sentiment === 'negative' && !r.responded).length}</Badge>
+              </div>
+              <div className="text-sm font-medium">Needs Response</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Negative reviews without reply
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Search and Filters */}
       <Card>
