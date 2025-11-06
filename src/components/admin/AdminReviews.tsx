@@ -133,9 +133,6 @@ const AdminReviews: React.FC = () => {
     );
   }
 
-  {/*if (reviews.length === 0 && complaints.length === 0) {
-    return null;*/}
-  }
 
   return (
     <div className="space-y-6">
