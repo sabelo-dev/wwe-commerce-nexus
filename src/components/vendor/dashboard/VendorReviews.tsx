@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,12 +47,6 @@ const VendorReviews = () => {
   const [responseText, setResponseText] = useState("");
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    averageRating: 0,
-    totalReviews: 0,
-    responseRate: 0,
-    positiveReviews: 0
-  });
 
   useEffect(() => {
     fetchReviews();
@@ -103,12 +97,6 @@ const VendorReviews = () => {
 
       if (!reviewsData || reviewsData.length === 0) {
         setReviews([]);
-        setStats({
-          averageRating: 0,
-          totalReviews: 0,
-          responseRate: 0,
-          positiveReviews: 0
-        });
         setLoading(false);
         return;
       }
@@ -143,18 +131,6 @@ const VendorReviews = () => {
       });
 
       setReviews(formattedReviews);
-
-      // Calculate statistics
-      const avgRating = formattedReviews.reduce((acc, r) => acc + r.rating, 0) / formattedReviews.length;
-      const responseRate = (formattedReviews.filter(r => r.responded).length / formattedReviews.length) * 100;
-      const positiveCount = formattedReviews.filter(r => r.sentiment === 'positive').length;
-
-      setStats({
-        averageRating: avgRating,
-        totalReviews: formattedReviews.length,
-        responseRate,
-        positiveReviews: positiveCount
-      });
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast({
@@ -209,6 +185,40 @@ const VendorReviews = () => {
     return matchesSearch && matchesRating;
   });
 
+  // Calculate comprehensive analytics
+  const analytics = useMemo(() => {
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews > 0 
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews 
+      : 0;
+    const respondedCount = reviews.filter(r => r.responded).length;
+    const responseRate = totalReviews > 0 ? (respondedCount / totalReviews) * 100 : 0;
+    const positiveCount = reviews.filter(r => r.sentiment === 'positive').length;
+    const neutralCount = reviews.filter(r => r.sentiment === 'neutral').length;
+    const negativeCount = reviews.filter(r => r.sentiment === 'negative').length;
+    const flaggedCount = 0; // Can be extended when flagging is implemented
+    
+    const ratingDistribution = {
+      5: reviews.filter(r => r.rating === 5).length,
+      4: reviews.filter(r => r.rating === 4).length,
+      3: reviews.filter(r => r.rating === 3).length,
+      2: reviews.filter(r => r.rating === 2).length,
+      1: reviews.filter(r => r.rating === 1).length,
+    };
+    
+    return {
+      totalReviews,
+      avgRating,
+      responseRate,
+      respondedCount,
+      positiveCount,
+      neutralCount,
+      negativeCount,
+      flaggedCount,
+      ratingDistribution
+    };
+  }, [reviews]);
+
   const ratingDistribution = [5, 4, 3, 2, 1].map(rating => ({
     stars: rating,
     count: reviews.filter(r => Math.floor(r.rating) === rating).length,
@@ -237,10 +247,6 @@ const VendorReviews = () => {
     return <div className="text-center py-8">Loading reviews...</div>;
   }
 
-  if (reviews.length === 0) {
-    return null;
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -254,15 +260,30 @@ const VendorReviews = () => {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
+            <div className="text-2xl font-bold">{analytics.totalReviews}</div>
+            <p className="text-xs text-muted-foreground">
+              {analytics.totalReviews === 0 ? 'No reviews yet' : 'Customer feedback received'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+          </CardHeader>
+          <CardContent>
             <div className="flex items-center gap-2">
-              <div className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</div>
-              <StarRating rating={stats.averageRating} className="w-4 h-4" />
+              <div className="text-2xl font-bold">{analytics.avgRating.toFixed(1)}</div>
+              {analytics.totalReviews > 0 && <StarRating rating={analytics.avgRating} className="w-4 h-4" />}
             </div>
-            <p className="text-xs text-muted-foreground">{stats.totalReviews} total reviews</p>
+            <p className="text-xs text-muted-foreground">
+              {analytics.totalReviews === 0 ? 'No ratings yet' : 'Out of 5 stars'}
+            </p>
           </CardContent>
         </Card>
 
@@ -272,9 +293,9 @@ const VendorReviews = () => {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.responseRate.toFixed(0)}%</div>
+            <div className="text-2xl font-bold">{analytics.responseRate.toFixed(0)}%</div>
             <p className="text-xs text-muted-foreground">
-              {reviews.filter(r => r.responded).length} of {stats.totalReviews} responded
+              {analytics.respondedCount} of {analytics.totalReviews} responded
             </p>
           </CardContent>
         </Card>
@@ -285,41 +306,43 @@ const VendorReviews = () => {
             <ThumbsUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.positiveReviews}</div>
+            <div className="text-2xl font-bold">{analytics.positiveCount}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.totalReviews > 0 ? ((stats.positiveReviews / stats.totalReviews) * 100).toFixed(0) : 0}% of all reviews
+              {analytics.totalReviews > 0 ? ((analytics.positiveCount / analytics.totalReviews) * 100).toFixed(0) : 0}% positive sentiment
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Flagged Reviews</CardTitle>
-            <Flag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      {/* Detailed Analytics Row */}
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Rating Distribution */}
         <Card>
           <CardHeader>
             <CardTitle>Rating Distribution</CardTitle>
+            <CardDescription>Breakdown of customer ratings</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {ratingDistribution.map((rating) => (
-                <div key={rating.stars} className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 w-12">
-                    <span className="text-sm">{rating.stars}</span>
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <div key={rating} className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 w-20">
+                    <span className="font-medium">{rating}</span>
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   </div>
-                  <Progress value={rating.percentage} className="flex-1" />
-                  <span className="text-sm text-muted-foreground w-8">{rating.count}</span>
+                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all"
+                      style={{ 
+                        width: analytics.totalReviews > 0 
+                          ? `${(analytics.ratingDistribution[rating as keyof typeof analytics.ratingDistribution] / analytics.totalReviews) * 100}%` 
+                          : '0%' 
+                      }}
+                    />
+                  </div>
+                  <span className="w-12 text-right font-medium">
+                    {analytics.ratingDistribution[rating as keyof typeof analytics.ratingDistribution]}
+                  </span>
                 </div>
               ))}
             </div>
@@ -330,40 +353,76 @@ const VendorReviews = () => {
         <Card>
           <CardHeader>
             <CardTitle>Sentiment Analysis</CardTitle>
+            <CardDescription>Customer feedback sentiment breakdown</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Positive</span>
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  <div>
+                    <div className="font-medium text-green-900 dark:text-green-100">Positive</div>
+                    <div className="text-xs text-green-700 dark:text-green-300">{analytics.positiveCount} reviews</div>
+                  </div>
                 </div>
-                <span className="font-medium">
-                  {stats.totalReviews > 0 ? ((stats.positiveReviews / stats.totalReviews) * 100).toFixed(0) : 0}%
+                <span className="text-2xl font-bold text-green-600">
+                  {analytics.totalReviews > 0 ? ((analytics.positiveCount / analytics.totalReviews) * 100).toFixed(0) : 0}%
                 </span>
               </div>
-              <div className="flex items-center justify-between">
+              
+              <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm">Neutral</span>
+                  <Clock className="h-5 w-5 text-yellow-600" />
+                  <div>
+                    <div className="font-medium text-yellow-900 dark:text-yellow-100">Neutral</div>
+                    <div className="text-xs text-yellow-700 dark:text-yellow-300">{analytics.neutralCount} reviews</div>
+                  </div>
                 </div>
-                <span className="font-medium">
-                  {stats.totalReviews > 0 ? (((reviews.filter(r => r.sentiment === "neutral").length) / stats.totalReviews) * 100).toFixed(0) : 0}%
+                <span className="text-2xl font-bold text-yellow-600">
+                  {analytics.totalReviews > 0 ? ((analytics.neutralCount / analytics.totalReviews) * 100).toFixed(0) : 0}%
                 </span>
               </div>
-              <div className="flex items-center justify-between">
+              
+              <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                  <span className="text-sm">Negative</span>
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                  <div>
+                    <div className="font-medium text-red-900 dark:text-red-100">Negative</div>
+                    <div className="text-xs text-red-700 dark:text-red-300">{analytics.negativeCount} reviews</div>
+                  </div>
                 </div>
-                <span className="font-medium">
-                  {stats.totalReviews > 0 ? (((reviews.filter(r => r.sentiment === "negative").length) / stats.totalReviews) * 100).toFixed(0) : 0}%
+                <span className="text-2xl font-bold text-red-600">
+                  {analytics.totalReviews > 0 ? ((analytics.negativeCount / analytics.totalReviews) * 100).toFixed(0) : 0}%
                 </span>
               </div>
             </div>
           </CardContent>
         </Card>
+      </div>
 
+      {/* Response Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Response Status</CardTitle>
+          <CardDescription>Track your engagement with customer feedback</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-3xl font-bold text-green-600">{analytics.respondedCount}</div>
+              <Badge variant="default" className="mt-2">Responded</Badge>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-3xl font-bold text-orange-600">{analytics.totalReviews - analytics.respondedCount}</div>
+              <Badge variant="outline" className="mt-2">Awaiting Response</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Rating Distribution - Removed, now shown above */}
+        
         {/* Quick Actions */}
         <Card>
           <CardHeader>
@@ -409,7 +468,7 @@ const VendorReviews = () => {
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Filter by rating" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="all">All Ratings</SelectItem>
                 <SelectItem value="5">5 Stars</SelectItem>
                 <SelectItem value="4">4 Stars</SelectItem>
