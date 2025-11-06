@@ -169,7 +169,16 @@ const VendorReviews = () => {
 
   const respondToReview = async (reviewId: string, response: string) => {
     try {
-      // In a real app, you'd update the review in the database
+      const { error } = await supabase
+        .from('reviews')
+        .update({
+          vendor_response: response,
+          vendor_responded_at: new Date().toISOString()
+        })
+        .eq('id', reviewId);
+
+      if (error) throw error;
+
       setReviews(reviews.map(review => 
         review.id === reviewId 
           ? { ...review, responded: true, response }
