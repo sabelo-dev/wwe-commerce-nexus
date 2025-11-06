@@ -133,8 +133,8 @@ const AdminReviews: React.FC = () => {
     );
   }
 
-  if (reviews.length === 0 && complaints.length === 0) {
-    return null;
+  {/*if (reviews.length === 0 && complaints.length === 0) {
+    return null;*/}
   }
 
   return (
