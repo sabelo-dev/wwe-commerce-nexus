@@ -122,6 +122,36 @@ const AdminReviews: React.FC = () => {
     });
   };
 
+  // Calculate analytics
+  const analytics = useMemo(() => {
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews > 0 
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews 
+      : 0;
+    const pendingCount = reviews.filter(r => r.status === "pending").length;
+    const approvedCount = reviews.filter(r => r.status === "approved").length;
+    const rejectedCount = reviews.filter(r => r.status === "rejected").length;
+    const flaggedCount = reviews.filter(r => r.flagged).length;
+    
+    const ratingDistribution = {
+      5: reviews.filter(r => r.rating === 5).length,
+      4: reviews.filter(r => r.rating === 4).length,
+      3: reviews.filter(r => r.rating === 3).length,
+      2: reviews.filter(r => r.rating === 2).length,
+      1: reviews.filter(r => r.rating === 1).length,
+    };
+    
+    return {
+      totalReviews,
+      avgRating,
+      pendingCount,
+      approvedCount,
+      rejectedCount,
+      flaggedCount,
+      ratingDistribution
+    };
+  }, [reviews]);
+
   // Filter and sort reviews
   const filteredAndSortedReviews = useMemo(() => {
     let filtered = [...reviews];
@@ -180,6 +210,95 @@ const AdminReviews: React.FC = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Reviews & Complaints</h2>
       </div>
+
+      {/* Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Total Reviews</CardDescription>
+            <CardTitle className="text-3xl">{analytics.totalReviews}</CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Average Rating</CardDescription>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-3xl">{analytics.avgRating.toFixed(1)}</CardTitle>
+              <StarIcon className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+            </div>
+          </CardHeader>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Pending Reviews</CardDescription>
+            <CardTitle className="text-3xl">{analytics.pendingCount}</CardTitle>
+          </CardHeader>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>Flagged Reviews</CardDescription>
+            <CardTitle className="text-3xl text-destructive">{analytics.flaggedCount}</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      {/* Status Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Review Status Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold">{analytics.approvedCount}</div>
+              <Badge variant="default" className="mt-2">Approved</Badge>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{analytics.pendingCount}</div>
+              <Badge variant="outline" className="mt-2">Pending</Badge>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{analytics.rejectedCount}</div>
+              <Badge variant="destructive" className="mt-2">Rejected</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Rating Distribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Rating Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[5, 4, 3, 2, 1].map((rating) => (
+              <div key={rating} className="flex items-center gap-3">
+                <div className="flex items-center gap-1 w-20">
+                  <span className="font-medium">{rating}</span>
+                  <StarIcon className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                </div>
+                <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all"
+                    style={{ 
+                      width: analytics.totalReviews > 0 
+                        ? `${(analytics.ratingDistribution[rating as keyof typeof analytics.ratingDistribution] / analytics.totalReviews) * 100}%` 
+                        : '0%' 
+                    }}
+                  />
+                </div>
+                <span className="w-12 text-right font-medium">
+                  {analytics.ratingDistribution[rating as keyof typeof analytics.ratingDistribution]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="reviews" className="w-full">
         <TabsList>
