@@ -138,12 +138,22 @@ const VendorOverview: React.FC<VendorOverviewProps> = ({ onNavigate }) => {
 
         const pendingPayoutsCount = payouts?.filter(p => p.status === 'pending').length || 0;
 
-        // Calculate profile completion
+        // Calculate comprehensive profile completion
         let completionScore = 0;
-        if (vendor.business_name) completionScore += 25;
-        if (vendor.description) completionScore += 25;
-        if (vendor.logo_url) completionScore += 25;
-        if (vendor.status === 'approved') completionScore += 25;
+        const checks = [
+          vendor.business_name,           // Business name (10%)
+          vendor.description,             // Vendor description (10%)
+          store.name,                     // Store name (10%)
+          store.description,              // Store description (10%)
+          store.logo_url,                 // Store logo (15%)
+          store.banner_url,               // Store banner (15%)
+          store.shipping_policy,          // Shipping policy (10%)
+          store.return_policy,            // Return policy (10%)
+          totalProducts > 0,              // Has products (10%)
+          vendor.status === 'approved'    // Approved status (10%)
+        ];
+        
+        completionScore = checks.filter(Boolean).length * 10;
 
         // Get recent orders with customer info
         const recentOrdersData = orders?.slice(0, 3).map(order => ({
