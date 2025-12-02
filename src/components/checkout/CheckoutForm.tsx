@@ -61,16 +61,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
   // Calculate shipping cost when cart changes
   useEffect(() => {
     const fetchShippingCost = async () => {
-      if (cart?.subtotal) {
+      if (cart?.subtotal !== undefined) {
         setLoadingShipping(true);
-        const cost = await calculateShipping(cart.subtotal);
+        const cartItems = cart.items.map(item => ({
+          productId: item.productId,
+          productType: item.productType
+        }));
+        const cost = await calculateShipping(cart.subtotal, cartItems);
         setShippingCost(cost);
         setLoadingShipping(false);
       }
     };
     
     fetchShippingCost();
-  }, [cart?.subtotal]);
+  }, [cart?.subtotal, cart?.items]);
 
   const onSubmit = async (values: CheckoutFormValues) => {
     if (!cart?.items?.length) {

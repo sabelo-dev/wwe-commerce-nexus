@@ -12,7 +12,19 @@ interface ShippingRate {
   is_active: boolean;
 }
 
-export const calculateShipping = async (subtotal: number): Promise<number> => {
+interface CartItem {
+  productId: string;
+  productType?: string;
+}
+
+export const calculateShipping = async (subtotal: number, cartItems?: CartItem[]): Promise<number> => {
+  // If all items are downloadable, shipping is free
+  if (cartItems && cartItems.length > 0) {
+    const allDownloadable = cartItems.every(item => item.productType === 'downloadable');
+    if (allDownloadable) {
+      return 0;
+    }
+  }
   try {
     // Fetch active shipping rates
     const { data: rates, error } = await supabase

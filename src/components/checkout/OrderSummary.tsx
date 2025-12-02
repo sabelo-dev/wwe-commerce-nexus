@@ -12,16 +12,20 @@ const OrderSummary: React.FC = () => {
 
   useEffect(() => {
     const fetchShipping = async () => {
-      if (cart?.subtotal) {
+      if (cart?.subtotal !== undefined) {
         setLoadingShipping(true);
-        const cost = await calculateShipping(cart.subtotal);
+        const cartItems = cart.items.map(item => ({
+          productId: item.productId,
+          productType: item.productType
+        }));
+        const cost = await calculateShipping(cart.subtotal, cartItems);
         setShipping(cost);
         setLoadingShipping(false);
       }
     };
     
     fetchShipping();
-  }, [cart?.subtotal]);
+  }, [cart?.subtotal, cart?.items]);
 
   if (!cart?.items?.length) {
     return (
