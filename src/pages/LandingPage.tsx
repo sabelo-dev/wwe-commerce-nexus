@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Hero from "@/components/home/Hero";
 import SEO from "@/components/SEO";
 import { getOrganizationSchema, getWebsiteSchema } from "@/utils/structuredData";
 
 const LandingPage: React.FC = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const structuredData = {
     '@context': 'https://schema.org',
     '@graph': [getOrganizationSchema(), getWebsiteSchema()],
