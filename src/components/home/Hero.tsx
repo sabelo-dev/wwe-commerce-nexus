@@ -5,7 +5,7 @@ import { Sparkles, ShoppingBag } from "lucide-react";
 
 const Hero: React.FC = () => {
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 min-h-[85vh] flex items-center">
+    <div className="relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 min-h-[60vh] flex items-center">
       <div className="absolute inset-0">
         <img
           src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
