@@ -1574,10 +1574,7 @@ export type Database = {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      get_vendor_features: {
-        Args: { vendor_id: string }
-        Returns: Json
-      }
+      get_vendor_features: { Args: { vendor_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1585,14 +1582,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_trial_expired: {
-        Args: { vendor_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
+      is_trial_expired: { Args: { vendor_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "consumer" | "vendor" | "admin"
