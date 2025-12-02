@@ -141,6 +141,7 @@ const ProductPage: React.FC = () => {
       image: selectedVariation?.imageUrl || fallbackImage,
       variationId: selectedVariation?.id,
       variationAttributes: selectedVariation?.attributes,
+      productType: product.productType,
     });
   };
 

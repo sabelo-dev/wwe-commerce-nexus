@@ -46,6 +46,7 @@ export interface Product {
   vendorSlug?: string;
   createdAt: string;
   variations?: ProductVariation[];
+  productType?: string;
 }
 
 export interface Category {
@@ -64,6 +65,7 @@ export interface CartItem {
   quantity: number;
   variationId?: string;
   variationAttributes?: Record<string, string>;
+  productType?: string;
 }
 
 export interface Cart {

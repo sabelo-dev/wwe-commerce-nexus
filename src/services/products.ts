@@ -42,6 +42,7 @@ const mapDatabaseProduct = (dbProduct: any, images: any[] = [], variations: any[
     vendorSlug: store.slug,
     createdAt: dbProduct.created_at,
     variations: mappedVariations.length > 0 ? mappedVariations : undefined,
+    productType: dbProduct.product_type,
   };
 };
 
