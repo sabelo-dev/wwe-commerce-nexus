@@ -64,10 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loadUserProfile = async (session: Session | null) => {
+  const loadUserProfile = async (session: Session | null, operation: string = 'auth') => {
     if (!session?.user) {
       clearAuthState();
-      loadingManager.stopLoading('auth');
+      loadingManager.stopLoading(operation);
       return;
     }
 
@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileResult.error) {
         console.error('Error fetching profile:', profileResult.error);
         clearAuthState();
-        loadingManager.stopLoading('auth');
+        loadingManager.stopLoading(operation);
         return;
       }
       
@@ -128,14 +128,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error loading user profile:', error);
       clearAuthState();
     } finally {
-      loadingManager.stopLoading('auth');
+      loadingManager.stopLoading(operation);
     }
   };
 
   const refreshUserProfile = async () => {
     if (session?.user) {
       loadingManager.startLoading('refresh');
-      await loadUserProfile(session);
+      await loadUserProfile(session, 'refresh');
     }
   };
 
